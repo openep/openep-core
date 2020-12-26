@@ -18,7 +18,7 @@ function hFig = plotOpenEPEgms( userdata, varargin )
 %           getIndexFromCartoPointNumber.
 %   'range'         {'window'}|'all'
 %           By default ('window') only the electrogram within the window of
-%           interest is drawn (±buffer). By specifying 'all' the entire point
+%           interest is drawn (+/-buffer). By specifying 'all' the entire point
 %           electrogram is drawn.
 %   'buffer'        {50}|double
 %           The time before and after the window of interest to draw. By

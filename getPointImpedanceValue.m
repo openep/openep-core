@@ -8,7 +8,7 @@ function a = getPointImpedanceValue(imp, tim)
 %   a - is the output
 %   imp - impedance values at times tim
 %
-% Impedance values are streaming every 100ms to Carto® 3 system from the 
+% Impedance values are streaming every 100ms to Carto 3 system from the 
 % RF Generator. A time range of -7.5s to +2.5s is output for each point and
 % saved in userdata.electric.impedances (.time and .value) in the mat
 % files.

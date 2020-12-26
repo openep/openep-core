@@ -29,7 +29,7 @@ function plotVisitags(userdata, varargin)
 % Info on Code Testing:
 % ---------------------------------------------------------------
 % plotVisitags(userdata)
-% plotVisitags(userdata, ‘plot’, ‘both’, ‘shell’, ‘off’, ‘orientation’, ‘ap’)
+% plotVisitags(userdata, 'plot', 'both', 'shell', 'off', 'orientation', 'ap')
 % ---------------------------------------------------------------
 %
 % ---------------------------------------------------------------
