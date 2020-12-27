@@ -2,7 +2,7 @@ function data = getSurfaceData( userdata, datatype )
 % GETSURFACEDATA Returns surface mapping data from userdata
 %
 % Usage:
-%   data = getMappingData( userdata, datatype )
+%   data = getSurfaceData( userdata, datatype )
 % Where:
 %   userdata  - see importcarto_mem
 %   datatype  - the required data. Must be one of:
