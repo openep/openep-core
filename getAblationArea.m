@@ -2,7 +2,7 @@ function [ablArea, isAblated, trAbl] = getAblationArea(userdata, varargin)
 % GETABLATIONAREA Calculates the area of a chamber which has been ablated
 %
 % Usage:
-%   area = getAblationArea( userdata )
+%   [ablArea, isAblated, trAbl] = getAblationArea( userdata )
 % Where:
 %   userdata - see importcarto_mem.m
 %   ablArea - the total area of the chamber that has been ablated
