@@ -2,7 +2,7 @@ function areas = voltageHistogramAnalysis( userdata, varargin )
 % VOLTAGEHISTOGRAMANALYSIS Performs voltage histogram analysis
 %
 % Usage:
-%   areas = plotVoltageHistogram( userdata, varargin )
+%   areas = voltageHistogramAnalysis( userdata, varargin )
 % Where:
 %   userdata  - see importcarto_mem
 %   areas     - he chamber areas within each of the voltage thresholds

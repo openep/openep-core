@@ -2,10 +2,10 @@ function [lowVArea, voltages, iTri, tr2] = getLowVoltageArea( userdata, varargin
 % GETLOWVOLTAGEAREA Returns the low voltage area
 %
 % Usage:
-%   lowVoltageArea = getLowVoltageArea( userdata, varargin )
+%   [lowVArea, voltages, iTri, tr2] = getLowVoltageArea( userdata, varargin )
 % Where:
 %   userdata  - see importcarto_mem
-%   lowVoltageArea  - the low voltage area (cm^2)
+%   lowVArea  - the low voltage area (cm^2)
 %   voltages - the voltages point values used to calculate areas
 %   iTri - indexes into userdata.surface.triRep.Triangulation and refers
 %          to the triangles that have voltage values within the range,
