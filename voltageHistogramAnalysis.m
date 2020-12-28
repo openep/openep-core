@@ -69,22 +69,9 @@ for i = 1:size(threshold, 1)
         );
 end
 
-if plot
-    % plot the surface
-    drawMap(userdata, 'type', 'none', 'orientation', 'pa');
-    hold on
-    for i = 1:size(threshold, 1)
-        if ~isempty(tr2{i})
-            trisurf(tr2{i} ...
-                , 'facecolor', colors(i,:) ...
-                , 'edgecolor', 'none' ...
-                , 'SpecularStrength', 0 ...
-                );
-        end
-    end
-    
+if plot  
     % plot the histogram
-    figure; axes; hold on;
+    hold on;
     % plot bars for each of the thresholds specified
     for i = 1:size(threshold, 1)
         y1 = 0;
@@ -119,4 +106,18 @@ if plot
     ylabel('Area (cm^2)');
     set(gcf, 'color', 'w')
     set(gca, 'fontsize', 14); 
+    
+        % plot the surface
+    figure
+    drawMap(userdata, 'type', 'none', 'orientation', 'pa');
+    hold on
+    for i = 1:size(threshold, 1)
+        if ~isempty(tr2{i})
+            trisurf(tr2{i} ...
+                , 'facecolor', colors(i,:) ...
+                , 'edgecolor', 'none' ...
+                , 'SpecularStrength', 0 ...
+                );
+        end
+    end
 end

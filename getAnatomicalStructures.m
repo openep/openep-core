@@ -79,7 +79,6 @@ end
 
 % plot
 if plot
-    figure
     drawFreeBoundaries(FF, trMesh);
     hold on
     hS = trisurf(userdata.surface.triRep);
