@@ -16,6 +16,7 @@ function hFig = plotElectrograms(egmTraces, varargin)
 % 'autogain', if true the electrograms are automatically scaled, default false
 % 'acttime', a vector of activation times to be plotted as red crosses
 % 'egmColors', cell array of colors. Same size as egmNames
+% 'linewidth', the width of the lines drawing the electrograms
 %
 % INSTRUCTIONS FOR A4 EGM PAGE
 % 1. Save figure as an .EPS file.
@@ -77,6 +78,7 @@ p.addParamValue('acttime', 0, @isnumeric);
 p.addParamValue('egmColors', {}, @iscellstr);
 p.addParamValue('axis', []);
 p.addParamValue('title', 'on', @isstr);
+p.addParamValue('linewidth', 1, @isnumeric);
 p.parse(egmTraces, varargin{:});
 inputs = p.Results;
 
@@ -101,6 +103,7 @@ center = inputs.center;
 acttime = inputs.acttime;
 ax = inputs.axis;
 titleText = inputs.title;
+linewidth = inputs.linewidth;
 
 if isempty(inputs.egmNames)
     egmNames = num2cell(1:numEgm);
@@ -183,7 +186,7 @@ xValues = repmat(time, [1, numEgm]);
 for i = 1:size(xValues,2)
     line(xValues(:,i), egm(time,i) ...
         , 'color', colorBrewer(egmColors{i}) ...
-        , 'linewidth', 1 ...
+        , 'linewidth', linewidth ...
         );
     
     yTickPos = separation:separation:separation*numEgm;

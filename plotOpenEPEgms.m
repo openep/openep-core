@@ -31,6 +31,8 @@ function hFig = plotOpenEPEgms( userdata, varargin )
 %           Whether to plot the reference channel, off by default userdata.electric.egm(iEgmArray,:) are selected for plotting
 %           To convert from Carto point numbers to iEgmArray use
 %           getIndexFromCartoPointNumber.
+%   'linewidth', {1} | integer
+%           The width of the lines drawing the electrograms
 %
 % PLOTOPENEPEGMS is a wrapper function for plotElectrograms.
 %
@@ -58,6 +60,7 @@ range = 'window';
 egmtype = 'bip-uni';
 buffer = 50;
 reference = 'on';
+linewidth = 1;
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
         switch lower(varargin{i})
@@ -73,6 +76,8 @@ if nargin > nStandardArgs
                 egmtype = varargin{i+1};
             case 'reference'
                 reference = varargin{i+1};
+            case 'linewidth'
+                linewidth = varargin{i+1};
         end
     end
 end
@@ -143,6 +148,7 @@ hFig = plotElectrograms(egmTraces ...
     , 'separation', 7.5 ...
     , 'autogain', true ...
     , 'title', 'off' ...
+    , 'linewidth', linewidth ...
     );
 
 
