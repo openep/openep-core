@@ -43,7 +43,7 @@ for i = 1:numel(userdata.electric.names)
         electrogram = getEgmsAtPoints(userdata, 'iegm', i, 'egmtype', 'bip', 'reference', 'off');
         e = electrogram{1}(reference+woi(1):reference+woi(2));
         
-        [~,~,act] = nleo(e', 'adaptive', false);
+        [~,~,act] = nleo(e', 'adaptive', false, 'threshold', 5E-3);
         
         A = find(act);
         if ~isempty(A)
