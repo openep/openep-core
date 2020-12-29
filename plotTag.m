@@ -59,17 +59,21 @@ end
 
 hold on
 if ~isempty(coord)
-   % plot coordinates 
-   for i = 1:size(coord,1)
-       h(i) = plotsphere(coord(i,1), coord(i,2), coord(i,3), color, r, 16);
-   end
-   
+    % plot coordinates
+    for i = 1:size(coord,1)
+        h(i) = plotsphere(coord(i,1), coord(i,2), coord(i,3), color, r, 16);
+    end
+    
 end
 
 if ~isempty(pointnum)
-   % plot pointnums 
+    % plot pointnums
+    coord = userdata.electric.egmX(pointnum,:);
+    for i = 1:numel(pointnum)
+        h(i) = plotsphere(coord(i,1), coord(i,2), coord(i,3), color, r, 16);
+    end
 end
 
 set(h, 'edgecolor', 'none');
-    
+
 end

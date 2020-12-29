@@ -25,6 +25,7 @@ function interpData = generateInterpData(userdata, datatype, varargin)
 %         'uni-egm' - unipolar voltage; measured by OpenEP on the egms (NOT IMPLEMENTED)
 %         'lat-egm' - local activation time; measured by OpenEP on the egms (NOT IMPLEMENTED)
 %         'cv' - conduction velocity
+%         'egmduration' - electrogram duration
 % GENERATEINTERPDATA removes any NaN values in data (and their
 % corresponding location(s) in coords) before calling scatteredInterpolant
 % with the interpolation/extrapolation methods specified. Any values greater
@@ -49,7 +50,7 @@ function interpData = generateInterpData(userdata, datatype, varargin)
      
 nStandardArgs = 2; 
 interMethod = 'natural';
-exterMethod = 'linear';
+exterMethod = 'nearest';
 distanceThresh = 10;
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
@@ -71,7 +72,7 @@ end
 if ~any(strcmpi(exterMethod, {'nearest' 'linear' 'none'}))
     error(['GENERATEINTERPDATA: Unrecognised value ' exterMethod ' for parameter exterMethod']);
 end
-if ~any(strcmpi(datatype, {'bip-map' 'uni-map' 'lat-map' 'bip-egm' 'uni_egm' 'lat-egm' 'cv'}))
+if ~any(strcmpi(datatype, {'bip-map' 'uni-map' 'lat-map' 'bip-egm' 'uni_egm' 'lat-egm' 'cv' 'egmduration'}))
     error(['GENERATEINTERPDATA: Unrecognised value ' datatype ' for parameter datatype']);
 end
 
@@ -79,7 +80,7 @@ end
 pts = userdata.surface.triRep.X;
 
 % Get the data
-switch datatype
+switch lower(datatype)
     case 'bip-map'
         data = userdata.electric.voltages.bipolar;
         coords = userdata.electric.egmX;
@@ -100,6 +101,9 @@ switch datatype
         % to be implemented
     case 'lat-map'
         data = userdata.electric.annotations.mapAnnot - userdata.electric.annotations.referenceAnnot;
+        coords = userdata.electric.egmX;
+    case 'egmduration'
+        data = getElectrogramDuration(userdata);
         coords = userdata.electric.egmX;
 end
 
