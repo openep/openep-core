@@ -7,16 +7,17 @@ function plotVisitags(userdata, varargin)
 %   userdata - see importcarto_mem.m
 %
 % PLOTVISITAG accepts the following parameter-value pairs
-%   'plot'     {'tags'}|'grid'|'both'
+%   'plot'     {'tags'} | 'grid' | 'both'
 %       - specifies whether to show the tags, the grid, or both
-%   'shell'    {'on'}|'off'
+%   'shell'    {'on'} | 'off'
 %       - specifies whether to show the chamber shell
-%   'colour'    {'r'}|colorspec|array     
+%   'colour'    {'r'} | colorspec | array     
 %       - can be a string or colorspec specifying the color of all the
 %       spheres
 %       - can be an array of double values which is rendered as a
 %       colorscale
-%   'orientation'   see drawMap.m
+%   'orientation'   
+%       - see `drawMap.m`
 %
 % PLOTVISITAG Requires a userdata structure which contains .rfindex as
 % its input, which can be created using importvisitag.m

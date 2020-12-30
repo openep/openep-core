@@ -7,10 +7,12 @@ function ref = getReferenceAnnotation(userdata, varargin)
 %   userdata  - see importcarto_mem
 %   ref  - the value of the reference annotation
 %
-% GETREFERENCEANNOTATION Accepts the following parameter-value pairs.
+% GETREFERENCEANNOTATION accepts the following parameter-value pairs
 %   'iegm'    {:} | integer | array
 %        - The electrogram point(s) for which the reference annotation is
 %        required
+%
+% GETREFERENCEANNOTATION Returns the value fo the reference annotation.
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

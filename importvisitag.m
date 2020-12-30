@@ -1,15 +1,15 @@
 function userdata = importvisitag(userdata, dirName)
 % IMPORTVISITAG provides a data structure from Carto visitag files.
 %
-% Usage
+% Usage:
 %   visitag = importvisitag(userdata, dirName)
 %   visitag = imporvisitag()
 % Where:
-%   dirName is the directory with all of the files corresponding to WiseTag
-%   visitag is a single data structure
+%   dirName - the directory with all of the files corresponding to WiseTag
+%   visitag - a single data structure
 %
 % IMPORTVISITAG parses the data contained in a Visitag export from the
-% Carto3 mapping system. The data is stored in a field '.rfindex' and the
+% Carto3 mapping system. The data is stored in a field `.rfindex` and the
 % new userdata data structure with the appended ablation data is returned.
 %
 % Author: Steven Williams (2020) (Copyright)

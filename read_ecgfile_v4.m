@@ -5,9 +5,10 @@ function varargout = read_ecgfile_v4(varargin)
 %   [channelNames channelVoltages] = read_ecgfile(filename)
 %   channelVoltages = read_ecgfile(filename, names)
 % Where:
-%   channelVoltages channelNames are voltages and names
-%   filename is the Carto3 .txt file
-%   names is optional and is the desired channel names - this helps speed
+%   channelVoltages - voltages
+%   channelNames - names
+%   filename - the Carto3 .txt file
+%   names - is optional and is the desired channel names which helps speed
 
 % Author: Nick Linton (2013) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

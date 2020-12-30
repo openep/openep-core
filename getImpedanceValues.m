@@ -13,13 +13,13 @@ function imp = getImpedanceValues( userdata, varargin )
 %   'vertices'  {':'} | int array
 %
 % GETIMPEDANCEVALUES Returns the impedance values. By default, impedance
-% values are returned for all the points in the map. If 'method' is
-% specified to be 'egm' then impedance transients are returned for each
+% values are returned for all the points in the map. If `method` is
+% specified to be `egm` then impedance transients are returned for each
 % individual mapping point, along with time intervals for the impedances.
-% If one or more 'vertices' are specified then impedance values are only 
-% returned for those vertices (only valid if 'method' is 'map'). 
-% If one or more 'points' is specified then impedance values are only 
-% returned for those mapping points (only va;lid if 'method' is 'egm').
+% If one or more `vertices` are specified then impedance values are only 
+% returned for those vertices (only valid if `method` is `map`). 
+% If one or more `points` is specified then impedance values are only 
+% returned for those mapping points (only valid if `method` is `egm`).
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

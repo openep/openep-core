@@ -11,7 +11,7 @@ function [inoutpts, meshpts] = pointStatus( userdata, varargin )
 %               referenced in the triangulation (logical(1)) or not
 %               (logical(0))
 %
-% POINTSTATUS accepts the following parameter-value pairs:
+% POINTSTATUS accepts the following parameter-value pairs
 %   'tol' 0.1 | double
 %       - The distance threshold within which points are considered to be
 %         internal or external to the triangulation

@@ -10,17 +10,17 @@ function [X, surfX, iPoint, t] = getLatestActivationSite( userdata, varargin )
 % Where:
 %   userdata    - see importcarto_mem
 %   X           - Cartesian co-ordinates of the latest activation site. For
-%                   map-based methods (i.e. 'clinmap', 'clinmapprct',
-%                   'openepmap'and 'openepmapprct'), X is identical to
+%                   map-based methods (i.e. `clinmap`, `clinmapprct`,
+%                   `openepmap` and `openepmapprct`), X is identical to
 %                   surfX.
 %   surfX       - The surface projection of the latest activation site
 %   iPoint      - The closest mapping point to the latest activation
-%                   site. For point-based methods (i.e. 'ptbased' or 
-%                   'ptbasedprct'), iPoint indexes into userdata.electric.
-%                   For map-based methods (i.e. 'clinmap', 'clinmapprct',
-%                   'openepmap', 'openepmapprct'), iPoint indexes into
+%                   site. For point-based methods (i.e. `ptbased` or 
+%                   `ptbasedprct`), iPoint indexes into userdata.electric.
+%                   For map-based methods (i.e. `clinmap`, `clinmapprct`,
+%                   `openepmap`, `openepmapprct`), iPoint indexes into
 %                   userdata.surface.triRep.X. For percentile methods (i.e.
-%                   'ptbasedprct', 'clinmapprct' or 'openepmapprct') iPoint
+%                   `ptbasedprct`, `clinmapprct` or `openepmapprct`) iPoint
 %                   returns all the points that were identified within the
 %                   relevant percentile.
 %   t           - The calculated latest activation time, relative to the
@@ -39,22 +39,22 @@ function [X, surfX, iPoint, t] = getLatestActivationSite( userdata, varargin )
 % time. Several alternative methods are provided for caluclating the latest 
 % activation site, specified by setting the 'method' parameter-value pair 
 % to one of the following options:
-%       'ptbased'    - Calculates the latest activation time using the 
+%       `ptbased`    - Calculates the latest activation time using the 
 %                       mapping points exported by the clinical system.
-%       'ptbasedprct'- Calculates the latest 2.5th percentile mapping 
+%       `ptbasedprct`- Calculates the latest 2.5th percentile mapping 
 %                       times on the exported electrogram annotations, then 
 %                       calculates the mean of this sets of activation times.
-%       'clinmap'    - Calculates the latest activation time on the 
+%       `clinmap`    - Calculates the latest activation time on the 
 %                       local activation time map created by the clinical 
 %                       mapping system
-%       'clinmapprct'- First calculates the latest 2.5th percentile 
+%       `clinmapprct`- First calculates the latest 2.5th percentile 
 %                       mapping times on the clinical local activation time 
 %                       map, then calculates the mean of this set of 
 %                       activation times.
-%       'openepmap'  - Calculates the latest activation time on the local 
+%       `openepmap`  - Calculates the latest activation time on the local 
 %                       activation time map created by OpenEP from the 
 %                       exported electrogram annotations.
-%       'openepmapprct'- First calculates the latest 2.5th percentile 
+%       `openepmapprct`- First calculates the latest 2.5th percentile 
 %                       mapping times on the local activation time map 
 %                       created by OpenEP from the exported electrogram 
 %                       annotations. Then calculates the mean of this set of 

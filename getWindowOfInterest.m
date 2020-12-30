@@ -8,10 +8,9 @@ function woi = getWindowOfInterest(userdata, varargin)
 %   woi  - two-element array specifying the window of interest relative to
 %          the reference annotation
 %
-% GETWINDOWOFINTEREST Accepts the following parameter-value pairs.
+% GETWINDOWOFINTEREST accepts the following parameter-value pairs
 %   'iEgm'    {:} | integer | array
-%        - The electrogram point(s) for which the window of interst is
-%        required
+%        - The electrogram point(s) for which the window of interst is required
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

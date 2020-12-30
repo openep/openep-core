@@ -4,25 +4,37 @@ function hFig = plotElectrograms(egmTraces, varargin)
 % Usage:
 %   hFig = PLOTELECTROGRAMS(egmTraces)
 %   hFig = PLOTELECTROGRAMS(egmTraces, varargin)
+% Where:
+%   egmTraces - the electrograms to plot
+%   hFig - a handle to the plotted figure
 %
-% PLOTELECTROGRAMS parameter-value pairs can be passed in as follows:
-% 'egmNames', cell array of electrogram names
-% 'range', two value vector [xmin xmax]
-% 'sampleRate', the sample rate in Hz
-% 'paperSpeed', the paper speed for plotting
-% 'separation', the separation between electrograms, default is 5mV
-% 'clipping', two value vector [clipmin clipmax] in mV
-% 'gain', the gain, default is 2
-% 'autogain', if true the electrograms are automatically scaled, default false
-% 'acttime', a vector of activation times to be plotted as red crosses
-% 'egmColors', cell array of colors. Same size as egmNames
-% 'linewidth', the width of the lines drawing the electrograms
+% PLOTELECTROGRAMS accepts the following parameter-value pairs
+% 'egmNames'
+%   - cell array of electrogram names
+% 'range'
+%   - two value vector [xmin xmax]
+% 'sampleRate'
+%   - the sample rate in Hz
+% 'paperSpeed'
+%   - the paper speed for plotting
+% 'separation'
+%   - the separation between electrograms, default is 5mV
+% 'clipping'
+%   - two value vector [clipmin clipmax] in mV
+% 'gain'
+%   - the gain, default is 2
+% 'autogain'
+%   - if true the electrograms are automatically scaled, default false
+% 'acttime'
+%   - a vector of activation times to be plotted as red crosses
+% 'egmColors'
+%   - cell array of colors. Same size as egmNames
+% 'linewidth'
+%   - the width of the lines drawing the electrograms
 %
-% INSTRUCTIONS FOR A4 EGM PAGE
-% 1. Save figure as an .EPS file.
-% 2. Open in Corel draw and export as a .PDF file.
-%
-% INSTRUCTIONS FOR TIMING SINGLE BEAT TRACES
+% PLOTELECTROGRAMS is used to plot electrograms. To plot an A4 electrogram
+% page: 1. Save figure as an .EPS file; 2. Open in Corel draw (or similar) 
+% and export as a .PDF file. INSTRUCTIONS FOR TIMING SINGLE BEAT TRACES
 % The default position gives a width of 300pixels, which corresponds to an
 % x axis width of 68.44mm. The number of samples to plot in this
 % width (ie width of 'range' parameter) is given by:

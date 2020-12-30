@@ -21,9 +21,9 @@ function [lowVArea, voltages, iTri, tr2] = getLowVoltageArea( userdata, varargin
 % GETLOWVOLTAGEAREA Returns the surface area of the chamber with voltage
 % less than the specified threshold, 0.5mV by default. By default low
 % voltage area is calculated using the surface data (stored in
-% userdat.surface). If 'method' is set to 'egm' then the bipolar voltage is 
+% `userdata.surface`). If `method` is set to `egm` then the bipolar voltage is 
 % first interpolated from the bipolar electrogram data (stored in
-% userdata.electric). If 'type' is set to 'uni' then unipolar voltages are
+% `userdata.electric`). If `type` is set to `uni` then unipolar voltages are
 % used for surface area calculation.
 %
 % Author: Steven Williams (2020) (Copyright)

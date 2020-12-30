@@ -12,32 +12,32 @@ function tat = getTotalActivationTime( userdata, varargin )
 %       - Specifies the method by which total activation time is calculated
 %   'prct'   {2.5} | double
 %       - The percentile to use for percentile mapping; only applicable if
-%        'method' is one of 'ptbasedprct', 'clinmapprct' or 'openepmapprct'.
+%        `method` is one of `ptbasedprct`, `clinmapprct` or `openepmapprct`.
 %
 % GETTOTALACTIVATIONTIME Returns the total activatoin time of the chamber.
 % Several alternative methods are provided, and specified by setting the
 % 'method' parameter-value pair to one of the following options:
-%       'ptbased'    - Calculates the difference in activation time between 
+%       `ptbased`    - Calculates the difference in activation time between 
 %                       the earliest and latest activation time mapping 
 %                       points exported by the clinical system.
-%       'ptbasedprct'- First calculates the earliest 2.5th percentile and 
+%       `ptbasedprct`- First calculates the earliest 2.5th percentile and 
 %                       the latest 2.5th percentile mapping times on the 
 %                       exported electrogram annotations, then calculates 
 %                       the difference between the means of these sets of 
 %                       activation times.
-%       'clinmap'    - Calculates the difference between the earliest and 
+%       `clinmap`    - Calculates the difference between the earliest and 
 %                       latest activation times on the local activation 
 %                       time map created by the clinical mapping system
-%       'clinmapprct'- First calculates the earliest 2.5th percentile and 
+%       `clinmapprct`- First calculates the earliest 2.5th percentile and 
 %                       latest 2.5th percentile mapping times on the 
 %                       clinical local activation time map, then calculates 
 %                       the difference between the means of these sets of 
 %                       activation times.
-%       'openepmap'  - Calculates the difference between the earliest and 
+%       `openepmap`  - Calculates the difference between the earliest and 
 %                       latest activation times on the local activation 
 %                       time map created by OpenEP from the exported 
 %                       electrogram annotations.
-%       'openepmapprct'- First calculates the earliest 2.5th percentile and 
+%       `openepmapprct`- First calculates the earliest 2.5th percentile and 
 %                       latest 2.5th percentile mapping times on the local 
 %                       activation time map created by OpenEP from the 
 %                       exported electrogram annotations. Then calculates 

@@ -10,12 +10,12 @@ function data = getSurfaceData( userdata, datatype )
 %   data      - The returned surface mapping data
 %
 % GETSURFACEDATA Returns surface mapping data from userdata. Data type is
-% specified by the 'datatype' argument:
-%   'act' - activation time
-%   'bip' - bipolar voltage
-%   'uni' - unipolar voltage
-%   'imp' - impedance
-%   'frc' - contact force
+% specified by the `datatype` argument:
+%   `act` - activation time
+%   `bip` - bipolar voltage
+%   `uni` - unipolar voltage
+%   `imp` - impedance
+%   `frc` - contact force
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

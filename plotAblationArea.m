@@ -6,8 +6,8 @@ function plotAblationArea(userdata)
 % Where:
 %   userdata - see importcarto_mem.m
 %
-% PLOTABLATIONAREA Requires a userdata structure which contains .rfindex as
-% its input, which can be created using importvisitag.m
+% PLOTABLATIONAREA Requires a userdata structure which contains `.rfindex` as
+% its input, which can be created using `importvisitag.m`
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

@@ -9,28 +9,27 @@ function hFig = plotOpenEPEgms( userdata, varargin )
 %   hFig - a handle to the plotted figure
 %
 % PLOTOPENEPEGMS accepts the following parameter-value pairs
-%   'iEgm'     {:}|[a:b]
-%           an array indexing into userdata.electric.egm such that
-%          %   'iEgm'     {:}|[a:b]
+%   'iEgm'     {:} | [a:b]
 %           an array indexing into userdata.electric.egm such that
 %           userdata.electric.egm(iEgmArray,:) are selected for plotting
 %           To convert from Carto point numbers to iEgmArray use
 %           getIndexFromCartoPointNumber.
-%   'range'         {'window'}|'all'
+%   'range'         {'window'} | 'all'
 %           By default ('window') only the electrogram within the window of
 %           interest is drawn (+/-buffer). By specifying 'all' the entire point
 %           electrogram is drawn.
-%   'buffer'        {50}|double
+%   'buffer'        {50} | double
 %           The time before and after the window of interest to draw. By
 %           default, 20ms, but can be changed by setting 'buffer' to an
 %           alternative value.
-%   'egmtype'   'bip'|'uni'|{'bip-uni'}
+%   'egmtype'   'bip' | 'uni' | {'bip-uni'}
 %           Whether to plot only the bipolar electrograms, only the
 %           unipolar electrograms or both
-%   'reference' 'off'|{'on'}
-%           Whether to plot the reference channel, off by default userdata.electric.egm(iEgmArray,:) are selected for plotting
-%           To convert from Carto point numbers to iEgmArray use
-%           getIndexFromCartoPointNumber.
+%   'reference' 'off' | {'on'}
+%           Whether to plot the reference channel, off by default 
+%           userdata.electric.egm(iEgmArray,:) are selected for plotting.
+%           To convert from Carto point numbers to iEgmArray use 
+%           `getIndexFromCartoPointNumber.m`
 %   'linewidth', {1} | integer
 %           The width of the lines drawing the electrograms
 %

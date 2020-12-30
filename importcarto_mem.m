@@ -19,22 +19,21 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %   containing all the other Carto3 files.
 %
 % IMPORTCARTO_MEM accepts the following parameter-value pairs
-%   'maptoread'     {''}|string|double
+%   'maptoread'     {''} | string | double
 %       Specifies which map to read. Can be a string referring
 %       to the map name or a double referring to the number of points in the
 %       map. If there are multiple maps with the same number of points an error
 %       will be thrown.
-%   'refchannel'    {''}|string
+%   'refchannel'    {''} | string
 %       The name of the channel to pick as the refence channel. Typically
 %       this is the pacing channel for the map. Specify a string such as
 %       'CS9-CS10'.
-%   'ecgchannel'    {''}|string
+%   'ecgchannel'    {''} | string
 %       The name of the channel to pick as the ECG channel. Typically
-%       this is an informative ECG such as V1. Specify a string such as
-%       'V1'.
-%   'savefilename'       {''}|string
+%       this is an informative ECG such as V1. Specify a string such as 'V1'.
+%   'savefilename'       {''} | string
 %       The full path to the location in which to save the output.
-%   'verbose'       {true}|false
+%   'verbose'       {true} | false
 %       Not yet implemented
 %
 % userdata structure ...

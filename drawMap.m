@@ -8,8 +8,7 @@ function hSurf = drawMap(userdata, varargin)
 %   hSurf - is a handle to the surface
 %   userdata - is a Carto data structure
 %
-% DRAWMAP is a wrapper function for colorShell.m which allows OpenEP data 
-% to be plotted. DRAWMAP accepts the following parameter-value pairs:
+% DRAWMAP accepts the following parameter-value pairs
 %   'data' {[]} | [d]
 %       - Where d is a vector of data values and size(d) equals numel(userdata.surface.triRep.X)
 %   'type'  {'act'} | 'bip' | 'force' | 'uni' | 'none' | 'cv'
@@ -28,6 +27,9 @@ function hSurf = drawMap(userdata, varargin)
 %       defined
 %   'colorfillthreshold'   {10} | c
 %       - Where c is a scalar value; defaulting to 10mm
+%
+% DRAWMAP is a wrapper function for colorShell.m which allows OpenEP data 
+% to be plotted. 
 %
 % Author: Steven Williams (2016) (Copyright)
 % SPDX-License-Identifier: Apache-2.0

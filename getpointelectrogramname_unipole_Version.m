@@ -4,8 +4,8 @@ function [electrogramname_bip, electrogramname_uni, point_xyz_2 ] = getpointelec
 % Usage:
 %   [ electrogramname_bip, electrogramname_uni ] = getelectrogramname( point_xyz, pointFileName )
 % Where:
-%   point_xyz  - 
-%   pointFileName  - 
+%   point_xyz  - co-ordinates
+%   pointFileName  - filename
 %   electrogramname_bip  - the electrode name for the bipolar electrogram at point_xyz
 %   electrogramname_uni - cell array of the electrode names for the
 %       unipolar electrogram at point_xyz and it's associated second electrode
