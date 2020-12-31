@@ -35,7 +35,7 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %       The full path to the location in which to save the output.
 %   'verbose'       {true} | false
 %       Not yet implemented
-%
+
 % userdata structure ...
 %   .surface
 %       .triRep         - TriRep object for the surface
@@ -61,7 +61,7 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %           .time_force - time course of force [(:,:,1)=time, (:,:,2)=force]
 %           .time_axial - time course of axial angle [(:,:,1)=time, (:,:,2)=axial angle]
 %           .time_lateral - time course of lateral angle [(:,:,1)=time, (:,:,2)=lateral angle]
-
+%
 % Author: Nick Linton (2011) (Copyright)
 % SPDX-License-Identifier: Apache-2.0
 %

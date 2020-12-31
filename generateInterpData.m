@@ -15,7 +15,7 @@ function interpData = generateInterpData(userdata, datatype, varargin)
 %       - The extrapolation method, defaults to linear
 %   'distanceThresh' {10}|double
 %       - The distance threshold, d, default 10mm
-% 
+%
 % GENERATEINTERPDDATA performs spatial interpolation of scalar data.
 % Userdata and datatype are mandatory arguments. Datatype may be one of:
 %         'bip-map' - bipolar voltage; from the exported voltage values
