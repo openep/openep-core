@@ -38,7 +38,7 @@ function [inoutpts, meshpts] = pointStatus( userdata, varargin )
 nStandardArgs = 1; % UPDATE VALUE
 plot = false;
 tol = 0.1;
-if nargin > nStandardArgs
+if nargin > nStandardArgs && ~isempty(varargin{1})
     for i = 1:2:nargin-1
         switch varargin{i}
             case 'plot'

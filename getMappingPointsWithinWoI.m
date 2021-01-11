@@ -6,7 +6,7 @@ function iPoint = getMappingPointsWithinWoI( userdata )
 %   iPoint = getMappingPointsWithinWoI( userdata )
 % Where:
 %   userdata  - see importcarto_mem
-%   iPoint  - the list of valid points; indexes into userdata.electric
+%   iPoint  - logicla array list of valid points; indexes into userdata.electric
 %
 % GETMAPPINGPOINTSWITHINWOI Returns the indices of the mapping points with
 % annotated local activation time within the window of interest
