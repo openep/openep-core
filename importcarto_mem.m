@@ -51,8 +51,10 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %       .barDirection   - normal to surface at egmSurfX
 %       .egm            - bipolar electrogram
 %       .egmUni         - matrix of unipolar electrograms
-%       .egmUniX        - localtion of unipolar points
+%       .egmUniX        - location of unipolar points
+%       .egmRefNames    - names of egmRef
 %       .egmRef         - electrogram of reference
+%       .ecgNames       - ecg names (or other channel names)
 %       .ecg            - ecg
 %       .force
 %           .force    - instantaneous force recording
@@ -169,6 +171,7 @@ if nargin > nStandardArgs
                 channelRef_cli = varargin{i+1};
             case 'ecgchannel'
                 channelECG_cli = varargin{i+1};
+                if ischar(channelECG_cli); channelECG_cli = {channelECG_cli}; end
             case 'savefilename'
                 saveFileName_cli = varargin{i+1};
             case 'verbose'
@@ -179,7 +182,7 @@ if nargin > nStandardArgs
     end
 end
 
-try
+% try
     studyDirInfo = dir(studyDir);
     allfilenames = cell(length(studyDirInfo),1);
     for i = 1:length(studyDirInfo)
@@ -363,20 +366,24 @@ try
         for iPoint = 1:nPoints
             waitbar(iPoint/nPoints, hWait);
             filename_pointExport = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
-            [pointExportTree, ~, ~] = xml_read([studyDir, filesep(), filename_pointExport], Pref);
-            pointExport_WOI(iPoint,:) = [str2double(pointExportTree.WOI.ATTRIBUTE.From) str2double(pointExportTree.WOI.ATTRIBUTE.To)];
-            pointExport_ReferenceAnnotation(iPoint) = str2double(pointExportTree.Annotations.ATTRIBUTE.Reference_Annotation);
-            pointExport_MapAnnotation(iPoint) = str2double(pointExportTree.Annotations.ATTRIBUTE.Map_Annotation);
-            pointExport_Unipolar(iPoint) = str2double(pointExportTree.Voltages.ATTRIBUTE.Unipolar);
-            pointExport_Bipolar(iPoint) = str2double(pointExportTree.Voltages.ATTRIBUTE.Bipolar);
-            
-            %TODO: Put an if statement here for if number=0
-            try
-                pointExport_ImpedanceTime{iPoint} = arrayfun(@(x) str2double(x.ATTRIBUTE.Time), pointExportTree.Impedances.Impedance);
-                pointExport_ImpedanceValue{iPoint} = arrayfun(@(x) str2double(x.ATTRIBUTE.Value), pointExportTree.Impedances.Impedance);
-            catch
-                pointExport_ImpedanceTime{iPoint} = NaN;
-                pointExport_ImpedanceValue{iPoint} = NaN;
+            if ~isfile([studyDir, filesep(), filename_pointExport])
+                disp(['File not found: ' , filename_pointExport])
+            else
+                [pointExportTree, ~, ~] = xml_read([studyDir, filesep(), filename_pointExport], Pref);
+                pointExport_WOI(iPoint,:) = [str2double(pointExportTree.WOI.ATTRIBUTE.From) str2double(pointExportTree.WOI.ATTRIBUTE.To)];
+                pointExport_ReferenceAnnotation(iPoint) = str2double(pointExportTree.Annotations.ATTRIBUTE.Reference_Annotation);
+                pointExport_MapAnnotation(iPoint) = str2double(pointExportTree.Annotations.ATTRIBUTE.Map_Annotation);
+                pointExport_Unipolar(iPoint) = str2double(pointExportTree.Voltages.ATTRIBUTE.Unipolar);
+                pointExport_Bipolar(iPoint) = str2double(pointExportTree.Voltages.ATTRIBUTE.Bipolar);
+                
+                %TODO: Put an if statement here for if number=0
+                try
+                    pointExport_ImpedanceTime{iPoint} = arrayfun(@(x) str2double(x.ATTRIBUTE.Time), pointExportTree.Impedances.Impedance);
+                    pointExport_ImpedanceValue{iPoint} = arrayfun(@(x) str2double(x.ATTRIBUTE.Value), pointExportTree.Impedances.Impedance);
+                catch
+                    pointExport_ImpedanceTime{iPoint} = NaN;
+                    pointExport_ImpedanceValue{iPoint} = NaN;
+                end
             end
         end
         delete(hWait)
@@ -393,6 +400,7 @@ try
         electrodeNames_bip = cell(nPoints, 1);
         electrodeNames_uni = cell(nPoints, 2);
         hWait = waitbar(0, ['Getting electrode name for ' num2str(nPoints) ' points']);
+        hasWarned = false;
         for iPoint = 1:nPoints
             waitbar(iPoint/nPoints , hWait )
             if allPointExport.Point(iPoint).ATTRIBUTE.ID ~= map.pointID(iPoint)
@@ -413,11 +421,23 @@ try
             ecgexportfilename = mycheckfilename(ecgexportfilename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
             [electrodeNamesCheck_bip, electrodeNamesCheck_uni] = read_ecgfile_v4_header(fullfile(homeDir, ecgexportfilename));
             if ~strcmpi(electrodeNamesCheck_bip, electrodeNames_bip{iPoint})
-                disp('IMPORTCARTO_MEM: Conflict between bipolar electrode names identified by read_positions_on_annotation_v2.m and read_ecgfile_v4_header.m. Using electrode names from read_ecgfile_v4_header.m. See issue https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from.')
+                if ~hasWarned
+                    warning(['IMPORTCARTO_MEM: Conflict between electrode names' newline() ...
+                          'identified by read_positions_on_annotation_v2.m and read_ecgfile_v4_header.m' newline() ...
+                          'using electrode names from read_ecgfile_v4_header.m' newline() ...
+                          'See https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from']);
+                    hasWarned = true;
+                end
                 electrodeNames_bip{iPoint} = electrodeNamesCheck_bip;
             end
             if ~strcmpi(electrodeNamesCheck_uni{1}, electrodeNames_uni{iPoint,1}) || ~strcmpi(electrodeNamesCheck_uni{2}, electrodeNames_uni{iPoint,2})
-                disp('IMPORTCARTO_MEM: Conflict between unipolar electrode names identified by read_positions_on_annotation_v2.m and read_ecgfile_v4_header.m. Using electrode names from read_ecgfile_v4_header.m. See issue https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from.')
+                if ~hasWarned
+                    warning(['IMPORTCARTO_MEM: Conflict between electrode names' newline() ...
+                          'identified by read_positions_on_annotation_v2.m and read_ecgfile_v4_header.m' newline() ...
+                          'using electrode names from read_ecgfile_v4_header.m' newline() ...
+                          'See https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from']);
+                    hasWarned = true;
+                end
                 electrodeNames_uni(iPoint, 1:2) = electrodeNamesCheck_uni;
             end
         end
@@ -445,11 +465,14 @@ try
                 end
             end
             if isempty(channelECG_cli)
-                [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is a good ECG?' , 'ListSize',[300 300] ); if ~ok; return; end
+                [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
             else
-                kEcg = find(strstartcmpi(channelECG_cli, namesTemp));
-                if isempty(kEcg) || numel(kEcg)>1
-                    error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                kEcg = zeros(1,numel(channelECG_cli));
+                for i = 1:numel(channelECG_cli)
+                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                    if isempty(kEcg(i))
+                        error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                    end
                 end
             end
             
@@ -457,10 +480,10 @@ try
             egmUni1 = zeros(nPoints, max(size(voltages)));
             egmUni2 = zeros(nPoints, max(size(voltages)));
             ref = zeros(nPoints, max(size(voltages)));
-            ecg = zeros(nPoints, max(size(voltages)));
+            ecg = zeros(nPoints, max(size(voltages)), numel(kEcg));
             
             nameRef = names{kRef};
-            nameEcg = names{kEcg};
+            nameEcg = names(kEcg);
             
             %%% Now get the electrograms
             hWait = waitbar(0, ['Getting electrical data for ' num2str(nPoints) ' points']);
@@ -470,12 +493,17 @@ try
                 filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
                 
                 if ~isempty(filename)
-                    [names voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
-                    if kRef>numel(names) || kEcg>numel(names) || ~strcmpi(names{kRef},nameRef) || ~strcmpi(names{kEcg},nameEcg)
+                    [names, voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
+                    if any(kRef>numel(names)) || any(kEcg>numel(names)) || any(~strcmpi(names(kRef),nameRef)) || any(~strcmpi(names(kEcg),nameEcg))
                         beep()
                         warning('IMPORTCARTO_MEM: The columns containing data in the .txt files change names.')
                         kRef = find( strcmpi(nameRef, names) );
-                        kEcg = find( strcmpi(nameEcg, names) );
+                        for i = 1:numel(kEcg)
+                            kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                            if isempty(kEcg(i))
+                                error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                            end
+                        end
                         if numel(kMap_bip)~=1 || numel(kRef)~=1 || numel(kEcg)~=1
                             error(['IMPORTCARTO_MEM: The name change could not be resolved. Problem with filename: ' filename])
                         end
@@ -487,7 +515,7 @@ try
                         egmUni1(iPoint,:) = voltages(:,kMap_uni(1));
                         egmUni2(iPoint,:) = voltages(:,kMap_uni(2));
                         ref(iPoint,:) = voltages(:,kRef);
-                        ecg(iPoint,:) = voltages(:,kEcg);
+                        ecg(iPoint,:,:) = voltages(:,kEcg);
                         
                     else
                         warning('IMPORTCARTO_MEM: No electrode found ... check "OnAnnotation" file ...')
@@ -525,6 +553,7 @@ try
             
             %%% Now we get the forces
             hWait = waitbar(0, ['Getting force data for ' num2str(nPoints) ' points']);
+            hasWarned = false;
             for iPoint = 1:nPoints
                 waitbar(iPoint/nPoints, hWait);
                 filename_force = [filenameroot '_' map.pointNames{iPoint} '_ContactForce.txt'];
@@ -559,10 +588,11 @@ try
                             [~,iMin] = min(pointSysTime - acqTime);
                             rfData(iMin, numColRfData) = iPoint;
                         end
-                        
                     end
-                else
-                    warning(['IMPORTCARTO_MEM: Force file not found for point ' num2str(iPoint)]);
+                elseif ~hasWarned
+                    %warning(['IMPORTCARTO_MEM: Force file not found for point ' num2str(iPoint)]);
+                    warning(['IMPORTCARTO_MEM: Force file not found for some points' char(10) 'Check userdata.electric.force for missing data.']);
+                    hasWarned = true;
                 end
                 
             end
@@ -588,8 +618,10 @@ try
         userdata.electric.egmUniX = unipolarEgmsX;
         userdata.electric.egmUni = unipolarEgms;
         
+        userdata.electric.egmRefNames = nameRef;
         userdata.electric.egmRef = ref;
-        userdata.electric.ecg = ecg;
+        userdata.electric.ecgNames = nameEcg;
+        userdata.electric.ecg = squeeze(ecg);
         
         userdata.electric.annotations.woi = pointExport_WOI;
         userdata.electric.annotations.referenceAnnot = pointExport_ReferenceAnnotation;
@@ -677,13 +709,13 @@ try
     
     
     
-catch err
-    if ~isempty(hWait) && ishandle(hWait)
-        delete(hWait)
-    end
-    warning('IMPORTCARTO_MEM: Do you have extra Carto3 files on the path?');
-    rethrow(err);
-end
+% catch err
+%     if ~isempty(hWait) && ishandle(hWait)
+%         delete(hWait)
+%     end
+%     warning('IMPORTCARTO_MEM: Do you have extra Carto3 files on the path?');
+%     rethrow(err);
+% end
 
 end
 
@@ -714,7 +746,8 @@ for i = 1:length(k)
 end
 if isempty(iMatch)
     fname = [];
-    warning(['IMPORTCARTO3: the filename relating to ' char(39) searchstring char(39) ' is unexpected and no match was found.'])
+    % use this for dbugging but can give excessive number of warnings
+    % warning(['IMPORTCARTO3: the filename relating to ' char(39) searchstring char(39) ' is unexpected and no match was found.'])
 else
     fname = allfilenames{iMatch};
     warning(['IMPORTCARTO3: the filename relating to ' char(39) searchstring char(39) ' is unexpected but a match was found - ' fname])

@@ -80,8 +80,13 @@ for iC = 1:numel(positions.Connector)
     positionFile = positions.Connector(iC).ATTRIBUTE;
     names = fieldnames(positionFile);
     positionFile =  positionFile.(names{1});
-    k  = strfind(lower(positionFile), 'onannotation.txt');
-    if ~isempty(k) %then it is an _OnAnnotation.txt file
+    % We want the files ending in ...
+    %      "_Eleclectrode_Positions_OnAnnotation.txt"
+    % Note the misspelling, so we just use...
+    %k  = strfind(lower(positionFile), lower('ectrode_Positions_OnAnnotation.txt'));
+    %if ~isempty(k) %then it is an electrode _OnAnnotation.txt file
+    if contains(lower(positionFile), lower('ectrode_Positions_OnAnnotation.txt'))
+        %then it is an electrode _OnAnnotation.txt file
         positionFile = fullfile(homeDir, positionFile);
         [iElectrode, xyz] = read_positions_on_annotation_v2(positionFile);
         [iClosest, dist] = findclosestvertex(xyz, point_xyz);
