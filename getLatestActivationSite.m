@@ -32,7 +32,7 @@ function [X, surfX, iPoint, t] = getLatestActivationSite( userdata, varargin )
 %           calculated.
 %   'prct'       {2.5} | double
 %       - The percentile to use for percentile mapping; only applicable if
-%       'method' is 'percentile'.
+%       `'method'` is `'ptbasedprct'`, `'clinmapprct'` or `'openmapprct'`
 %
 % GETLATESTACTIVATOINSITE By identifying the latest activating site,
 % this function can be used, for example, to calculate the total activation
@@ -41,20 +41,20 @@ function [X, surfX, iPoint, t] = getLatestActivationSite( userdata, varargin )
 % to one of the following options:
 %       `ptbased`    - Calculates the latest activation time using the 
 %                       mapping points exported by the clinical system.
-%       `ptbasedprct`- Calculates the latest 2.5th percentile mapping 
+%       `ptbasedprct`- Calculates the 97.5-100th percentile mapping 
 %                       times on the exported electrogram annotations, then 
 %                       calculates the mean of this sets of activation times.
 %       `clinmap`    - Calculates the latest activation time on the 
 %                       local activation time map created by the clinical 
 %                       mapping system
-%       `clinmapprct`- First calculates the latest 2.5th percentile 
+%       `clinmapprct`- First calculates the 97.5-100th percentile 
 %                       mapping times on the clinical local activation time 
 %                       map, then calculates the mean of this set of 
 %                       activation times.
 %       `openepmap`  - Calculates the latest activation time on the local 
 %                       activation time map created by OpenEP from the 
 %                       exported electrogram annotations.
-%       `openepmapprct`- First calculates the latest 2.5th percentile 
+%       `openepmapprct`- First calculates the 97.5-100th percentile 
 %                       mapping times on the local activation time map 
 %                       created by OpenEP from the exported electrogram 
 %                       annotations. Then calculates the mean of this set of 

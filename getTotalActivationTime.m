@@ -20,16 +20,16 @@ function tat = getTotalActivationTime( userdata, varargin )
 %       `ptbased`    - Calculates the difference in activation time between 
 %                       the earliest and latest activation time mapping 
 %                       points exported by the clinical system.
-%       `ptbasedprct`- First calculates the earliest 2.5th percentile and 
-%                       the latest 2.5th percentile mapping times on the 
+%       `ptbasedprct`- First calculates the 0-2.5th percentile and 
+%                       the 97.5-100th percentile mapping times on the 
 %                       exported electrogram annotations, then calculates 
 %                       the difference between the means of these sets of 
 %                       activation times.
 %       `clinmap`    - Calculates the difference between the earliest and 
 %                       latest activation times on the local activation 
 %                       time map created by the clinical mapping system
-%       `clinmapprct`- First calculates the earliest 2.5th percentile and 
-%                       latest 2.5th percentile mapping times on the 
+%       `clinmapprct`- First calculates the 0-2.5th percentile and 
+%                       the 97.5-100th percentile mapping times on the 
 %                       clinical local activation time map, then calculates 
 %                       the difference between the means of these sets of 
 %                       activation times.
@@ -37,8 +37,8 @@ function tat = getTotalActivationTime( userdata, varargin )
 %                       latest activation times on the local activation 
 %                       time map created by OpenEP from the exported 
 %                       electrogram annotations.
-%       `openepmapprct`- First calculates the earliest 2.5th percentile and 
-%                       latest 2.5th percentile mapping times on the local 
+%       `openepmapprct`- First calculates the 0-2.5th percentile and 
+%                       the 97.5-100th percentile mapping times on the local 
 %                       activation time map created by OpenEP from the 
 %                       exported electrogram annotations. Then calculates 
 %                       the difference between the means of these sets of 
