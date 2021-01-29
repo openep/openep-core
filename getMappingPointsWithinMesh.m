@@ -62,8 +62,17 @@ end
 
 if ~isempty(mask)
     % we need to find the points which are internal to the mask
-    FV.vertices = mask.Points;
-    FV.faces = mask.ConnectivityList;
+    
+    if isa(mask, 'TriRep')
+        FV.vertices = mask.X;
+        FV.faces = mask.Triangulation;
+    elseif isa(mask, 'Triangulation')
+        FV.vertices = mask.Points;
+        FV.faces = mask.ConnectivityList;
+    else
+        error('OPENEP/GETMAPPINGPOINTSWITHINMESH: invalid data format for mask')
+    end
+    
     QPTS = userdata.electric.egmX(iPoint,:);
     iPoint = inpolyhedron(FV, QPTS, 'tol', tol);
 end

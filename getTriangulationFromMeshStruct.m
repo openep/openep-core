@@ -15,6 +15,7 @@ function tr = getTriangulationFromMeshStruct( meshStruct, varargin )
 %       - The units of length for the meshStruct
 %   'repack' {true} | false
 %       - Whether to repack the triangulation to remove unused vertices
+%   'type'   {'triangulation'} | 'trirep'
 %
 % GETTRIANGULATIONFROMMESHSTRUCT Creates a Triangulation object from a
 % meshStructure which contains .Pts and .Tri fields. Note that
@@ -47,7 +48,7 @@ nStandardArgs = 1; % UPDATE VALUE
 region = ':';
 dorepack = true;
 scale = 'mm';
-type = 'Triangulation';
+type = 'triangulation';
 if nargin > nStandardArgs && ~isempty(varargin{1})
     for i = 1:2:nargin-1
         switch lower(varargin{i})
