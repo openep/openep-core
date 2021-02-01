@@ -207,7 +207,7 @@ if plot
     end
     plotsphere(C_ep(1,1), C_ep(1,2), C_ep(1,3),'k',1,16);
     title('OpenEP geometry with selected electrodes and barycentre')
-    set(hSurf, 'facealpha', 0.8);s
+    set(hSurf, 'facealpha', 0.8);
     
     % UAC plot of selected electrodes - OpenEP surface
     figure
