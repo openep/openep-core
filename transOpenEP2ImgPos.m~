@@ -126,17 +126,16 @@ iVertex_openEp3D = findclosestvertex(openEp3DMesh.Pts/1000, rV);
 coordUac = openEpUacMesh.Pts(iVertex_openEp3D,:);
 
 
-% 6. Find the closest vertex to this location in the MRI-UAC mesh; this defines the barycentre line of interest and sub
+% 6. Find the index of the closest node to this location in the MRI-UAC
+%    mesh; this defines the barycentre line of interest
 iVertex_mImgUac = findclosestvertex(imgUacMesh.Pts, coordUac);
-nV = img3DMesh.Pts(iVertex_mImgUac,:); %nV for newvertex
 
 % 7. Calculate the barycentre of the MRI-3D mesh
 tempUserdata.surface.triRep = getTriangulationFromMeshStruct(img3DMesh, 'type', 'trirep');
 C_img = getCentreOfMass(tempUserdata);
 
 % 8. calcualte vectors from each node toward the barycentre
-%baryVectors = repmat(C_img, size(img3DMesh.Pts(iVertex_mImgUac))) - nV;
-baryVectors = repmat(C_img, size(nV,1), 1) - nV;
+baryVectors = repmat(C_img, size(img3DMesh.Pts(iVertex_mImgUac))) - img3DMesh.Pts(iVertex_mImgUac,:);
 
 % 9. calculate the length of these vectors
 baryVectorLengths = vecnorm(baryVectors,2,2);
@@ -148,18 +147,14 @@ uV = baryVectors./baryVectorLengths; % uV for unitVector
 %    the MRI-3D mesh.
 scaledVectors = uV .* repmat(dR', 1, 3) .* baryVectorLengths;
 
-Y = nV + scaledVectors;
+Y = img3DMesh.Pts(iVertex_mImgUac,:) + scaledVectors;
 
 X = X * 1000;
 
 if plot
-    colors = [colorBrewer(1); colorBrewer(2); colorBrewer(3)];
-    mriColor = [255 224 179]/256;
-    openepColor = [.7 .7 .7];
-    
     % atrium with barycentre lines
     figure
-    drawMap(userdata, 'type', 'none', 'usrcolormap', openepColor);
+    drawMap(userdata, 'type', 'none');
     hold on
     for i = 1:10:size(vertices,1)
         line( [C_ep(1,1) vertices(i,1)], [C_ep(1,2) vertices(i,2)], [C_ep(1,3) vertices(i,3)], 'linewidth', 1.5, 'color', 'k');
@@ -172,8 +167,9 @@ if plot
 
     % 3D plot of selected electrodes on OpenEP surface
     figure
-    drawMap(userdata, 'type', 'none', 'usrcolormap', openepColor);
+    drawMap(userdata, 'type', 'none');
     hold on
+    colors = [colorBrewer(1); colorBrewer(2); colorBrewer(3)];
     for i = 1:numel(elecsamples)
          coord = X(elecsamples(i),:)/1000;
          plotTag(userdata, 'coord', coord, 'color', colors(i,:));
@@ -186,7 +182,7 @@ if plot
     % UAC plot of selected electrodes - OpenEP surface
     figure
     hSurf = trisurf(getTriangulationFromMeshStruct(openEpUacMesh));
-    set(hSurf, 'facecolor', openepColor, 'edgecolor', 'none');
+    set(hSurf, 'facecolor', [.5 .5 .5], 'edgecolor', 'none');
     hold on
     for i = 1:numel(elecsamples)
         plotTag(userdata, 'coord', coordUac(elecsamples(i),:), 'color', colors(i,:), 'size', 3/100);
@@ -199,7 +195,7 @@ if plot
     % UAC plot of selected electrodes - OpenEP distances
     figure
     hSurf = trisurf(getTriangulationFromMeshStruct(openEpUacMesh));
-    set(hSurf, 'facecolor', openepColor, 'edgecolor', 'none');
+    set(hSurf, 'facecolor', [.5 .5 .5], 'edgecolor', 'none');
     hold on
     for i = 1:numel(elecsamples)
         coord = coordUac(elecsamples(i),:);
@@ -217,7 +213,7 @@ if plot
     % UAC plot of selected electrodes - MRI surface
     figure
     hSurf = trisurf(getTriangulationFromMeshStruct(imgUacMesh));
-    set(hSurf, 'facecolor', mriColor, 'edgecolor', 'none');
+    set(hSurf, 'facecolor', [.5 .8 .5], 'edgecolor', 'none');
     hold on
     for i = 1:numel(elecsamples)
         plotTag(userdata, 'coord', coordUac(elecsamples(i),:), 'color', colors(i,:), 'size', 3/100);
@@ -230,7 +226,7 @@ if plot
     % UAC plot of selected electrodes - MRI distances
     figure
     hSurf = trisurf(getTriangulationFromMeshStruct(imgUacMesh));
-    set(hSurf, 'facecolor', mriColor, 'edgecolor', 'none');
+    set(hSurf, 'facecolor', [.5 .8 .5], 'edgecolor', 'none');
     hold on
     for i = 1:numel(elecsamples)
         coord = coordUac(elecsamples(i),:);
@@ -247,20 +243,17 @@ if plot
     
     % 3D plot of selected electrodes on MRI surface
     figure
-    hSurf = trisurf(getTriangulationFromMeshStruct(img3DMesh));
-    set(hSurf, 'facecolor', mriColor, 'edgecolor', 'none');
-    cameraLight;
-    axis off equal vis3d;
+    drawMap(userdata, 'type', 'none');
     hold on
+    colors = [colorBrewer(1); colorBrewer(2); colorBrewer(3)];
     for i = 1:numel(elecsamples)
-         coord = Y(elecsamples(i),:);
-         plotTag(userdata, 'coord', coord, 'color', colors(i,:), 'size', 3000);
-         line( [coord(1) nV(elecsamples(i),1)], [coord(2) nV(elecsamples(i),2)], [coord(3) nV(elecsamples(i),3)], 'linewidth', 1.5, 'color', 'k');
-         line( [coord(1) C_img(1,1)],           [coord(2) C_img(1,2)],           [coord(3) C_img(1,3)],            'linewidth', 1.5, 'color', [.3 .3 .3], 'linestyle', '--');
+         coord = X(elecsamples(i),:)/1000;
+         plotTag(userdata, 'coord', coord, 'color', colors(i,:));
+         line( [coord(1) rV(elecsamples(i),1)], [coord(2) rV(elecsamples(i),2)], [coord(3) rV(elecsamples(i),3)], 'linewidth', 1.5, 'color', 'k');
+         line( [coord(1) C_ep(1,1)],            [coord(2) C_ep(1,2)],            [coord(3) C_ep(1,3)],            'linewidth', 1.5, 'color', [.3 .3 .3], 'linestyle', '--');
     end
-    plotsphere(C_img(1,1), C_img(1,2), C_img(1,3),'k',1000,16);
+    plotsphere(C_ep(1,1), C_ep(1,2), C_ep(1,3),'k',1,16);
     title('OpenEP geometry with selected electrodes and barycentre')
-    set(gcf, 'color', 'w');
 end
 
 

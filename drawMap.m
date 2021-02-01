@@ -82,7 +82,16 @@ end
 % Draw the surface
 hSurf = trisurf(userdata.surface.triRep, 'edgecolor', 'none');
 axis equal vis3d
-set(hSurf, 'facecolor', [.5 .5 .5]);
+
+% Color the surface
+if strcmpi(type, 'none')
+    if numel(usrColorMap)==3
+        surfaceColor = usrColorMap;
+    else
+        surfaceColor = [.5 .5 .5];
+    end
+    set(hSurf, 'facecolor', surfaceColor);
+end
 
 % Draw the free boundary, i.e. valve
 drawFreeBoundary(userdata.surface.triRep, [0 0 0]);

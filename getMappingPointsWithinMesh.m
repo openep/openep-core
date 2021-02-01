@@ -66,7 +66,7 @@ if ~isempty(mask)
     if isa(mask, 'TriRep')
         FV.vertices = mask.X;
         FV.faces = mask.Triangulation;
-    elseif isa(mask, 'Triangulation')
+    elseif isa(mask, 'triangulation')
         FV.vertices = mask.Points;
         FV.faces = mask.ConnectivityList;
     else

@@ -15,7 +15,7 @@ function h = plotTag( userdata, varargin )
 %       - An array of size nx1 where n is the number of tags to plot
 %   'color'     {'r'}|'g'|'b'|'p'|'o'|'y'
 %       - The color of the tag to draw
-%   'size'
+%   'size'      {3} | double
 %       - The size of the tag to draw
 %
 % PLOTTAG Plots tag(s) on the current map
