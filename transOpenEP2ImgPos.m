@@ -66,10 +66,10 @@ function [Y, iX, colourIndex, colourMap] = transOpenEP2ImgPos(userdata, openEp3D
 % Info on Code Testing:
 % ---------------------------------------------------------------
 %  load('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Carto/Study_1_07_02_2017_19-42-07_1-Map.mat');
-%  mOpenEp3D = io_readCARPMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Carto/Labelled');
-%  mOpenEpUac = io_readCARPMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Carto/Labelled_Coords_2D_Rescaling_v3_C');
-%  mImg3D = io_readCARPMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Model_16/Labelled');
-%  mImgUac = io_readCARPMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Model_16/Labelled_Coords_2D_Rescaling_v3_C');
+%  mOpenEp3D = io_readCarpMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Carto/Labelled');
+%  mOpenEpUac = io_readCarpMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Carto/Labelled_Coords_2D_Rescaling_v3_C');
+%  mImg3D = io_readCarpMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Model_16/Labelled');
+%  mImgUac = io_readCarpMesh('/media/stw11/Data/StevenModellingData/Models/Carto_153_NR/Model_16/Labelled_Coords_2D_Rescaling_v3_C');
 %  [Y, iX] = transOpenEP2ImgPos(userdata, mOpenEp3D, mOpenEpUac, mImg3D, mImgUac, 'plot', true, 'elecsamples', [101 529], 'eleccolors', [colorBrewer(1); colorBrewer(2)]);
 %  [Y, iX, colourIndex, colourMap] = transOpenEP2ImgPos(userdata, mOpenEp3D, mOpenEpUac, mImg3D, mImgUac, 'plot', false, 'elecsamples', ':');
 %  writeOpenEPElec2VTKImgPositions(Y, colourIndex, colourMap)
