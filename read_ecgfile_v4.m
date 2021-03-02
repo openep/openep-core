@@ -109,7 +109,7 @@ end
 
 % the rest is the voltages
 voltages = sscanf(vData, '%d');
-if numel(voltages) ~= nChannels*2500;
+if numel(voltages) ~= nChannels*2500
     error('READ_ECGFILE: Unexpected size of voltage data.')
 end
 voltages = chGain * reshape(voltages, nChannels, 2500)';
@@ -132,7 +132,7 @@ end
 
 if nargout == 1
     varargout{1} = voltages;
-elseif nargout == 2;
+elseif nargout == 2
     varargout{1} = names;
     varargout{2} = voltages;
 else
