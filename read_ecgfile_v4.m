@@ -94,9 +94,19 @@ while i<=nChannels
         indTempChName = indTempChName+1;
         i = i+1;
     else
-        tempChName{indTempChName+1} = [names{i} ' ' names{i+1} ' ' names{i+2}];
+        % look onwards from i to find a string part which ends in a ')'
+        j = 0;
+        nextStrPart = names{i+j};
+        concatStr = names{i};
+        while ~strcmpi(nextStrPart(end), ')')
+            j = j + 1;
+            nextStrPart = names{i+j};
+            concatStr = [concatStr ' ' nextStrPart];
+        end
+        tempChName{indTempChName+1} = concatStr;
+        %tempChName{indTempChName+1} = [names{i} ' ' names{i+1} ' ' names{i+2}];
         indTempChName = indTempChName+1;
-        i = i+3;
+        i = i+j+1;
     end
 end
 names = tempChName;
