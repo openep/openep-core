@@ -698,7 +698,7 @@ end
             [filename,saveDir] = uiputfile('*.mat', 'Save the userdata to disc for future rapid access?',defaultName);
             cd(originalDir);
             if filename ~= 0
-                save([saveDir filename], 'userdata');
+                save([saveDir filename], 'userdata','-v7.3'); %needed as sometimes >2GB
                 matFileFullPath = fullfile(saveDir, filename);
             end
         end
