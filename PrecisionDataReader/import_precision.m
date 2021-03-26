@@ -36,60 +36,67 @@ function userdata = import_precision(varargin)
 data = import_precision(varargin);
 
 % Translate into OpenEP format
+userdata = openep_createuserdata();
 
 % General data - COMPLETE
 userdata.systemName = 'precision';
-userdata.precisionFolder = data.directory;
-userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
 userdata.notes{1} = [date() ': Created'];
+if isfield(data.directory)
+    userdata.precisionFolder = data.directory;
+end
+if isfield(data.epcath_bip_raw.sampleFreq)
+    userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
+end
 
-% Electric data
-userdata.electric.tags = 
-userdata.electric.names = 
-userdata.electric.electrodeNames_bip = 
-userdata.electric.egmX =
-userdata.electric.egmSurfX =
-userdata.electric.egm =
-userdata.electric.electrodeNames_uni = 
-userdata.electric.egmUniX = 
-userdata.electric.egmUni =
-userdata.electric.egmRef = 
-userdata.electric.ecg =
-
-userdata.electric.annotations.woi = 
-userdata.electric.annotations.referenceAnnot = 
-userdata.electric.annotations.mapAnnot =
-
-userdata.electric.voltages.bipolar = 
-userdata.electric.voltages.unipolar = 
-
-userdata.electric.impedances.time = 
-userdata.electric.impedances.value = 
+% Electric data - TODO
+% userdata.electric.tags = 
+% userdata.electric.names = 
+% userdata.electric.electrodeNames_bip = 
+% userdata.electric.egmX =
+% userdata.electric.egmSurfX =
+% userdata.electric.egm =
+% userdata.electric.electrodeNames_uni = 
+% userdata.electric.egmUniX = 
+% userdata.electric.egmUni =
+% userdata.electric.egmRef = 
+% userdata.electric.ecg =
+% 
+% userdata.electric.annotations.woi = 
+% userdata.electric.annotations.referenceAnnot = 
+% userdata.electric.annotations.mapAnnot =
+% 
+% userdata.electric.voltages.bipolar = 
+% userdata.electric.voltages.unipolar = 
+% 
+% userdata.electric.impedances.time = 
+% userdata.electric.impedances.value = 
 
 % Geometry data - COMPLETE
-TRI = data.modelgroups.dxgeo.triangles;
-X = data.modelgroups.dxgeo.vertices(:,1);
-Y = data.modelgroups.dxgeo.vertices(:,2);
-Z = data.modelgroups.dxgeo.vertices(:,3);
-userdata.surface.triRep = TriRep(TRI, X, Y, Z);
-FF = freeBoundary(userdata.surface.triRep);
-isVertexAtRim = false(size(userdata.surface.triRep.X,1),1);
-isVertexAtRim(FF(:,1)) = true;
-userdata.surface.isVertexAtRim = isVertexAtRim;
+if isfield(data.modelgroups.dxgeo.triangles) && isfield(data.modelgroups.dxgeo.vertices)
+    TRI = data.modelgroups.dxgeo.triangles;
+    X = data.modelgroups.dxgeo.vertices(:,1);
+    Y = data.modelgroups.dxgeo.vertices(:,2);
+    Z = data.modelgroups.dxgeo.vertices(:,3);
+    userdata.surface.triRep = TriRep(TRI, X, Y, Z);
+    FF = freeBoundary(userdata.surface.triRep);
+    isVertexAtRim = false(size(userdata.surface.triRep.X,1),1);
+    isVertexAtRim(FF(:,1)) = true;
+    userdata.surface.isVertexAtRim = isVertexAtRim;
+end
 
-% Surface data
-userdata.surface.act_bip = 
-userdata.surface.uni_imp_frc = 
+% Surface data TODO
+% userdata.surface.act_bip = 
+% userdata.surface.uni_imp_frc = 
 
-% Ablation data
-userdata.rf.originaldata.force.time = 
-userdata.rf.originaldata.force.force =
-userdata.rf.originaldata.force.axialangle = 
-userdata.rf.originaldata.force.lateralangle = 
-userdata.rf.originaldata.force.position = 
-userdata.rf.originaldata.ablparams.time = 
-userdata.rf.originaldata.ablparams.power =
-userdata.rf.originaldata.ablparams.impedance = 
-userdata.rf.originaldata.ablparams.distaltemp = 
+% Ablation data - TODO
+% userdata.rf.originaldata.force.time = 
+% userdata.rf.originaldata.force.force =
+% userdata.rf.originaldata.force.axialangle = 
+% userdata.rf.originaldata.force.lateralangle = 
+% userdata.rf.originaldata.force.position = 
+% userdata.rf.originaldata.ablparams.time = 
+% userdata.rf.originaldata.ablparams.power =
+% userdata.rf.originaldata.ablparams.impedance = 
+% userdata.rf.originaldata.ablparams.distaltemp = 
 
 end
