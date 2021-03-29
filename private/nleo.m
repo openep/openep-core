@@ -65,7 +65,7 @@ nl = [0; nl; 0];
 % low pass filter the nleo
 cutOff = 24;                 %cutoff frequency
 Wn = cutOff/(sampleFreq/2);  %normalised cutoff frequency
-n = sampleFreq/200;          %filter order
+n = sampleFreq/(sampleFreq/10);          %filter order
 b = fir1(n, Wn, 'low');      %design a lowpass filter
 nlfilt = filtfilt(b, 1, nl); %zero-phase digital filtering
 
