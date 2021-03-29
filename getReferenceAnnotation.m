@@ -12,7 +12,7 @@ function ref = getReferenceAnnotation(userdata, varargin)
 %        - The electrogram point(s) for which the reference annotation is
 %        required
 %
-% GETREFERENCEANNOTATION Returns the value fo the reference annotation.
+% GETREFERENCEANNOTATION Returns the value(s) of the reference annotation.
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0
