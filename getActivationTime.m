@@ -21,7 +21,7 @@ function activationTime = getActivationTime( userdata, varargin )
 %   userdata.electric. For each mapping point we get the electrogram within
 %   the window of interest. We apply the non-linear energy operator to this
 %   electrogram. We identify the earliest activation of the energy operator
-%   and assign that to activationTime. 
+%   and assign that to activationTime.
 % Both methods use the sampling frequency stored in `userdata.electric.sampleFrequency
 % and assume that sampling frequencey is 1000Hz if not specified. If the
 % input parameter `'units'` is set to `'time'` (the default) then times are
@@ -68,10 +68,6 @@ switch method
             getReferenceAnnotation(userdata) ...
             );
         
-        if strcmpi(units, 'time')
-            activationTime = activationTime / sF;
-        end
-        
         % Using non-linear energy operator
     case 'nleo'
         iPoint = getMappingPointsWithinWoI(userdata);
@@ -84,7 +80,7 @@ switch method
                 electrogram = getEgmsAtPoints(userdata, 'iegm', i, 'egmtype', 'bip', 'reference', 'off');
                 e = electrogram{1}(reference+woi(1):reference+woi(2));
                 
-                [~,~,act] = nleo(e', 'adaptive', false, 'threshold', 5E-3);
+                [~,~,act] = nleo(e', 'adaptive', false, 'threshold', 5E-3, 'sampleFreq', sF);
                 
                 A = find(act);
                 if ~isempty(A)
@@ -95,5 +91,10 @@ switch method
                 end
             end
         end
+end
+
+% convert to time units if needed
+if strcmpi(units, 'time')
+    activationTime = activationTime / sF;
 end
 end
