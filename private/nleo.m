@@ -15,6 +15,7 @@ function [nl, nlfilt, act] = nleo(x, varargin)
 %
 % Author: Steven Williams (2012)
 % Modifications -
+%   2021: SW, added parameter parsing
 %
 % Info on Code Testing:
 % ---------------------------------------------------------------
@@ -28,8 +29,22 @@ function [nl, nlfilt, act] = nleo(x, varargin)
 % code
 % ---------------------------------------------------------------
 
+nStandardArgs = 1;
 adaptive = true;
 sampleFreq = 2000;
+threshold = 1E-4;
+if nargin > nStandardArgs
+    for i = 1:2:nargin-nStandardArgs
+        switch lower(varargin{i})
+            case 'adaptive'
+                adaptive = varargin{i+1};
+            case 'samplefreq'
+                sampleFreq = varargin{i+1};
+            case 'threshold'
+                threshold = varargin{i+1};
+        end
+    end
+end
 
 % calculate the parameters
 xsq = x.^2;
@@ -50,7 +65,7 @@ nl = [0; nl; 0];
 % low pass filter the nleo
 cutOff = 24;                 %cutoff frequency
 Wn = cutOff/(sampleFreq/2);  %normalised cutoff frequency
-n = sampleFreq/200;          %filter order
+n = sampleFreq/(sampleFreq/10);          %filter order
 b = fir1(n, Wn, 'low');      %design a lowpass filter
 nlfilt = filtfilt(b, 1, nl); %zero-phase digital filtering
 
@@ -58,17 +73,10 @@ N = 100;
 Fp = 24; % 24Hz passband frequency
 Fs = sampleFreq; % 2000Hz sample frequency
 
-
 % STATIC determine the activation
-if nargin == 2
-    t = varargin{2};
-else
-    t = 1E-4;
-end
-
 act = nlfilt;
-act(act>t) = 1;
-act(act<=t) = 0;
+act(act>threshold) = 1;
+act(act<=threshold) = 0;
 
 % ADAPTIVE determine the activation
 if adaptive
@@ -100,12 +108,8 @@ if adaptive
     % take the smallest of each thresh value
     threshold = min(t)';
     
-    % top and tail the signal
-    %threshold = threshold(2:end-1);
-    
     act = nlfilt;
     act(act>=threshold) = 1;
-    act(act<=threshold) = 0;
-    
+    act(act<=threshold) = 0;    
 end
 end

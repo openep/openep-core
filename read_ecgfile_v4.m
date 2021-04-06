@@ -39,11 +39,12 @@ try
     line1 = fgetl(fid);
     line2 = fgetl(fid);
     line3 = fgetl(fid);
-    if ~strcmpi(line3(1:2),'m1')
+    libChars = {'m1' 'wc'};
+    if ~strcmpi(line3(1:2),libChars)
         %then we may have another version of the ecgfile
         %try the next line
         line3 = fgetl(fid);
-        if ~strcmpi(line3(1:2),'m1')
+        if ~strcmpi(line3(1:2),libChars)
             error(['READ_ECGFILE: Could not read the file: "' filename '"'])
         end
     end
