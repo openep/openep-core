@@ -1,18 +1,18 @@
-function ref = getReferenceAnnotation(userdata, varargin)
-% GETREFERENCEANNOTATION Returns the value of the reference annotation 
+function map = getMapAnnotation(userdata, varargin)
+% GETMAPANNOTATION Returns the value(s) of the map annotation 
 %
 % Usage:
-%   ref = getReferenceAnnotation( userdata )
+%   map = getMapAnnotation( userdata )
 % Where:
 %   userdata  - see importcarto_mem
-%   ref  - the value of the reference annotation
+%   map  - the value of the map annotation
 %
-% GETREFERENCEANNOTATION accepts the following parameter-value pairs
+% GETMAPANNOTATION accepts the following parameter-value pairs
 %   'iegm'    {:} | integer | array
-%        - The electrogram point(s) for which the reference annotation is
+%        - The electrogram point(s) for which the map annotation is
 %        required
 %
-% GETREFERENCEANNOTATION Returns the value(s) of the reference annotation.
+% GETMAPANNOTATION Returns the value(s) of the map annotation.
 %
 % Author: Steven Williams (2020) (Copyright)
 % SPDX-License-Identifier: Apache-2.0
@@ -42,10 +42,10 @@ end
 
 ref = [];
 if isstr(iEgm) && strcmpi(iEgm, ':')
-    ref = userdata.electric.annotations.referenceAnnot;
+    map = userdata.electric.annotations.mapAnnot;
 else
     for i = 1:numel(iEgm)
-        ref(i,1) = userdata.electric.annotations.referenceAnnot(iEgm(i),1);
+        map(i,1) = userdata.electric.annotations.mapAnnot(iEgm(i),1);
     end
 end
 
