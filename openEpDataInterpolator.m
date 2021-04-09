@@ -1,11 +1,69 @@
 classdef openEpDataInterpolator
-    % OPENEPDATAINTERPOLATOR Performs data interpolation for OpenEP
+    % OPENEPDATAINTERPOLATOR Creates objects for performing spatial
+    % interpolation for OpenEP data
+    %
+    % Usage (Constructor):
+    %   int = openEpDataInterpolator()
+    %   int = openEpDataInterpolator(method)
+    %   int = openEpDataInterpolator(method, options)
+    %
+    % Where:
+    %   method  - the method to use for interpolation, can be
+    %             'scatteredInterpolant', 'localSmoothing' or 'radialBasis'
+    %   options - a structure containing options pertaining to each
+    %             interpolation method. Options which are not relevant to a
+    %             particular interpolation method will be ignored.
+    %       .interMethod
+    %           - The interpolation method to use with
+    %           scatteredInterpolant. See `help scatteredInterpolant`
+    %       .exterMethod
+    %           - The extrapolation method to use with
+    %           scatteredInterpolant. See `help scatteredInterpolant`
+    %       .smoothingLength
+    %           - The smoothing length to use with localSmoothing.
+    %           - AC: can you describe this please
+    %       .fillWith
+    %           - AC: can you describe this please
+    %       .distanceThreshold
+    %           - The distance threshold from known data to truncate the
+    %           interpolated data.
+    %
+    % OPENEPDATAINTERPOLATOR Instances of openEpDataInterpolator perform
+    % spatial interpolation. When instantiated, objects of this type
+    % describe the interpolation scheme to be used. When ready to perform
+    % interpolation, the `interpolation(...)` function should be called.
+    %
+    % Author: Steven Williams (2021) (Copyright)
+    % SPDX-License-Identifier: Apache-2.0
+    %
+    % Modifications -
+    %
+    % Info on Code Testing:
+    % ---------------------------------------------------------------
+    % (1) Perform interpolation of electrogram voltage data using
+    %     localSmoothing with default options.
+    %
+    % int = openEpDataInterpolator('localSmoothing');
+    % egmX = getElectrogramX(userdata);
+    % bip = getVoltages(userdata);
+    % vtx = getVertices(userdata, 'used', false);
+    % vertexVoltageData = int.interpolate(egmX, bip, vtx);
+    %
+    % (2) Visualise the above data
+    %
+    % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2])
+    % title('Carto voltage data')
+    % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2], 'data', vertexVoltageData)
+    % title('OpenEP voltage data')
+    % ---------------------------------------------------------------
+    %
+    % ---------------------------------------------------------------
+    % code
+    % ---------------------------------------------------------------
     
+    % Properties
     properties
         method
-    end
-    
-    properties (Access = private)
         interMethod
         exterMethod
         distanceThreshold
@@ -18,14 +76,14 @@ classdef openEpDataInterpolator
         function int = openEpDataInterpolator(varargin)
             
             % specify default values
+            int.method = 'scatteredinterpolant';
             int.interMethod = 'linear';
             int.exterMethod = 'linear';
             int.distanceThreshold = Inf;
             int.smoothingLength = 10;
             int.fillWith = NaN;
             
-            int.method = 'scatteredinterpolant';
-            
+            % parse input data and warn if conflicts
             if nargin==1
                 int.method = varargin{1};
             end
@@ -71,7 +129,7 @@ classdef openEpDataInterpolator
             end
         end
         
-        % Interpolation
+        % Perform Interpolation
         function d1 = interpolate(int, x0,d0,x1)
             
             % remove any data with NaNs
@@ -99,7 +157,7 @@ classdef openEpDataInterpolator
                 case 'localsmoothing'
                     
                     % error checking
-                         % % % AC: is there any appropriate error checking to do
+                    % % % AC: is there any appropriate error checking to do
                     % here?
                     
                     % interpolation
