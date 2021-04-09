@@ -50,7 +50,8 @@ classdef openEpDataInterpolator
     % vertexVoltageData = int.interpolate(egmX, bip, vtx);
     %
     % (2) Visualise the above data
-    %
+    % 
+    % figure;histogram(vertexVoltageData);
     % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2])
     % title('Carto voltage data')
     % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2], 'data', vertexVoltageData)
@@ -78,7 +79,7 @@ classdef openEpDataInterpolator
             % specify default values
             int.method = 'scatteredinterpolant';
             int.interMethod = 'linear';
-            int.exterMethod = 'linear';
+            int.exterMethod = 'nearest';
             int.distanceThreshold = Inf;
             int.smoothingLength = 10;
             int.fillWith = NaN;
