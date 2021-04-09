@@ -18,8 +18,8 @@ function [cv, cvX, interpCv] = getConductionVelocity( userdata, varargin )
 %   `'method'`        `'triangulation'` | `'cosinefit'` | `{'radialbasis'}` |
 %                     `'omnipole'` | `'gradient'` | `'eikonal'`
 %   `'interpolator'`  `{'scatteredInterpolant'}` | `'radialbasis'` |
-%                     `'localsmoothing'`
-
+%                     `'localsmoothing'`; or an instance of openEpDataInterpolator
+%
 % GETCONDUCTIONVELOCITY Returns the conduction velocity data of the chamber.
 % Five methods for calculating conduction velocity are provided as
 % described below. The conduction velocity data interpolated over the
@@ -90,15 +90,10 @@ end
             [cv, cvX, interpCv] = doCvMapping_Triangulation(userdata, int);
             
         case 'cosinefit'
-            [cv, cvX, interpCv] = doCvMapping_CosineFit(userdata);
+            [cv, cvX, interpCv] = doCvMapping_CosineFit(userdata, int);
             
         case 'radialbasis'
-            [cv, cvX, interpCv] = doCvMapping_RadialBasis(userdata);
-            
-            %         lats = userdata.electric.annotations.mapAnnot(getMappingPointsWithinWoI(userdata));
-            %         X = userdata.electric.egmX(getMappingPointsWithinWoI(userdata),:);
-            %         [~,~,~,~,cvdata] = RBFConductionVelocity(lats', X', userdata.surface.triRep.X');
-            %         cvdata = cvdata';
+            [cv, cvX, interpCv] = doCvMapping_RadialBasis(userdata, int);
             
         case 'omnipole'
             [cv, cvX, interpCv] = doCvMapping_Omnipole(userdata, int);
@@ -108,7 +103,6 @@ end
             
         case 'eikonal'
             [cv, cvX, interpCv] = doCvMapping_Eikonal(userdata, int);
-            
     end
     
 end
