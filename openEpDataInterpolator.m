@@ -7,6 +7,10 @@ classdef openEpDataInterpolator
     %   int = openEpDataInterpolator(method)
     %   int = openEpDataInterpolator(method, options)
     %
+    % Usage (interpolator):
+    %   interpolated_function_at_query_points = int.interpolate(points, 
+    %       function_at_points, query_points);
+    %
     % Where:
     %   method  - the method to use for interpolation, can be
     %             'scatteredInterpolant', 'localSmoothing' or 'radialBasis'
@@ -21,9 +25,14 @@ classdef openEpDataInterpolator
     %           scatteredInterpolant. See `help scatteredInterpolant`
     %       .smoothingLength
     %           - The smoothing length to use with localSmoothing.
-    %           - AC: can you describe this please
+    %           Consider a value in the range 5-10. Large values may overly
+    %           smooth the resulting field, and small values may not
+    %           provide enough coverage. 
     %       .fillWith
-    %           - AC: can you describe this please
+    %           - The value to assign to the field at query points which
+    %           fall outside the smoothingLength radius. Possible values
+    %           are "nearest" or NaN. "nearest" performs nearest neighbour
+    %           interpolation for query points outside the smoothingLength.
     %       .distanceThreshold
     %           - The distance threshold from known data to truncate the
     %           interpolated data.
@@ -70,6 +79,7 @@ classdef openEpDataInterpolator
         distanceThreshold
         smoothingLength
         fillWith
+        rbfConstant
     end
     
     methods
@@ -82,7 +92,8 @@ classdef openEpDataInterpolator
             int.exterMethod = 'nearest';
             int.distanceThreshold = Inf;
             int.smoothingLength = 10;
-            int.fillWith = NaN;
+            int.fillWith = 'nearest';
+            int.rbfConstant = 1;
             
             % parse input data and warn if conflicts
             if nargin==1
@@ -127,6 +138,14 @@ classdef openEpDataInterpolator
                         end
                     end
                 end
+                if isfield(options, 'rbfConstant')
+                    if ~isempty(options.fillWith)
+                        if ~strcmpi(int.method, 'radialBasis')
+                            warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting rbfConstant property has no effect for interpolation method ' int.method])
+                            int.rbfConstant = options.rbfConstant;
+                        end
+                    end
+                end
             end
         end
         
@@ -157,18 +176,23 @@ classdef openEpDataInterpolator
                     
                 case 'localsmoothing'
                     
-                    % error checking
-                    % % % AC: is there any appropriate error checking to do
-                    % here?
-                    
+                    if isempty(x0) || isempty(x1) || isempty(d0)
+                        error('OPENEP/OPENEPDATAINTERPOLATOR: Missing query or data points!');
+                    end
                     % interpolation
-                    d1 = localSmoothing(x0, d0, x1, int.smoothingLength, int.fillWith);
+                    [d1, ~] = localSmoothing(x0, d0, x1, int.smoothingLength, int.fillWith);
                     
                 case 'radialbasis'
                     
-                    % error checking
+                    if isempty(x0) || isempty(x1) || isempty(d0)
+                        error('OPENEP/OPENEPDATAINTERPOLATOR: Missing query or data points!');
+                    end
                     
                     % interpolation
+                    op = rbfcreate(x0', d0', 'RBFFunction', 'multiquadric', 'RBFConstant', int.rbfConstant);
+                    rbfcheck(op); %if this returns anything >10^-9 then consider increasing 'RBFConstant'
+                    [d1, ~] = rbfinterp(x1', op);
+                    d1 = d1';
             end
             
             % remove interpolated data that is too far from real data
