@@ -8,7 +8,7 @@ classdef openEpDataInterpolator
     %   int = openEpDataInterpolator(method, options)
     %
     % Usage (interpolator):
-    %   interpolated_function_at_query_points = int.interpolate(points, 
+    %   interpolated_function_at_query_points = int.interpolate(points,
     %       function_at_points, query_points);
     %
     % Where:
@@ -27,7 +27,7 @@ classdef openEpDataInterpolator
     %           - The smoothing length to use with localSmoothing.
     %           Consider a value in the range 5-10. Large values may overly
     %           smooth the resulting field, and small values may not
-    %           provide enough coverage. 
+    %           provide enough coverage.
     %       .fillWith
     %           - The value to assign to the field at query points which
     %           fall outside the smoothingLength radius. Possible values
@@ -59,7 +59,7 @@ classdef openEpDataInterpolator
     % vertexVoltageData = int.interpolate(egmX, bip, vtx);
     %
     % (2) Visualise the above data
-    % 
+    %
     % figure;histogram(vertexVoltageData);
     % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2])
     % title('Carto voltage data')
@@ -96,25 +96,23 @@ classdef openEpDataInterpolator
             int.rbfConstant = 1;
             
             % parse input data and warn if conflicts
-            if nargin==1
-                int.method = varargin{1};
-            end
+            int.method = varargin{1};
             if nargin==2
                 options = varargin{2};
                 if isfield(options, 'interMethod')
                     if ~isempty(options.interMethod)
                         if ~strcmpi(int.method, 'scatteredInterpolant')
                             warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting interMethod property has no effect for interpolation method ' int.method]);
-                            int.interMethod = options.interMethod;
                         end
+                        int.interMethod = options.interMethod;
                     end
                 end
                 if isfield(options, 'exterMethod')
                     if ~isempty(options.exterMethod)
                         if ~strcmpi(int.method, 'scatteredInterpolant')
                             warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting exterMethod property has no effect for interpolation method ' int.method]);
-                            int.exterMethod = options.exterMethod;
                         end
+                        int.exterMethod = options.exterMethod;
                     end
                 end
                 if isfield(options, 'distanceThreshold')
@@ -126,24 +124,24 @@ classdef openEpDataInterpolator
                     if ~isempty(options.smoothingLength)
                         if ~strcmpi(int.method, 'localSmoothing')
                             warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting fillWith property has no effect for interpolation method ' int.method])
-                            int.smoothingLength = options.smoothingLength;
                         end
+                        int.smoothingLength = options.smoothingLength;
                     end
                 end
                 if isfield(options, 'fillWith')
                     if ~isempty(options.fillWith)
                         if ~strcmpi(int.method, 'localSmoothing')
                             warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting fillWith property has no effect for interpolation method ' int.method])
-                            int.fillWith = options.fillWith;
                         end
+                        int.fillWith = options.fillWith;
                     end
                 end
                 if isfield(options, 'rbfConstant')
                     if ~isempty(options.fillWith)
                         if ~strcmpi(int.method, 'radialBasis')
                             warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting rbfConstant property has no effect for interpolation method ' int.method])
-                            int.rbfConstant = options.rbfConstant;
                         end
+                        int.rbfConstant = options.rbfConstant;
                     end
                 end
             end
