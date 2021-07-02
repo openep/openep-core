@@ -19,23 +19,24 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %   containing all the other Carto3 files.
 %
 % IMPORTCARTO_MEM accepts the following parameter-value pairs
-%   'maptoread'     {''} | string | double
+%   'maptoread'     {''}|string|double
 %       Specifies which map to read. Can be a string referring
 %       to the map name or a double referring to the number of points in the
 %       map. If there are multiple maps with the same number of points an error
 %       will be thrown.
-%   'refchannel'    {''} | string
+%   'refchannel'    {''}|string
 %       The name of the channel to pick as the refence channel. Typically
 %       this is the pacing channel for the map. Specify a string such as
 %       'CS9-CS10'.
-%   'ecgchannel'    {''} | string
+%   'ecgchannel'    {''}|string
 %       The name of the channel to pick as the ECG channel. Typically
-%       this is an informative ECG such as V1. Specify a string such as 'V1'.
-%   'savefilename'       {''} | string
+%       this is an informative ECG such as V1. Specify a string such as
+%       'V1'.
+%   'savefilename'       {''}|string
 %       The full path to the location in which to save the output.
-%   'verbose'       {true} | false
+%   'verbose'       {true}|false
 %       Not yet implemented
-
+%
 % userdata structure ...
 %   .surface
 %       .triRep         - TriRep object for the surface
@@ -63,8 +64,8 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %           .time_force - time course of force [(:,:,1)=time, (:,:,2)=force]
 %           .time_axial - time course of axial angle [(:,:,1)=time, (:,:,2)=axial angle]
 %           .time_lateral - time course of lateral angle [(:,:,1)=time, (:,:,2)=lateral angle]
-%
-% Author: Nick Linton (2011) (Copyright)
+
+% Author: Nick Linton (2011)
 % SPDX-License-Identifier: Apache-2.0
 %
 % Modifications - Steven Williams (2013) - force data
@@ -224,10 +225,6 @@ end
                 error(['IMPORTCARTO_MEM: Multiple maps with ' ...
                     num2str(mapToRead_cli) ...
                     ' points identified. Use an alternative method to identify map.']);
-            elseif isempty(selection)
-                error(['IMPORTCARTO_MEM: No map with ' ...
-                    num2str(mapToRead_cli) ...
-                    ' points identified. Check the number of points specified is correct.']);
             end
         elseif ischar(mapToRead_cli)
             selection = find(strstartcmpi(mapToRead_cli, names));
@@ -249,6 +246,50 @@ end
         map.studyName = tree.ATTRIBUTE.name;
         map.name = cartoMap.ATTRIBUTE.Name;
         map.meshFile = cartoMap.ATTRIBUTE.FileNames;
+        
+        
+        %%% Work out the root filename
+        filenameroot = map.meshFile;
+        k = strfind(filenameroot, '.mesh');
+        filenameroot(k:end) = [];
+        
+        
+        isFirstPointRead = false;
+        filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
+        filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
+        if ~isempty(filename)
+            [names, voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
+            
+            % remove the trailing parentheses from names and store in namesTemp
+            namesTemp = names;
+            for i = 1:numel(namesTemp)
+                namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
+            end
+            
+            if isempty(channelRef_cli)
+                [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
+            else
+                kRef = find(strstartcmpi(channelRef_cli, namesTemp));
+                if isempty(kRef) || numel(kRef)>1
+                    error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
+                end
+            end
+            if isempty(channelECG_cli)
+                [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
+            else
+                kEcg = zeros(1,numel(channelECG_cli));
+                for i = 1:numel(channelECG_cli)
+                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                    if isempty(kEcg(i))
+                        error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                    end
+                end
+            end
+            isFirstPointRead = true;
+        end
+
+        
+        
         
         nAnat = 0;
         if isfield(cartoMap, 'Anatomical_Tags')
@@ -301,10 +342,7 @@ end
         map.tag = cell(nPoints, 1);
         map.electrodesUsed = cell(nPoints, 1);
         
-        %%% Work out the root filename
-        filenameroot = map.meshFile;
-        k = strfind(filenameroot, '.mesh');
-        filenameroot(k:end) = [];
+
         
         for iPoint = 1:nPoints
             map.xyz(iPoint,:) = str2num(cartoMap.CartoPoints.Point(iPoint).ATTRIBUTE.Position3D);
@@ -444,38 +482,40 @@ end
         delete(hWait)
         
         
-        %%% Now get the electrograms for the first point.
-        filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
-        filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
-        if ~isempty(filename)
-            [names voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
-            
-            % remove the trailing parentheses from names and store in namesTemp
-            namesTemp = names;
-            for i = 1:numel(namesTemp)
-                namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
-            end
-            
-            if isempty(channelRef_cli)
-                [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
-            else
-                kRef = find(strstartcmpi(channelRef_cli, namesTemp));
-                if isempty(kRef) || numel(kRef)>1
-                    error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
-                end
-            end
-            if isempty(channelECG_cli)
-                [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
-            else
-                kEcg = zeros(1,numel(channelECG_cli));
-                for i = 1:numel(channelECG_cli)
-                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
-                    if isempty(kEcg(i))
-                        error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
-                    end
-                end
-            end
-            
+        %%% Now get the electrograms for the first point and get user preferences.
+% Code in this chunk put higher up so that long read times are not
+% interrupted by requiring user again
+%         filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
+%         filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
+%         if ~isempty(filename)
+%             [names voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
+%             
+%             % remove the trailing parentheses from names and store in namesTemp
+%             namesTemp = names;
+%             for i = 1:numel(namesTemp)
+%                 namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
+%             end
+%             
+%             if isempty(channelRef_cli)
+%                 [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
+%             else
+%                 kRef = find(strstartcmpi(channelRef_cli, namesTemp));
+%                 if isempty(kRef) || numel(kRef)>1
+%                     error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
+%                 end
+%             end
+%             if isempty(channelECG_cli)
+%                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
+%             else
+%                 kEcg = zeros(1,numel(channelECG_cli));
+%                 for i = 1:numel(channelECG_cli)
+%                     kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+%                     if isempty(kEcg(i))
+%                         error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+%                     end
+%                 end
+%             end
+        if isFirstPointRead
             egm = zeros(nPoints, max(size(voltages)));
             egmUni1 = zeros(nPoints, max(size(voltages)));
             egmUni2 = zeros(nPoints, max(size(voltages)));
