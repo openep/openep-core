@@ -70,137 +70,63 @@ classdef openEpDataInterpolator
     % ---------------------------------------------------------------
     % code
     % ---------------------------------------------------------------
-    
+        
     % Properties
     properties
         method
-        interMethod
-        exterMethod
         distanceThreshold
-        smoothingLength
-        fillWith
-        rbfConstant
+    end
+    
+    properties (Access = private)
+        call_interpolator
     end
     
     methods
         % Contructor
-        function int = openEpDataInterpolator(varargin)
+        function obj = openEpDataInterpolator(method)
+                        
+            possibleMethods = {'scatteredinterpolant' ...
+                , 'localsmoothing' ...
+                , 'radialbasis' ...
+                };
             
-            % specify default values
-            int.method = 'scatteredinterpolant';
-            int.interMethod = 'linear';
-            int.exterMethod = 'nearest';
-            int.distanceThreshold = Inf;
-            int.smoothingLength = 10;
-            int.fillWith = 'nearest';
-            int.rbfConstant = 1;
+            defaultMethod = 'scatteredinterpolant';
             
-            % parse input data and warn if conflicts
-            int.method = varargin{1};
-            if nargin==2
-                options = varargin{2};
-                if isfield(options, 'interMethod')
-                    if ~isempty(options.interMethod)
-                        if ~strcmpi(int.method, 'scatteredInterpolant')
-                            warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting interMethod property has no effect for interpolation method ' int.method]);
+            obj.distanceThreshold = 10;
+            
+            if nargin == 0
+                obj.method = defaultMethod;
+                obj.call_interpolator = openEpScatteredInterpolant;
+            else
+                if nargin > 1
+                    error('Too many input arguments!');
+                else
+                    if ~ismember(lower(method), possibleMethods)
+                        error('Choose from ''scatteredinterpolant'', ''localsmoothing'' or ''radialbasis''');
+                    else
+                        obj.method = lower(method);
+                        switch obj.method
+                            case 'scatteredinterpolant'
+                                obj.call_interpolator = openEpScatteredInterpolant;
+                            case 'localsmoothing'
+                                obj.call_interpolator = openEpLocalSmoothingInterpolant;
+                            case 'radialbasis'
+                                obj.call_interpolator = openEpRadialBasisInterpolant;
                         end
-                        int.interMethod = options.interMethod;
                     end
-                end
-                if isfield(options, 'exterMethod')
-                    if ~isempty(options.exterMethod)
-                        if ~strcmpi(int.method, 'scatteredInterpolant')
-                            warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting exterMethod property has no effect for interpolation method ' int.method]);
-                        end
-                        int.exterMethod = options.exterMethod;
-                    end
-                end
-                if isfield(options, 'distanceThreshold')
-                    if ~isempty(options.distanceThreshold)
-                        int.distanceThreshold = options.distanceThreshold;
-                    end
-                end
-                if isfield(options, 'smoothingLength')
-                    if ~isempty(options.smoothingLength)
-                        if ~strcmpi(int.method, 'localSmoothing')
-                            warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting fillWith property has no effect for interpolation method ' int.method])
-                        end
-                        int.smoothingLength = options.smoothingLength;
-                    end
-                end
-                if isfield(options, 'fillWith')
-                    if ~isempty(options.fillWith)
-                        if ~strcmpi(int.method, 'localSmoothing')
-                            warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting fillWith property has no effect for interpolation method ' int.method])
-                        end
-                        int.fillWith = options.fillWith;
-                    end
-                end
-                if isfield(options, 'rbfConstant')
-                    if ~isempty(options.fillWith)
-                        if ~strcmpi(int.method, 'radialBasis')
-                            warning(['OPENEP/OPENEPDATAINTERPOLATOR: Setting rbfConstant property has no effect for interpolation method ' int.method])
-                        end
-                        int.rbfConstant = options.rbfConstant;
-                    end
-                end
+                end      
             end
+                
         end
         
-        % Perform Interpolation
-        function d1 = interpolate(int, x0,d0,x1)
+        function f_q = interpolate(obj, x, f_x, q)
             
-            % remove any data with NaNs
-            tempData = d0;
-            tempCoords = x0;
-            iNaN = isnan(tempData);
-            tempData(iNaN) = [];
-            tempCoords(iNaN,:) = [];
-            d0 = tempData;
-            x0 = tempCoords;
+            f_q = obj.call_interpolator.interpolate(x, f_x, q);
             
-            % perform interpolation
-            switch lower(int.method)
-                case 'scatteredinterpolant'
-                    
-                    % error checking
-                    if numel(d0) < 4
-                        error('OPENEP/OPENEPDATAINTERPOLATOR: Cannot perform interpolation with less than four data points');
-                    end
-                    
-                    % interpolation
-                    F = scatteredInterpolant(x0(:,1), x0(:,2), x0(:,3), d0, int.interMethod, int.exterMethod);
-                    d1 = F(x1);
-                    
-                case 'localsmoothing'
-                    
-                    if isempty(x0) || isempty(x1) || isempty(d0)
-                        error('OPENEP/OPENEPDATAINTERPOLATOR: Missing query or data points!');
-                    end
-                    % interpolation
-                    [d1, ~] = localSmoothing(x0, d0, x1, int.smoothingLength, int.fillWith);
-                    
-                case 'radialbasis'
-                    
-                    if isempty(x0) || isempty(x1) || isempty(d0)
-                        error('OPENEP/OPENEPDATAINTERPOLATOR: Missing query or data points!');
-                    end
-                    
-                    % interpolation
-                    op = rbfcreate(x0', d0', 'RBFFunction', 'multiquadric', 'RBFConstant', int.rbfConstant);
-                    rbfcheck(op); %if this returns anything >10^-9 then consider increasing 'RBFConstant'
-                    [d1, ~] = rbfinterp(x1', op);
-                    d1 = d1';
-            end
-            
-            % remove interpolated data that is too far from real data
-            id = knnsearch(x0, x1);
-            cPts = x0(id,:); %c for closest
-            d = distBetweenPoints(cPts, x1);
-            thresholdDistance = zeros(size(d));
-            thresholdDistance(d>int.distanceThreshold) = 1;
-            nanset = logical(thresholdDistance);
-            d1(nanset) = NaN;
+        end
+        
+        function disp(obj)
+            display(obj.call_interpolator);
         end
     end
 end

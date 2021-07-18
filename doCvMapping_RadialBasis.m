@@ -33,8 +33,11 @@ function [cv, cvX, interpCv] = doCvMapping_RadialBasis( userdata, int )
 
 % first perform global interpolation using radial basis function to 
 % calculate conduction velocities
-lats = userdata.electric.annotations.mapAnnot(getMappingPointsWithinWoI(userdata));
+mapAnnot = userdata.electric.annotations.mapAnnot(getMappingPointsWithinWoI(userdata));
+refAnnot = userdata.electric.annotations.referenceAnnot(getMappingPointsWithinWoI(userdata));
+lats = mapAnnot - refAnnot;
 X = userdata.electric.egmX(getMappingPointsWithinWoI(userdata),:);
+
 cvX = userdata.surface.triRep.X;
 [~,~,~,~,cvdata] = RBFConductionVelocity(lats', X', cvX');
 cv = cvdata';

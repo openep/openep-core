@@ -80,7 +80,7 @@ end
 
 % first create an interpolator
 if ischar(interpolator)
-    int = createInterpolator(interpolator);
+    int = openEpDataInterpolator(interpolator);
 else
     int = interpolator;
 end
