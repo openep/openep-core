@@ -63,7 +63,7 @@ cv(~vtx) = [];
 cvX(~vtx,:) = [];
 disp(['OPENEP/DOCVMAPPING_GRADIENT: ' num2str(sum(~vtx)) ' CV values were removed which were more than ' num2str(DISTANCETHRESHOLD) 'mm from a mapping point']);
 
-% then remove any non physiological values over the CVLIMIT
+% remove any non physiological values over the CVLIMIT
 isOverCvLimit = cv>CVLIMIT;
 cv(isOverCvLimit) = [];
 cvX(isOverCvLimit,:) = [];
