@@ -23,6 +23,12 @@ function faces = getFaces( userdata )
 % code
 % ---------------------------------------------------------------
 
-faces = userdata.surface.triRep.Triangulation;
+if isa(userdata.surface.triRep, 'TriRep')
+    faces = userdata.surface.triRep.Triangulation;
+elseif isa(userdata.surface.triRep, 'triangulation')
+    faces = userdata.surface.triRep.ConnectivityList;
+else
+    error('OPENEP/getFaces: userdata.surface.TriRep should be a TriRep or a triangulation object')
+end
 
 end

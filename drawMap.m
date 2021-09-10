@@ -11,7 +11,7 @@ function hSurf = drawMap(userdata, varargin)
 % DRAWMAP accepts the following parameter-value pairs
 %   'data' {[]} | [d]
 %       - Where d is a vector of data values and size(d) equals numel(userdata.surface.triRep.X)
-%   'type'  {'act'} | 'bip' | 'force' | 'uni' | 'none' | 'cv'
+%   'type'  {'act'} | 'bip' | 'force' | 'uni' | 'none' | 'cv' | 'geodesic' | 'wallthickness'
 %       - Specifies type of map - activation, bipolar or unipolar voltage
 %   'coloraxis' {[]} | [a b]
 %       - Where a and b are real numbers. See help colorShell
@@ -74,8 +74,8 @@ colorbarlocation = inputs.colorbarlocation;
 orientation = inputs.orientation;
 DISTANCETHRESH = inputs.colorfillthreshold;
 
-if ~any(strcmpi(type, {'act', 'bip', 'force', 'uni', 'none', 'cv'}))
-    error('DRAWMAP: Invalid parameter-value pair; type must be one of act, bip, force, uni, none')
+if ~any(strcmpi(type, {'act', 'bip', 'force', 'uni', 'none', 'cv', 'geodesic', 'wallthickness'}))
+    error('DRAWMAP: Invalid parameter-value pair; type must be one of act, bip, force, uni, none, cv or geodesic')
 end
 
 
@@ -124,6 +124,26 @@ switch type
         else
             DATA = getConductionVelocity(userdata);
         end
+    case 'geodesic'
+        DATATYPE = 'geodesic';
+        if ~isempty(DATAMANUAL)
+            DATA = DATAMANUAL;
+        else
+            % by default draw the geodesics from the first electrode positon
+            distances = getData2MeshGeodesicDistances(userdata);
+            DATA = NaN(size(getVertices(userdata),1),10);
+            int = openEpDataInterpolator();
+            for i = 1:20%size(distances,1)
+                DATA(:,i) = int.interpolate(getVertices(userdata,'used',true), distances(i,:)', getVertices(userdata,'used',false));
+            end
+        end
+    case 'wallthickness'
+        DATATYPE = 'wallthickness';
+        if ~isempty(DATAMANUAL)
+            DATA = DATAMANUAL;
+        else
+            error('OPENEP/drawMap: automatic calculation of wall thickness data not supported')
+        end
 end
 
 if ~strcmpi(type, 'none')
@@ -148,7 +168,7 @@ if ~strcmpi(type, 'none')
             );
     else
         disp('no data to color the shell with')
-    end
+    end    
 end
 
 % Adjust the light/material

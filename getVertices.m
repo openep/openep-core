@@ -41,7 +41,13 @@ if nargin > nStandardArgs
     end
 end
 
-vertices = userdata.surface.triRep.X;
+if isa(userdata.surface.triRep, 'TriRep')
+    vertices = userdata.surface.triRep.X;
+elseif isa(userdata.surface.triRep, 'triangulation')
+    vertices = userdata.surface.triRep.Points;
+else
+    error('OPENEP/getVertices: userdata.surface.TriRep should be a TriRep or a triangulation object')
+end
 [~, isVertUsed] = repack(getMesh(userdata));
 
 if used
