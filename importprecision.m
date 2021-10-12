@@ -10,7 +10,7 @@ function info = importprecision(varargin)
 %   directory - an absolute folder path (if empty, use will be asked)
 %   Name,Value pairs ...
 %       'filematch' - a string that gives a PARTIAL match to the file(s) to
-%           be loaded. e.g. {'bipol_RAW', 'Location'}. Not case sensitive
+%           be loaded. e.g. 'bipol_RAW', 'Location'. Not case sensitive
 %           and does NOT need to be a full match. This is useful if you do
 %           not want to read in all files (save time + memory).
 %       'format'
@@ -52,7 +52,9 @@ function info = importprecision(varargin)
 % ---------------------------------------------------------------
 
     persistent caseDirec
-    if isempty(caseDirec); caseDirec = local_homedirec(); end
+    if isempty(caseDirec)
+        caseDirec = local_homedirec(); 
+    end
     
     p = inputParser;
     p.addParameter('direc', caseDirec, @(x) isfolder(x));
@@ -82,11 +84,12 @@ function info = importprecision(varargin)
 
     info = cell(numel(fullFileList),1);
     
-    hBar = waitbar(0,'Reading data files'); cleanupWaitBar = onCleanup(@()close(hBar));
+    hBar = waitbar(0,'Reading data files'); 
+    cleanupWaitBar = onCleanup(@()close(hBar));
     set(findall(hBar, 'type', 'text'), 'Interpreter', 'none')
     
     %disable warnings about invalid file - we will monitor
-    oldWarningState = warning('query','LoadPrecision:InvalidFile');
+    oldWarningState = warning('query', 'LoadPrecision:InvalidFile');
     warning('off','LoadPrecision:InvalidFile');
     cleanupWarning = onCleanup(@()warning(oldWarningState));
     
@@ -220,7 +223,7 @@ function newInfo = local_default(info)
     
     isRead = false(numel(info),1);
     for iTr=1:numel(translator)
-        isMatch = false(numel(info));
+        isMatch = false(numel(info), 1);
         for iIn=1:numel(info)
             if isempty(info{iIn})
                 isRead(iIn) = true;
@@ -240,7 +243,10 @@ function newInfo = local_default(info)
             isRead(isMatch)=true;
         end
     end
-    if any(~isRead); beep(); warning('REFORMAT_PRECISION_INFO: some info was not reformatted.'); end
+    if any(~isRead)
+        beep()
+        warning('REFORMAT_PRECISION_INFO: some info was not reformatted.');
+    end
 end
 
 function newInfo = local_stevewilliams_01(info)

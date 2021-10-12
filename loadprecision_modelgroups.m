@@ -60,7 +60,7 @@ for i = 1:tree.DIFBody.Volumes.ATTRIBUTE.number
     if isfield(tree.DIFBody.Volumes.Volume(i).ATTRIBUTE, 'name')
         dxgeo(i).name = tree.DIFBody.Volumes.Volume(i).ATTRIBUTE.name;
     end
-    
+
     %get the labels
     if isfield(tree.DIFBody.Labels, 'Label')
         for j = 1:tree.DIFBody.Labels.ATTRIBUTE.number
