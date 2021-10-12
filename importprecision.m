@@ -55,8 +55,8 @@ function info = importprecision(varargin)
     if isempty(caseDirec); caseDirec = local_homedirec(); end
     
     p = inputParser;
-    p.addOptional('direc',caseDirec, @(x) isfolder(x));
-    p.addParameter('filematch',{}, @(x) validateattributes(x,{'char','string','cell'}, {'vector'}));
+    p.addParameter('direc', caseDirec, @(x) isfolder(x));
+    p.addParameter('filematch', {}, @(x) validateattributes(x,{'char','string','cell'}, {'vector'}));
     p.addParameter('format', 'default', @(x) validateattributes(x,{'string'} ));
     p.parse(varargin{:})
     
@@ -224,8 +224,10 @@ function newInfo = local_default(info)
         for iIn=1:numel(info)
             if isempty(info{iIn})
                 isRead(iIn) = true;
-            elseif any(contains(info{iIn}.dataElement,translator{iTr},'IgnoreCase',true))
-                isMatch(iIn) = true;
+            elseif isfield(info{iIn}, 'dataElement') 
+                if any(contains(info{iIn}.dataElement,translator{iTr},'IgnoreCase',true))
+                    isMatch(iIn) = true;
+                end
             end
         end
         ind = find(isMatch);

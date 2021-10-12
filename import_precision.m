@@ -33,7 +33,11 @@ function userdata = import_precision(varargin)
 % ---------------------------------------------------------------
 
 % Read the data
-data = import_precision(varargin);
+if nargin == 0
+    data = importprecision();
+else
+    data = importprecision('direc', varargin{1});
+end
 
 % Translate into OpenEP format
 userdata = openep_createuserdata();
@@ -41,10 +45,10 @@ userdata = openep_createuserdata();
 % General data - COMPLETE
 userdata.systemName = 'precision';
 userdata.notes{1} = [date() ': Created'];
-if isfield(data.directory)
+if isfield(data, 'directory')
     userdata.precisionFolder = data.directory;
 end
-if isfield(data.epcath_bip_raw.sampleFreq)
+if isfield(data.epcath_bip_raw, 'sampleFreq')
     userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
 end
 
@@ -72,7 +76,7 @@ end
 % userdata.electric.impedances.value = 
 
 % Geometry data - COMPLETE
-if isfield(data.modelgroups.dxgeo.triangles) && isfield(data.modelgroups.dxgeo.vertices)
+if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
     TRI = data.modelgroups.dxgeo.triangles;
     X = data.modelgroups.dxgeo.vertices(:,1);
     Y = data.modelgroups.dxgeo.vertices(:,2);
