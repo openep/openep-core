@@ -55,18 +55,43 @@ if isfield(data.epcath_bip_raw, 'sampleFreq')
     userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
 end
 
-% Geometry data - COMPLETE
-if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
-    TRI = data.modelgroups.dxgeo.triangles;
-    X = data.modelgroups.dxgeo.vertices(:,1);
-    Y = data.modelgroups.dxgeo.vertices(:,2);
-    Z = data.modelgroups.dxgeo.vertices(:,3);
-    userdata.surface.triRep = TriRep(TRI, X, Y, Z);
-    FF = freeBoundary(userdata.surface.triRep);
-    isVertexAtRim = false(size(userdata.surface.triRep.X,1),1);
-    isVertexAtRim(FF(:,1)) = true;
-    userdata.surface.isVertexAtRim = isVertexAtRim;
+% Geometry data - NOT COMPLETE
+% if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
+%     TRI = data.modelgroups.dxgeo.triangles;
+%     X = data.modelgroups.dxgeo.vertices(:,1);
+%     Y = data.modelgroups.dxgeo.vertices(:,2);
+%     Z = data.modelgroups.dxgeo.vertices(:,3);
+%     userdata.surface.triRep = TriRep(TRI, X, Y, Z);
+%     FF = freeBoundary(userdata.surface.triRep);
+%     isVertexAtRim = false(size(userdata.surface.triRep.X,1),1);
+%     isVertexAtRim(FF(:,1)) = true;
+%     userdata.surface.isVertexAtRim = isVertexAtRim;
+% end
+iMap = 1
+for i = 1:numel(data.modelgroups)
+    for j = 1:numel(data.modelgroups(i).dxgeo)
+        TRI = data.modelgroups(i).dxgeo(j).triangles;
+        X = data.modelgroups(i).dxgeo(j).vertices(:,1);
+        Y = data.modelgroups(i).dxgeo(j).vertices(:,2);
+        Z = data.modelgroups(i).dxgeo(j).vertices(:,3);
+        tr{iMap} = TriRep(TRI, X, Y, Z);
+        iMap = iMap + 1;
+    end
 end
+% TODO HOW TO DEAL WITH GEOMETRY
+% (1) Find the dxgeo with the first comment 'St. Jude Medical Dx Landmark Geo data export; file format revision 0'
+%     - best to do this by identifying the comment which contains the string 'Dx Landmark Geo'
+% (2) Use the geometry described in this file as userdata.surface.triRep
+% (3) Find the dxgeo with the comment 'St. Jude Medical Model Groups data export; file format revision 0'
+%     - best to do this be identifying the comment which contains the string 'Model Groups'
+% (4) Use this file to tag each polygon in userdata.surface.triRep as
+% belongining to one or more geometries. Will need to think of how/where to
+% store this information, but it probably needs another data field and may
+% be specific to Precision
+% (5) Note that some dxgeo's do not contain a comment. These *probably*
+% refer to image data sets merged into the system. Will need to think of
+% how/where to store this information, but it probably needs another data
+% field, and is not likley to be specific to Precision
 
 % Electric data - PARTIALLY COMPLETE
 % userdata.electric.tags = ;
@@ -89,6 +114,7 @@ userdata.electric.voltages.bipolar = dxldata.peak2peak';
 % userdata.electric.impedances.value = 
 
 % Surface data - TODO
+% NOTE THE SURFACE DATA WILL COME FROM THE DXL FILES I THINK
 % userdata.surface.act_bip = 
 % userdata.surface.uni_imp_frc = 
 
