@@ -55,6 +55,10 @@ if isfield(data.epcath_bip_raw, 'sampleFreq')
     userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
 end
 
+
+
+
+
 % Geometry data - NOT COMPLETE
 % if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
 %     TRI = data.modelgroups.dxgeo.triangles;
@@ -67,7 +71,8 @@ end
 %     isVertexAtRim(FF(:,1)) = true;
 %     userdata.surface.isVertexAtRim = isVertexAtRim;
 % end
-iMap = 1
+% Test code:
+iMap = 1;
 for i = 1:numel(data.modelgroups)
     for j = 1:numel(data.modelgroups(i).dxgeo)
         TRI = data.modelgroups(i).dxgeo(j).triangles;
@@ -78,7 +83,7 @@ for i = 1:numel(data.modelgroups)
         iMap = iMap + 1;
     end
 end
-% TODO HOW TO DEAL WITH GEOMETRY
+% TODO: HOW TO DEAL WITH GEOMETRY *** Github Issue #42: https://github.com/openep/openep-core/issues/42 ***
 % (1) Find the dxgeo with the first comment 'St. Jude Medical Dx Landmark Geo data export; file format revision 0'
 %     - best to do this by identifying the comment which contains the string 'Dx Landmark Geo'
 % (2) Use the geometry described in this file as userdata.surface.triRep
@@ -93,6 +98,10 @@ end
 % how/where to store this information, but it probably needs another data
 % field, and is not likley to be specific to Precision
 
+
+
+
+
 % Electric data - PARTIALLY COMPLETE
 % userdata.electric.tags = ;
 % userdata.electric.names = ;
@@ -100,6 +109,7 @@ userdata.electric.electrodeNames_bip = dxldata.rovtrace_pts';
 userdata.electric.egmX = [dxldata.rovingx' dxldata.rovingy' dxldata.rovingz'];
 userdata.electric.egmSurfX = [dxldata.surfPtx' dxldata.surfPty' dxldata.surfPtz'];
 userdata.electric.egm = rovtrace';
+% TODO: IMPORTING UNIPOLE DATA *** Github Issue #43: https://github.com/openep/openep-core/issues/43***
 % userdata.electric.electrodeNames_uni = ; 
 % userdata.electric.egmUniX = ;
 % userdata.electric.egmUni = ;
@@ -113,10 +123,23 @@ userdata.electric.voltages.bipolar = dxldata.peak2peak';
 % userdata.electric.impedances.time = 
 % userdata.electric.impedances.value = 
 
+
+
+
+
 % Surface data - TODO
-% NOTE THE SURFACE DATA WILL COME FROM THE DXL FILES I THINK
-% userdata.surface.act_bip = 
+% THERE DOES NOT APPEAR TO BE VOLTAGE MAPPING DATA AVAILABLE BUT THERE DOES
+% APPEAR TO BE ACTIVATION TIME DATA AVAILABLE IN THE Dx Landmark Geo data file
+% Get the activation time 
+act = dxldata.latmap';
+bip = zeros(size(act));
+act_bip = [act bip];
+userdata.surface.act_bip = act_bip;
 % userdata.surface.uni_imp_frc = 
+
+
+
+
 
 % Ablation data - TODO
 % userdata.rf.originaldata.force.time = 
@@ -128,10 +151,5 @@ userdata.electric.voltages.bipolar = dxldata.peak2peak';
 % userdata.rf.originaldata.ablparams.power =
 % userdata.rf.originaldata.ablparams.impedance = 
 % userdata.rf.originaldata.ablparams.distaltemp = 
-
-
-
-
-
 
 end
