@@ -81,13 +81,15 @@ Added bipole/unipole flag: Philip Gemmell (2020-04-22)
 
 %}
 
-%% Check libraries have been added
-search_paths = {'lib/xml_io_tools', 'lib', '../../igb_readWrite', 'panel-2.14'};
-for i_path = 1:length(search_paths)
-    if ~contains(path, search_paths{i_path})
-        addpath(search_paths{i_path})
-    end
-end
+%% Check libraries have been added, & the relevant functions are available
+% Need access to:
+%   - filebytes2end
+% search_paths = {'private'};
+% for i_path = 1:length(search_paths)
+%     if ~contains(path, search_paths{i_path})
+%         addpath(search_paths{i_path})
+%     end
+% end
 
 %% Parse input parameters
 persistent caseDirec

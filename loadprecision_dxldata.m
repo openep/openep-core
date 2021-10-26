@@ -33,7 +33,7 @@ function [info, points, egms] = loadprecision_dxldata(filename)
 %
 % Author: Steven Williams (2017)
 % Modifications -
-%   Phil Gemmel (2020): Significant additions to complete DxL data loading
+%   Phil Gemmell (2020): Significant additions to complete DxL data loading
 
 % Info on Code Testing:
 % ---------------------------------------------------------------
@@ -256,6 +256,7 @@ while isempty(e)
         ind1(ind1>e) = []; %#ok<AGROW>
     end
     if ~isempty(ind1)
+%         egmVarNameTemp = cell(numel(ind1), 1);
         for iVarName = 1:numel(ind1)
             egmVarNameTemp{iVarName} = fileText(ind1(iVarName):ind2(iVarName))';
         end

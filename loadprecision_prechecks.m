@@ -3,7 +3,7 @@ function success = loadprecision_prechecks(fData, data_type)
 %   Function pulled from 'loadprecision_dxldata.m', author Steven Williams
 %
 % Modifications -
-%   Phil Gemmel (2020): Refactored and updated
+%   Phil Gemmell (2020): Refactored and updated
 
 success = false;
 
