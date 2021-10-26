@@ -39,7 +39,10 @@ else
     data = importprecision('direc', varargin{1});
 end
 
-% Translate into OpenEP format
+% Load DxL data
+dxldata = importprecision_dxldata(data.directory);
+
+% Create a blank OpenEP data structure
 userdata = openep_createuserdata();
 
 % General data - COMPLETE
@@ -51,29 +54,6 @@ end
 if isfield(data.epcath_bip_raw, 'sampleFreq')
     userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
 end
-
-% Electric data - TODO
-% userdata.electric.tags = 
-% userdata.electric.names = 
-% userdata.electric.electrodeNames_bip = 
-% userdata.electric.egmX =
-% userdata.electric.egmSurfX =
-% userdata.electric.egm =
-% userdata.electric.electrodeNames_uni = 
-% userdata.electric.egmUniX = 
-% userdata.electric.egmUni =
-% userdata.electric.egmRef = 
-% userdata.electric.ecg =
-% 
-% userdata.electric.annotations.woi = 
-% userdata.electric.annotations.referenceAnnot = 
-% userdata.electric.annotations.mapAnnot =
-% 
-% userdata.electric.voltages.bipolar = 
-% userdata.electric.voltages.unipolar = 
-% 
-% userdata.electric.impedances.time = 
-% userdata.electric.impedances.value = 
 
 % Geometry data - COMPLETE
 if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
@@ -88,7 +68,27 @@ if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxge
     userdata.surface.isVertexAtRim = isVertexAtRim;
 end
 
-% Surface data TODO
+% Electric data - PARTIALLY COMPLETE
+% userdata.electric.tags = ;
+% userdata.electric.names = ;
+userdata.electric.electrodeNames_bip = dxldata.rovtrace_pts';
+userdata.electric.egmX = [dxldata.rovingx' dxldata.rovingy' dxldata.rovingz'];
+userdata.electric.egmSurfX = [dxldata.surfPtx' dxldata.surfPty' dxldata.surfPtz'];
+userdata.electric.egm = rovtrace';
+% userdata.electric.electrodeNames_uni = ; 
+% userdata.electric.egmUniX = ;
+% userdata.electric.egmUni = ;
+userdata.electric.egmRef = dxldata.rovtrace';
+% userdata.electric.ecg =
+% userdata.electric.annotations.woi = 
+userdata.electric.annotations.referenceAnnot = dxldata.refLAT';
+userdata.electric.annotations.mapAnnot = dxldata.rovLAT';
+userdata.electric.voltages.bipolar = dxldata.peak2peak';
+% userdata.electric.voltages.unipolar = 
+% userdata.electric.impedances.time = 
+% userdata.electric.impedances.value = 
+
+% Surface data - TODO
 % userdata.surface.act_bip = 
 % userdata.surface.uni_imp_frc = 
 
@@ -102,5 +102,10 @@ end
 % userdata.rf.originaldata.ablparams.power =
 % userdata.rf.originaldata.ablparams.impedance = 
 % userdata.rf.originaldata.ablparams.distaltemp = 
+
+
+
+
+
 
 end
