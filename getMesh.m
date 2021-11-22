@@ -10,6 +10,8 @@ function tr = getMesh(userdata, varargin)
 %   'type'     {'trirep'}|'triangulation'
 %       - Specifies whether to return the mesh as a TriRep object or as a
 %       Triangulation object
+%   'limitToTriangulation' {'false'}|true
+%       - Specifies whether to repack the triangulation
 %
 % GETMESH Returns a face/vertex representation of the anatomical model. 
 % Supported data types include istances of the Matlab objects Trirep and 
@@ -31,11 +33,14 @@ function tr = getMesh(userdata, varargin)
 
 nStandardArgs = 1; % UPDATE VALUE
 type = 'trirep';
+limitToTriangulation = false;
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
-        switch varargin{i}
+        switch lower(varargin{i})
             case 'type'
                 type = varargin{i+1};
+            case 'limittotriangulation'
+                limitToTriangulation - varargin{i+1};
         end
     end
 end
@@ -43,8 +48,15 @@ if ~any(strcmpi({'trirep' 'triangulation'}, type))
     error(['OPENEP/GETMESH: Value: ' type ' for parameter: type not recognised']);
 end
 
-FV.vert = userdata.surface.triRep.X;
-FV.faces = userdata.surface.triRep.Triangulation;
+if isa(userdata.surface.triRep, 'TriRep')
+    FV.vert = userdata.surface.triRep.X;
+    FV.faces = userdata.surface.triRep.Triangulation;
+elseif isa(userdata.surface.triRep, 'triangulation')
+    FV.vert = userdata.surface.triRep.Points;
+    FV.faces = userdata.surface.triRep.ConnectivityList;
+else
+    error('OPENEP/getMesh: userdata.surface.TriRep should be a TriRep or a triangulation object')
+end
 
 switch lower(type)
     case 'trirep'
@@ -63,6 +75,10 @@ switch lower(type)
             tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
             return;
         end
+end
+
+if limitToTriangulation
+    tr = repack(tr);
 end
 
 end

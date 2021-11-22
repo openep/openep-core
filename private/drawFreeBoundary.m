@@ -30,6 +30,14 @@ if nargin==3
     drawline = varargin{1};
 end
 
+if isa(tr, 'triangulation')
+    Vertices = tr.Points;
+elseif isa(tr, 'TriRep')
+    Vertices = tr.X;
+else
+    error('OPENEP/drawFreeBoundary.m the input "tr" should be a TriRep or triangulation object');
+end
+
 rimEdges= freeBoundary(tr);
 
 n = size(rimEdges,1);
@@ -37,9 +45,9 @@ x = nan(3*n,1);
 y = nan(size(x));
 z = nan(size(x));
 
-for i = 0:(n-1);
-    loc1 = tr.X(rimEdges(i+1,1),:);
-    loc2 = tr.X(rimEdges(i+1,2),:);
+for i = 0:(n-1)
+    loc1 = Vertices(rimEdges(i+1,1),:);
+    loc2 = Vertices(rimEdges(i+1,2),:);
     
     x(3*i+1) = loc1(1);
     y(3*i+1) = loc1(2);
