@@ -1,11 +1,13 @@
 function distance = distanceBetweenPoints(userdata, P1, P2, varargin)
-% DISTANCEBETWEENPOINTS Returns the distance from A to B.
+% DISTANCEBETWEENPOINTS Returns the distance between electrogram recording 
+% locations P1 and P2.
+%
 % Usage:
 %   distance = distanceBetweenPoints(userdata, A, B)
 % Where:
 %   userdata    - see importcarto_mem
-%   P1          - is the first point
-%   P2          - is the second point
+%   P1           - is the index of the first electrogram point(s)
+%   P2           - is the index of the second electrogram point(s)
 %
 % DISTBETWEENPOINTS accepts the following parameter-value pairs
 %   'method'    {'linear'} | 'geodesic'
@@ -56,10 +58,8 @@ switch method
         % get the co-ordinates of the points
         A = userdata.electric.egmX(P1,:);
         B = userdata.electric.egmX(P2,:);
-        
-        % calculate the linear distance
-        diffsq = (A - B).^2;
-        distance = sqrt(sum(diffsq, 2));
+
+        distance = distBetweenPoints(A, B, 'method', 'linear');
         
         % plot a figure
         if plot
@@ -75,33 +75,8 @@ switch method
         % get the co-ordinates of the surface points
         A = userdata.electric.egmSurfX(P1,:);
         B = userdata.electric.egmSurfX(P2,:);
-        
-        % calculate the geodesic distance (repacking and reducepatch
-        % necessary to prevent ?memory problem in exact geodesic)
-        V = userdata.surface.triRep.X;
-        F = userdata.surface.triRep.Triangulation;
-        [faces,vertices] = reducepatch(F,V,size(F,1));
-        
-        % now find the closest vertex index to A and B
-        P1new = findclosestvertex(vertices, A);
-        P2new = findclosestvertex(vertices, B);
-        
-        % geodesic algorithm
-        mesh = geodesic_new_mesh(vertices,faces);
-        algorithm = geodesic_new_algorithm(mesh, 'exact');
-        source_point = {geodesic_create_surface_point('vertex',P1new,vertices(P1new,:))};
-        geodesic_propagate(algorithm, source_point); % the most time-consuming step
-        
-        % find a shortest path from source to target
-        destination = geodesic_create_surface_point('vertex',P2new,vertices(P2new,:));
-        path = geodesic_trace_back(algorithm, destination);
-        
-        % find distances
-        [x,y,z] = extract_coordinates_from_path(path);
-        distance = sum(sqrt(diff(x).^2 + diff(y).^2 + diff(z).^2));
-        
-        %delete all meshes and algorithms
-        geodesic_delete;
+
+        [distance, pathCoordinates] = distBetweenPoints(A, B, 'method', 'geodesic', 'userdata', userdata);
         
         if plot
             hSurf = drawMap(userdata, 'type', 'none', 'orientation', 'pa');
@@ -109,6 +84,9 @@ switch method
             hold on
             plotTag(userdata, 'coord', A);
             plotTag(userdata, 'coord', B);
+            x = pathCoordinates(:,1);
+            y = pathCoordinates(:,2);
+            z = pathCoordinates(:,3);
             plot3(x*1.001,y*1.001,z*1.001,'k-','LineWidth',2);    %plot path
         end
 end
