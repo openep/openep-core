@@ -1,4 +1,4 @@
-function h = plotTag( userdata, varargin )
+function [h vi] = plotTag( userdata, varargin )
 % PLOTTAG Plots tag(s) on the current map
 %
 % Usage:
@@ -7,6 +7,7 @@ function h = plotTag( userdata, varargin )
 % Where:
 %   userdata  - see importcarto_mem
 %   h - an array of handles representing the plotted surface
+%   vi - indices of the surface projection if 'type' is 'surf' or 'both'
 %
 % PLOTTAG accepts the following parameter-value pairs
 %   'coord'     {[x y x]}
@@ -72,10 +73,21 @@ if ~isempty(pointnum)
     coord = [coord; userdata.electric.egmX(pointnum,:)];
 end
 
+vi = [];
 if strcmpi(type, 'surf') || strcmpi(type, 'both')
-    N = getNormals(userdata);
-    surfCoord = userdata.electric.egmSurfX(pointnum,:);
-    vi = findclosestvertex(getMesh(userdata, 'type', 'triangulation', 'limittotriangulation', false), surfCoord);
+    if ~isfield(userdata.surface, 'normals')
+        N = getNormals(userdata);
+    else
+        N = userdata.surface.normals;
+    end
+    if ~isempty(pointnum)
+        surfCoord = userdata.electric.egmSurfX(pointnum,:);        
+        vi = findclosestvertex(getMesh(userdata, 'type', 'triangulation', 'limittotriangulation', false), surfCoord);
+    else
+        mesh = getMesh(userdata, 'type', 'triangulation', 'limittotriangulation', false);
+        vi = findclosestvertex(mesh, coord);
+        surfCoord = mesh.Points(vi,:);
+    end
     endPoints = surfCoord + (N(vi,:) * SURFTHICKNESS);
     
 end
