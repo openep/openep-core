@@ -68,6 +68,12 @@ if nargin > nStandardArgs
     end
 end
 
+% Create default regionDefinition
+if isempty(regionDefinition)
+    regionDefinition.shape = 'sphere';
+    regionDefinition.params = 5;
+end
+
 % get the potential data positions
 switch lower(type)
     case 'map'
@@ -94,6 +100,9 @@ switch lower(regionDefinition.shape)
             weights(n,:) = abs(temp);
         end
 end
+
+points = points';
+weights = weights';
 
 end
 
