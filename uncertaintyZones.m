@@ -79,7 +79,7 @@ end
 % identify the points of interest
 m = size(X,1);
 n = size(loc,1);
-points = NaN(n, m);
+points = zeros(n, m);
 weights = zeros(n,m);
 
 switch lower(regionDefinition.shape)
