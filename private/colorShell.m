@@ -267,6 +267,10 @@ adjustSlider();
                 magenta = [1 0 1] * .8;
                 red = cMap(1,:);
                 cBarTitle = 'Wall Thickness (mm)';
+
+            case 'weights'
+                cMap = colormap(parula);
+                cBarTitle = 'Normalised distance weights';
                 
         end
         if ~isempty(usrColorMap)
