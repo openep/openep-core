@@ -74,7 +74,7 @@ colorbarlocation = inputs.colorbarlocation;
 orientation = inputs.orientation;
 DISTANCETHRESH = inputs.colorfillthreshold;
 
-if ~any(strcmpi(type, {'act', 'bip', 'force', 'uni', 'none', 'cv', 'geodesic', 'wallthickness'}))
+if ~any(strcmpi(type, {'act', 'bip', 'force', 'uni', 'none', 'cv', 'geodesic', 'wallthickness', 'weights'}))
     error('DRAWMAP: Invalid parameter-value pair; type must be one of act, bip, force, uni, none, cv or geodesic')
 end
 
@@ -144,6 +144,15 @@ switch type
         else
             error('OPENEP/drawMap: automatic calculation of wall thickness data not supported')
         end
+    case 'weights'
+        DATATYPE = 'weights';
+        if ~isempty(DATAMANUAL)
+            DATA = DATAMANUAL;
+        else
+            [~, weights] = uncertaintyZones(userdata, getElectrogramX(userdata), []);
+            DATA = max(weights, [], 2);
+        end
+            
 end
 
 if ~strcmpi(type, 'none')
