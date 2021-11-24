@@ -225,6 +225,10 @@ end
                 error(['IMPORTCARTO_MEM: Multiple maps with ' ...
                     num2str(mapToRead_cli) ...
                     ' points identified. Use an alternative method to identify map.']);
+            elseif isempty(selection)
+                error(['IMPORTCARTO_MEM: No map with ' ...
+                    num2str(mapToRead_cli) ...
+                    ' points identified. Check the number of points specified is correct.']);
             end
         elseif ischar(mapToRead_cli)
             selection = find(strstartcmpi(mapToRead_cli, names));
@@ -262,12 +266,14 @@ end
             
             % remove the trailing parentheses from names and store in namesTemp
             namesTemp = names;
+            warning('Some code may rely on parentheses in names - consider remove following for ...end')
             for i = 1:numel(namesTemp)
                 namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
             end
             
             if isempty(channelRef_cli)
                 [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
+                channelRef_cli = names{kRef};
             else
                 kRef = find(strstartcmpi(channelRef_cli, namesTemp));
                 if isempty(kRef) || numel(kRef)>1
@@ -276,6 +282,7 @@ end
             end
             if isempty(channelECG_cli)
                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
+                channelECG_cli = names(kEcg);
             else
                 kEcg = zeros(1,numel(channelECG_cli));
                 for i = 1:numel(channelECG_cli)
@@ -538,6 +545,10 @@ end
                         beep()
                         warning('IMPORTCARTO_MEM: The columns containing data in the .txt files change names.')
                         kRef = find( strcmpi(nameRef, names) );
+                        if isempty(kRef)
+                            warning(['IMPORTCARTO_MEM: The requested reference channel, ' nameRef ' was not found in file: ' filename '. NaN values will be assigned as the reference for this point' ]);
+                            kRef = NaN;
+                        end
                         for i = 1:numel(kEcg)
                             kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
                             if isempty(kEcg(i))
@@ -554,7 +565,11 @@ end
                         egm(iPoint,:) = voltages(:,kMap_bip);
                         egmUni1(iPoint,:) = voltages(:,kMap_uni(1));
                         egmUni2(iPoint,:) = voltages(:,kMap_uni(2));
-                        ref(iPoint,:) = voltages(:,kRef);
+                        if isnan(kRef)
+                            ref(iPoint,:) = NaN;
+                        else
+                            ref(iPoint,:) = voltages(:,kRef);
+                        end
                         ecg(iPoint,:,:) = voltages(:,kEcg);
                         
                     else
@@ -793,6 +808,5 @@ else
     warning(['IMPORTCARTO3: the filename relating to ' char(39) searchstring char(39) ' is unexpected but a match was found - ' fname])
 end
 end
-
 
 
