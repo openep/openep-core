@@ -294,19 +294,23 @@ classdef HoleCutter < matlab.mixin.SetGet
             obj.deleteGeodesic();
         end
         
-        function newSurface = cutMesh(obj)
+        function newSurfaces = cutMesh(obj)
+            % returns the newSurfaces as a cell array of triangulations.
+            % The largest surface will always be newSurfaces{1}.
+
             iFaces = obj.identifyFacesIntersectingPath;
             trNew = triangulation(obj.Mesh.ConnectivityList(~iFaces,:), obj.Mesh.Points);
             
             % start with any edge, might as well be the first one, in eCross
-            trTemp{1} = getallattachedsurface(trNew, obj.eCross(1,1), 'vertex');
-            trTemp{2} = getallattachedsurface(trNew, obj.eCross(1,2), 'vertex');
+            trTemp{1} = repack(getallattachedsurface(trNew, obj.eCross(1,1), 'vertex'));
+            trTemp{2} = repack(getallattachedsurface(trNew, obj.eCross(1,2), 'vertex'));
             
             areas = [sum(triarea(trTemp{1})) sum(triarea(trTemp{2}))];
             [~,i] = max(areas);
-            newSurface = trTemp{i};
+            newSurfaces{1} = trTemp{i};
+            newSurfaces{2} = trTemp{abs(i - 2) + 1};
             
-            trisurf(newSurface, 'facecolor', 'r');
+            trisurf(newSurfaces{1}, 'facecolor', 'r');
         end
         
     end

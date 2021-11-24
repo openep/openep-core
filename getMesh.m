@@ -10,6 +10,7 @@ function tr = getMesh(userdata, varargin)
 %   'type'     {'trirep'}|'triangulation'
 %       - Specifies whether to return the mesh as a TriRep object or as a
 %       Triangulation object
+%   'repack'    {false}|true
 %
 % GETMESH Returns a face/vertex representation of the anatomical model. 
 % Supported data types include istances of the Matlab objects Trirep and 
@@ -31,14 +32,14 @@ function tr = getMesh(userdata, varargin)
 
 nStandardArgs = 1; % UPDATE VALUE
 type = 'trirep';
-repack = 'false';
+dorepack = false;
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
         switch varargin{i}
             case 'type'
                 type = varargin{i+1};
             case 'repack'
-                repack = varargin{i+1};
+                dorepack = varargin{i+1};
         end
     end
 end
@@ -53,21 +54,17 @@ switch lower(type)
     case 'trirep'
         if isa(userdata.surface.triRep, 'TriRep')
             tr = userdata.surface.triRep;
-            return;
         else
             tr = TriRep(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
-            return;
         end
     case 'triangulation'
         if isa(userdata.surface.triRep, 'triangulation')
             tr = userdata.surface.triRep;
-            return;
         else
             tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
-            return;
         end
 end
 
-if repack
+if dorepack
     tr = repack(tr);
 end
