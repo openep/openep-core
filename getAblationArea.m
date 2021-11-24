@@ -6,7 +6,7 @@ function [ablArea, isAblated, trAbl] = getAblationArea(userdata, varargin)
 % Where:
 %   userdata - see importcarto_mem.m
 %   ablArea - the total area of the chamber that has been ablated
-%   isAblated - indexes into getMesh(userdata).Triangulation and
+%   isAblated - indexes into userdata.surface.triRep.Triangulation and
 %               indicates whether a particular triangle is considered
 %               ablated (1) or not (0).
 %   trAbl - a Triangulation of the ablated tissue
@@ -59,25 +59,26 @@ end
 switch method
     case 'tags'
         X = userdata.rfindex.tag.X;
+        tr = getMesh(userdata);
         
         % find the closest point on the surface to each tag
-        iV = findclosestvertex(getMesh(userdata), X);
-        vertices = getMesh(userdata).X(iV,:);
+        iV = findclosestvertex(tr, X);
+        vertices = tr.X(iV,:);
         
         % find the centroids of all the triangles in the triangulation
-        [~,allCentroids] = tricentroid(getMesh(userdata));
+        [~,allCentroids] = tricentroid(tr);
         
         % find all the triangles whose centres are within r radius of
-        isAblated = false(size(getMesh(userdata).Triangulation,1),1);
+        isAblated = false(size(tr.Triangulation,1),1);
         for i = 1:length(vertices)
             distances = distBetweenPoints(vertices(i,:), allCentroids);
             isAblatedByThisLesion = distances<r;
             isAblated(isAblatedByThisLesion) = true;
         end
-        trAbl = triangulation(getMesh(userdata).Triangulation(isAblated,:) ...
-            , getMesh(userdata).X(:,1) ...
-            , getMesh(userdata).X(:,2) ...
-            , getMesh(userdata).X(:,3) ...
+        trAbl = triangulation(tr.Triangulation(isAblated,:) ...
+            , tr.X(:,1) ...
+            , tr.X(:,2) ...
+            , tr.X(:,3) ...
             );
         ablArea = sum(triarea(trAbl))/100;
         

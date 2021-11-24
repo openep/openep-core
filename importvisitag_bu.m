@@ -110,11 +110,12 @@ visitag.X = positions;
 
 % now map the visitags to userdata if it has been passed in
 if ~isempty(userdata)
+    tr = getMesh(userdata);
     % Now work out the surface projections
     warning('off', 'FINDCLOSESTVERTEX:hasToTrim')
-    [closestVertices, ~] = findclosestvertex(getMesh(userdata), visitag.X, true);
+    [closestVertices, ~] = findclosestvertex(tr, visitag.X, true);
     warning('on', 'FINDCLOSESTVERTEX:hasToTrim')
-    visitag.surfX = getMesh(userdata).X(closestVertices,:);
+    visitag.surfX = tr.X(closestVertices,:);
 
     userdata.visitag = visitag;
     visitag = userdata;

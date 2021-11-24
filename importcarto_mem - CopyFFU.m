@@ -427,7 +427,7 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
                 % output argument ... added on 25.4.14
                 % Also, make sure that only CartoMEM and not Carto3 is on the
                 % path
-                [getMesh(userdata) userdata.surface.isVertexAtRim userdata.surface.act_bip normals userdata.surface.uni_imp_frc] = read_meshfile([ studyDir, filesep(), map.meshFile]);
+                [userdata.surface.triRep userdata.surface.isVertexAtRim userdata.surface.act_bip normals userdata.surface.uni_imp_frc] = read_meshfile([ studyDir, filesep(), map.meshFile]);
             else
                 userdata.surface = [];
             end
@@ -461,12 +461,15 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
             
             % Now get the Bar directions - the normal to the surface
             if ~isempty(userdata.surface)
+
+                tr = getMesh(userdata);
+
                 warning('off', 'FINDCLOSESTVERTEX:hasToTrim')
-                [closestVertices, ~] = findclosestvertex(getMesh(userdata), userdata.electric.egmX, true);
+                [closestVertices, ~] = findclosestvertex(tr, userdata.electric.egmX, true);
                 warning('on', 'FINDCLOSESTVERTEX:hasToTrim')
                 
                 % Now work out the surface projections
-                userdata.electric.egmSurfX = getMesh(userdata).X(closestVertices,:);
+                userdata.electric.egmSurfX = tr.X(closestVertices,:);
                 userdata.electric.barDirection = normals(closestVertices, :);
             else
                 userdata.electric.egmSurfX = [];

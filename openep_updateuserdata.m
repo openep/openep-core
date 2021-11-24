@@ -18,7 +18,7 @@ function nU = openep_updateuserdata(f, varargin)
 % 1) By specifying 'version', the save version can be modified (see help 
 %    save). Note that unless otherwise specified, '-v7.3' is used, and that
 %    saving to disc is optional.
-% 2) Convert getMesh(userdata) to a structure rather than a triRep.
+% 2) Convert userdata.surface.triRep to a structure rather than a triRep.
 %    This is useful for example if userdata is subsequently to be loaded
 %    into a non-Matlab environment
 % Note that this function handles single files only. Paths to single files 
@@ -71,11 +71,12 @@ end
 
 % Unpack the TriRep (for example, for loading the .mat file into Python
 if unPackTriRep
-    X = getMesh(userdata).X;
-    Triangulation = getMesh(userdata).Triangulation;
-    getMesh(userdata) = [];
-    getMesh(userdata).X = X;
-    getMesh(userdata).Triangulation = Triangulation;
+    tr = getMesh(userdata);
+    X = tr.X;
+    Triangulation = tr.Triangulation;
+    userdata.surface.triRep = [];
+    userdata.surface.triRep.X = X;
+    userdata.surface.triRep.Triangulation = Triangulation;
     
     % Store comment about triRep
     userdata.notes{end+1} = [date ': TriRep unpacked using openep_updateuserdata.m'];

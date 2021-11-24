@@ -713,6 +713,7 @@ for iMap = selection
             userdata.electric.force.time_axial = t_axialAngle;
             userdata.electric.force.time_lateral = t_lateralAngle;
         end
+<<<<<<< HEAD
     end
 
     % Now get the normal to the surface

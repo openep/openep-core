@@ -24,7 +24,8 @@ function [vertices, isVertUsed] = getVertices( userdata )
 % code
 % ---------------------------------------------------------------
 
-vertices = getMesh(userdata).X;
-[~, isVertUsed] = repack(getMesh(userdata));
+tr = getMesh(userdata);
+vertices = tr.X;
+[~, isVertUsed] = repack(tr);
 
 end

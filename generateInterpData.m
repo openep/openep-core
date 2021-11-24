@@ -159,7 +159,7 @@ for i = 1:size(data,2)
     
     % Remove any data which is associated with vertices that are not 
     % referenced by the triangulation
-    [~,isVertUsed] = repack(getMesh(userdata));
+    [~,isVertUsed] = repack(userdata.surface.triRep);
     interpData(~isVertUsed,i) = NaN;
 end
 
