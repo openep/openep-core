@@ -108,7 +108,7 @@ uniname{2} = [uniname{2} '('];
 temp = find(iCh); iChSecond = temp(2);
 temp = find(iRf); iRfFirst = temp(1);
 iNeeded = iChSecond+1 : 1 : iRfFirst-1;
-if strstartcmpi(tokens(iNeeded(1)), 'MC')
+if strstartcmpi('MC', tokens(iNeeded(1)))
     separator = ' ';
 else
     separator = '-';

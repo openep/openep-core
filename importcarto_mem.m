@@ -543,14 +543,14 @@ end
                     [names, voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
                     if any(kRef>numel(names)) || any(kEcg>numel(names)) || any(~strcmpi(names(kRef),nameRef)) || any(~strcmpi(names(kEcg),nameEcg))
                         beep()
-                        warning('IMPORTCARTO_MEM: The columns containing data in the .txt files change names.')
+                        warning(['IMPORTCARTO_MEM: The columns containing data in the .txt files change names. In ' filename])
                         kRef = find( strcmpi(nameRef, names) );
                         if isempty(kRef)
                             warning(['IMPORTCARTO_MEM: The requested reference channel, ' nameRef ' was not found in file: ' filename '. NaN values will be assigned as the reference for this point' ]);
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
-                            kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                            kEcg(i) = find(strstartcmpi(channelECG_cli{i}, names));
                             if isempty(kEcg(i))
                                 error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
                             end
