@@ -7,7 +7,7 @@ function [lowVArea, voltages, iTri, tr2] = getLowVoltageArea( userdata, varargin
 %   userdata  - see importcarto_mem
 %   lowVArea  - the low voltage area (cm^2)
 %   voltages - the voltages point values used to calculate areas
-%   iTri - indexes into userdata.surface.triRep.Triangulation and refers
+%   iTri - indexes into getMesh(userdata).Triangulation and refers
 %          to the triangles that have voltage values within the range,
 %          threshld
 %   tr2 - a triangulation of all the triangles referenced in iTri.
@@ -74,7 +74,7 @@ switch lower(method)
         end
 end
 
-tr = userdata.surface.triRep;
+tr = getMesh(userdata);
 [lowVArea, iTri, tr2] = local_calculateArea(tr, voltages, threshold);
 
     function [a, iTri, tr2] = local_calculateArea(tr, sI, threshold)

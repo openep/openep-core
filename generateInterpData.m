@@ -77,7 +77,7 @@ if ~any(strcmpi(datatype, {'bip-map' 'uni-map' 'lat-map' 'bip-egm' 'uni_egm' 'la
 end
 
 % Get the vertices of the trirep
-pts = userdata.surface.triRep.X;
+pts = getMesh(userdata).X;
 
 % Get the data
 switch lower(datatype)

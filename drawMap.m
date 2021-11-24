@@ -10,7 +10,7 @@ function hSurf = drawMap(userdata, varargin)
 %
 % DRAWMAP accepts the following parameter-value pairs
 %   'data' {[]} | [d]
-%       - Where d is a vector of data values and size(d) equals numel(userdata.surface.triRep.X)
+%       - Where d is a vector of data values and size(d) equals numel(getMesh(userdata).X)
 %   'type'  {'act'} | 'bip' | 'force' | 'uni' | 'none' | 'cv'
 %       - Specifies type of map - activation, bipolar or unipolar voltage
 %   'coloraxis' {[]} | [a b]

@@ -112,9 +112,9 @@ visitag.X = positions;
 if ~isempty(userdata)
     % Now work out the surface projections
     warning('off', 'FINDCLOSESTVERTEX:hasToTrim')
-    [closestVertices, ~] = findclosestvertex(userdata.surface.triRep, visitag.X, true);
+    [closestVertices, ~] = findclosestvertex(getMesh(userdata), visitag.X, true);
     warning('on', 'FINDCLOSESTVERTEX:hasToTrim')
-    visitag.surfX = userdata.surface.triRep.X(closestVertices,:);
+    visitag.surfX = getMesh(userdata).X(closestVertices,:);
 
     userdata.visitag = visitag;
     visitag = userdata;

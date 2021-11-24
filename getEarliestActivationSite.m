@@ -19,7 +19,7 @@ function [X, surfX, iPoint, t] = getEarliestActivationSite( userdata, varargin )
 %                   `ptbasedprct`), iPoint indexes into userdata.electric.
 %                   For map-based methods (i.e. `clinmap`, `clinmapprct`,
 %                   `openepmap`, `openepmapprct`), iPoint indexes into
-%                   userdata.surface.triRep.X. For percentile methods (i.e.
+%                   getMesh(userdata).X. For percentile methods (i.e.
 %                   `ptbasedprct`, `cinmapprct` or `openepmapprct`) iPoint
 %                   returns all the points that were identified within the
 %                   relevant percentile.
@@ -117,37 +117,37 @@ switch method
         iPoint = I(1:floor(numel(mapAnnot)*prct/100));
         X = mean(userdata.electric.egmX(iPoint,:));
         surfXtemp = mean(userdata.electric.egmSurfX(iPoint,:));
-        [surfXtr, distances] = findclosestvertex(userdata.surface.triRep, surfXtemp);
-        surfX = userdata.surface.triRep.X(surfXtr,:);
+        [surfXtr, distances] = findclosestvertex(getMesh(userdata), surfXtemp);
+        surfX = getMesh(userdata).X(surfXtr,:);
         t = mean(mapAnnot(iPoint) - referenceAnnot(iPoint));
         disp(['Nearest surface point to [' num2str(surfXtemp) '] is [' num2str(surfX) '], distance: ' num2str(distances) '.'])
     case 'clinmap'
         % 1. Get clinical activation data
         [t,iPoint] = nanmin(userdata.surface.act_bip(:,1));
-        X = userdata.surface.triRep.X(iPoint,:);
+        X = getMesh(userdata).X(iPoint,:);
         surfX = X;
     case 'clinmapprct'
         act = userdata.surface.act_bip(:,1);
         [~, I] = sort(act, 'ascend');
         iPoint = I(1:floor(numel(act)*prct/100));
-        X = mean(userdata.surface.triRep.X(iPoint,:));
-        surfXtr = findclosestvertex(userdata.surface.triRep,X);
-        surfX = userdata.surface.triRep.X(surfXtr,:);
+        X = mean(getMesh(userdata).X(iPoint,:));
+        surfXtr = findclosestvertex(getMesh(userdata),X);
+        surfX = getMesh(userdata).X(surfXtr,:);
         t = mean(act(iPoint));
     case 'openepmap'
         % 1. Get OpenEP interpolated activation data
         act = generateInterpData(userdata, 'lat-map');
         [t,iPoint] = nanmin(act);
-        X = userdata.surface.triRep.X(iPoint,:);
+        X = getMesh(userdata).X(iPoint,:);
         surfX = X;
     case 'openepmapprct'
         % 1. Get OpenEP interpolated activation data
         act = generateInterpData(userdata, 'lat-map');
         [~, I] = sort(act, 'ascend');
         iPoint = I(1:floor(numel(act)*prct/100));
-        X = mean(userdata.surface.triRep.X(iPoint,:));
-        surfXtr = findclosestvertex(userdata.surface.triRep,X);
-        surfX = userdata.surface.triRep.X(surfXtr,:);
+        X = mean(getMesh(userdata).X(iPoint,:));
+        surfXtr = findclosestvertex(getMesh(userdata),X);
+        surfX = getMesh(userdata).X(surfXtr,:);
         t = mean(act(iPoint));
 end
 

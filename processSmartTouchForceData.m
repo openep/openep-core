@@ -64,7 +64,7 @@ if isempty(loc)
 end
 
 % Draw the force map
-hSurf = trisurf(userdata.surface.triRep);
+hSurf = trisurf(getMesh(userdata));
 axis equal vis3d;
 scaledData = colorShell(hSurf, loc, f, distanceThreshold ...
         , 'datatype', 'force' ...
@@ -76,6 +76,6 @@ scaledData = colorShell(hSurf, loc, f, distanceThreshold ...
 [filename, pathname, filterindex] = uiputfile('*.vtk', 'Save the shell as a VTK file?');
 if filterindex~=0
     % The user wants to save the file
-    writeTriRep2VTK(userdata.surface.triRep, scaledData, 'outputfile', [pathname filesep() filename]);
+    writeTriRep2VTK(getMesh(userdata), scaledData, 'outputfile', [pathname filesep() filename]);
 end
 end

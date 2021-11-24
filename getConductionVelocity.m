@@ -32,7 +32,7 @@ function cvdata = getConductionVelocity( userdata )
 
 lats = userdata.electric.annotations.mapAnnot(getMappingPointsWithinWoI(userdata));
 X = userdata.electric.egmX(getMappingPointsWithinWoI(userdata),:);
-[~,~,~,~,cvdata] = RBFConductionVelocity(lats', X', userdata.surface.triRep.X');
+[~,~,~,~,cvdata] = RBFConductionVelocity(lats', X', getMesh(userdata).X');
 cvdata = cvdata';
 
 end

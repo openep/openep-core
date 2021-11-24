@@ -23,6 +23,6 @@ function faces = getFaces( userdata )
 % code
 % ---------------------------------------------------------------
 
-faces = userdata.surface.triRep.Triangulation;
+faces = getMesh(userdata).Triangulation;
 
 end
