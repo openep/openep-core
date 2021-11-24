@@ -31,11 +31,14 @@ function tr = getMesh(userdata, varargin)
 
 nStandardArgs = 1; % UPDATE VALUE
 type = 'trirep';
+repack = 'false';
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
         switch varargin{i}
             case 'type'
                 type = varargin{i+1};
+            case 'repack'
+                repack = varargin{i+1};
         end
     end
 end
@@ -65,4 +68,6 @@ switch lower(type)
         end
 end
 
+if repack
+    tr = repack(tr);
 end
