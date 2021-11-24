@@ -36,7 +36,7 @@ uni_imp_frc = [];
 
 fid = fopen(filename, 'r');
 if fid == (-1)
-    warning('READ_MESHFILE: Could not open file.');
+    warning(['READ_MESHFILE: Could not open file: ' filename]);
     beep()
     varargout = cell(1,nargout);
     return
