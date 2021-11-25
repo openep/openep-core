@@ -53,7 +53,15 @@ classdef HoleCutter < matlab.mixin.SetGet
         function initialiseGeodesicCalculation(obj)
             % Initialise the geodesic library and algorithm
             global geodesic_library
-            geodesic_library = 'geodesic_matlab_api';
+            
+            if ismac
+                geodesic_library = 'geodesic_matlab_api-macos';
+            elseif isunix
+                geodesic_library = 'geodesic_matlab_api';
+            else
+                disp('Platform not supported')
+            end
+            
             mesh = geodesic_new_mesh(obj.Mesh.Points, obj.Mesh.ConnectivityList);
             obj.Algorithm = geodesic_new_algorithm(mesh, 'exact');
         end
