@@ -49,16 +49,18 @@ end
 % Copy userdata
 newUserdata = userdata;
 
+% Set the new mesh
 switch type
     case lower('trirep')
-        newUserdata.surface.triRep.X = tNew.X;
-        newUserdata.surface.triRep.Triangulation = tNew.Triangulation;
+        t.X = tNew.X;
+        t.Triangulation = tNew.Triangulation;
 
     case lower('triangulation')
-        newUserdata.surface.triRep.X = tNew.Points;
-        newUserdata.surface.triRep.Triangulation = tNew.ConnectivityList;
+        t.X = tNew.Points;
+        t.Triangulation = tNew.ConnectivityList;
 
     case lower('struct')
-        newUserdata.surface.triRep.X = tNew.X;
-        newUserdata.surface.triRep.Triangulation = tNew.Triangulation;
+        tNew.X = tNew.X;
+        t.Triangulation = tNew.Triangulation;
 end
+newUserdata.surface.triRep = t;

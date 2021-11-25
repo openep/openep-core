@@ -34,6 +34,6 @@ newUserdata = setMesh(userdata, tNew);
 % remove irrelevant data
 newUserdata.surface.act_bip(~isVertUsed,:) = [];
 newUserdata.surface.uni_imp_frc(~isVertUsed,:) = [];
-newUserdata.isVertexAtRim(~isVertUsed,:) = [];
+newUserdata.surface.isVertexAtRim(~isVertUsed,:) = [];
 
 end
