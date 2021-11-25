@@ -64,8 +64,8 @@ userdata2.surface.isVertexAtRim = local_isVertexAtRim(newSurfaces{2});
 userdata2.surface.act_bip = userdata.surface.act_bip(tf,:);
 userdata2.surface.uni_imp_frc = userdata.surface.uni_imp_frc(tf,:);
 
-newUserdata{1} = userdata1;
-newUserdata{2} = userdata2;
+newUserdata{1} = repackUserdata(userdata1);
+newUserdata{2} = repackUserdata(userdata2);
 
     function isVertexAtEdge = local_isVertexAtRim(tr)
         if isa(tr, 'TriRep')

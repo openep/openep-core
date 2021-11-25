@@ -25,20 +25,15 @@ function newUserdata = repackUserdata(userdata)
 % code
 % ---------------------------------------------------------------
 
+% get the new mesh and identify the vertices not referenced by the triangulation
+[tNew, isVertUsed] = repack(getMesh(userdata));
+
 % set the new mesh
 newUserdata = setMesh(userdata, tNew);
 
-% identify the vertices not referenced by the triangulation
-[tNew, isVertUsed] = repack(getMesh(userdata));
-
-
-
-% remove data
+% remove irrelevant data
 newUserdata.surface.act_bip(~isVertUsed,:) = [];
 newUserdata.surface.uni_imp_frc(~isVertUsed,:) = [];
 newUserdata.isVertexAtRim(~isVertUsed,:) = [];
-
-
-
 
 end
