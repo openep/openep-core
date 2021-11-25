@@ -46,26 +46,19 @@ elseif isa(tNew, 'struct')
     end
 end
 
+% Copy userdata
+newUserdata = userdata;
 
+switch type
+    case lower('trirep')
+        newUserdata.surface.triRep.X = tNew.X;
+        newUserdata.surface.triRep.Triangulation = tNew.Triangulation;
 
-FV.vert = userdata.surface.triRep.X;
-FV.faces = userdata.surface.triRep.Triangulation;
+    case lower('triangulation')
+        newUserdata.surface.triRep.X = tNew.Points;
+        newUserdata.surface.triRep.Triangulation = tNew.ConnectivityList;
 
-switch lower(type)
-    case 'trirep'
-        if isa(userdata.surface.triRep, 'TriRep')
-            tr = userdata.surface.triRep;
-        else
-            tr = TriRep(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
-        end
-    case 'triangulation'
-        if isa(userdata.surface.triRep, 'triangulation')
-            tr = userdata.surface.triRep;
-        else
-            tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
-        end
-end
-
-if dorepack
-    tr = repack(tr);
+    case lower('struct')
+        newUserdata.surface.triRep.X = tNew.X;
+        newUserdata.surface.triRep.Triangulation = tNew.Triangulation;
 end
