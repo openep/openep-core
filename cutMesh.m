@@ -88,7 +88,6 @@ newUserdata{2} = userdata2;
         % which are closest to (in this case the same as) pointSetNew.
 
         tf = ismember(pointSetOriginal, pointSetNew, 'rows');
-
     end
 
 
