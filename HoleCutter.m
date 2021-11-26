@@ -55,7 +55,7 @@ classdef HoleCutter < matlab.mixin.SetGet
             global geodesic_library
             
             if ismac
-                geodesic_library = 'geodesic_matlab_api-macos';
+                geodesic_library = 'geodesic_matlab_api_macos';
             elseif isunix
                 geodesic_library = 'geodesic_matlab_api';
             else
