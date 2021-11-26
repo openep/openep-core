@@ -1,4 +1,4 @@
-function [result, goodTriangles, goodPoints] = getallattachedsurface(inputSurface, inputStart, startType)
+function [result, goodTriangles, goodPoints] = getallattachedsurface(inputSurface, inputStart, startType, varargin)
 % GETALLATTACHEDSURFACE Returns all of the surface continuous with start.
 % Usage:
 %   newTriRep = getallattachedsurface(oldTriRep, start, starttype)
@@ -7,25 +7,39 @@ function [result, goodTriangles, goodPoints] = getallattachedsurface(inputSurfac
 % Where:
 %   newTriRep.X contains only data points that are continuous with start
 %            .Triangulation is the corresponding triangulation
-%   newFaceIndices - 
+%   newFaceIndices -
 %           oldFaces(newFaceIndices,:)  or  newTriRep(newFaceIndices,:)
 %           gives the triangulation that only refers to data points
 %           continuous with start.
-%            
-%   start is either an index representing a vertex or one of the faces - 
+%   start is either an index representing a vertex or one of the faces -
 %   startType is either 'Face' or 'Vertex'
 %
+% GETALLATTACHEDSURFACE accepts the following parameter-value pairs
+%   'verbose'     {true}|false
+%
 % Author: Nick Linton (2010)
-% Modifications - 
-
+% Modifications -
+%   Steven Williams (2021) - added verbose option
+%
 % Info on Code Testing:
-						% ---------------------
-                        % test code
-                        % ---------------------
+% ---------------------
+% test code
+% ---------------------
 
 % ---------------------------------------------------------------
 % code
 % ---------------------------------------------------------------
+
+nStandardArgs = 3; % UPDATE VALUE
+verbose = true;
+if nargin > nStandardArgs
+    for i = 1:2:nargin-nStandardArgs
+        switch varargin{i}
+            case 'verbose'
+                verbose = varargin{i+1};
+        end
+    end
+end
 
 if isa(inputSurface, 'triangulation')
     tri = inputSurface;
@@ -51,7 +65,9 @@ end
 
 % Each face has 3 edges. There will be <= 3 neighbouring triangles for each
 % face.
-warning('if a triangle edge has 3 face attachments then this will not work')
+if verbose
+    warning('if a triangle edge has 3 face attachments then this will not work')
+end
 ngbrs = neighbors(tri);
 ngbrs = [ (1:size(ngbrs,1))' , ngbrs ]; %I'm including the index to the original triangles as well
 

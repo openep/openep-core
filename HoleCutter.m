@@ -310,8 +310,8 @@ classdef HoleCutter < matlab.mixin.SetGet
             trNew = triangulation(obj.Mesh.ConnectivityList(~iFaces,:), obj.Mesh.Points);
             
             % start with any edge, might as well be the first one, in eCross
-            trTemp{1} = repack(getallattachedsurface(trNew, obj.eCross(1,1), 'vertex'));
-            trTemp{2} = repack(getallattachedsurface(trNew, obj.eCross(1,2), 'vertex'));
+            trTemp{1} = repack(getallattachedsurface(trNew, obj.eCross(1,1), 'vertex', 'verbose', false));
+            trTemp{2} = repack(getallattachedsurface(trNew, obj.eCross(1,2), 'vertex', 'verbose', false));
             
             areas = [sum(triarea(trTemp{1})) sum(triarea(trTemp{2}))];
             [~,i] = max(areas);
