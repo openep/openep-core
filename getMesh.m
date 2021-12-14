@@ -10,6 +10,7 @@ function tr = getMesh(userdata, varargin)
 %   'type'     {'trirep'}|'triangulation'
 %       - Specifies whether to return the mesh as a TriRep object or as a
 %       Triangulation object
+%   'repack'    {false}|true
 %
 % GETMESH Returns a face/vertex representation of the anatomical model. 
 % Supported data types include istances of the Matlab objects Trirep and 
@@ -31,11 +32,14 @@ function tr = getMesh(userdata, varargin)
 
 nStandardArgs = 1; % UPDATE VALUE
 type = 'trirep';
+dorepack = false;
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
         switch varargin{i}
             case 'type'
                 type = varargin{i+1};
+            case 'repack'
+                dorepack = varargin{i+1};
         end
     end
 end
@@ -43,26 +47,40 @@ if ~any(strcmpi({'trirep' 'triangulation'}, type))
     error(['OPENEP/GETMESH: Value: ' type ' for parameter: type not recognised']);
 end
 
-FV.vert = userdata.surface.triRep.X;
-FV.faces = userdata.surface.triRep.Triangulation;
+% Check the type of surface data stored in the OpenEP datastructure and
+% accordingly access the triangulation and the points
+if isa(userdata.surface.triRep, 'TriRep')
+    FV.vert = userdata.surface.triRep.X;
+    FV.faces = userdata.surface.triRep.Triangulation;
+elseif isa(userdata.surface.triRep, 'triangulation')
+    FV.vert = userdata.surface.triRep.Points;
+    FV.faces = userdata.surface.triRep.ConnectivityList;
+elseif isa(userdata.surface.triRep, 'struct')
+    if ~isfield(userdata.surface.triRep, 'X')
+        error('OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
+    end
+    if ~isfield(userdata.surface.triRep, 'Triangulation')
+        error('OPENEP/SETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
+    end
+    FV.vert = userdata.surface.triRep.X;
+    FV.faces = userdata.surface.triRep.Triangulation;
+end
 
 switch lower(type)
     case 'trirep'
         if isa(userdata.surface.triRep, 'TriRep')
             tr = userdata.surface.triRep;
-            return;
         else
             tr = TriRep(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
-            return;
         end
     case 'triangulation'
         if isa(userdata.surface.triRep, 'triangulation')
             tr = userdata.surface.triRep;
-            return;
         else
             tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
-            return;
         end
 end
 
+if dorepack
+    tr = repack(tr);
 end
