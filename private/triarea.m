@@ -26,6 +26,13 @@ switch nargin
         elseif isa(varargin{1},'double')
             simplices = [1, 2, 3];
             points = varargin{1};
+        elseif isa(varargin{1},'struct')
+            if isfield(varargin{1},'Triangulation') & isfield(varargin{1},'X')
+                simplices = varargin{1}.Triangulation;
+                points = varargin{1}.X;
+            else
+                error('Unexpected format of input variables')
+            end
         else
             error('Unexpected format of input variables')
         end
