@@ -80,7 +80,7 @@ end
 
 
 % Draw the surface
-hSurf = trisurf(userdata.surface.triRep, 'edgecolor', 'none');
+hSurf = trisurf(getMesh(userdata), 'edgecolor', 'none');
 axis equal vis3d
 
 % Color the surface
@@ -94,7 +94,7 @@ if strcmpi(type, 'none')
 end
 
 % Draw the free boundary, i.e. valve
-drawFreeBoundary(userdata.surface.triRep, [0 0 0]);
+drawFreeBoundary(getMesh(userdata), [0 0 0]);
 
 % Set up variables for colorShell
 switch type
