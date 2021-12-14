@@ -33,6 +33,22 @@ function userdata = openep_createuserdata()
     for i = 1:numel(fNames)
         tempstruct.(fNames{i}) = [];
     end
+
+    annotationsSubFields = {'woi','referenceAnnot','mapAnnot'};
+    voltagesSubFields = {'bipolar','unipolar'};
+    impedancesSubFields = {'time','value'};
+
+    for i = 1:numel(annotationsSubFields)
+        tempstruct.annotations.(annotationsSubFields{i}) = [];
+    end
+    for i = 1:numel(voltagesSubFields)
+        tempstruct.voltages.(voltagesSubFields{i}) = [];
+    end
+    for i = 1:numel(impedancesSubFields)
+        tempstruct.impedances.(impedancesSubFields{i}) = [];
+    end
+
+
     userdata.electric = tempstruct;
     
     

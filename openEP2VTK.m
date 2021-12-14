@@ -2,13 +2,12 @@ function path2VTKfile = openEP2VTK(userdata, varargin)
 % OPENEP2VTK Converts an OpenEP data structure to a VTK file
 %
 % Usage:
-%   tr = openEP2VTK('openfile')
+%   path2VTKfile = openEP2VTK('openfile')
 % Where:
-%   tr  - a TriRep object
 %   path2VTKfile - the path to the file that was written
 %
 % OPENEP2VTK accepts the following parameter-value pairs
-%   'datatype'     {'bip'} | 'uni' | 'lat'
+%   'datatype'     {'none'} | 'bip' | 'uni' | 'lat'
 %       - the required data, bipolar voltage, unipolar voltage or local
 %       activation time
 %   'method'       {'map'} | 'egm'
@@ -42,7 +41,7 @@ function path2VTKfile = openEP2VTK(userdata, varargin)
 
 % parse input arguments
 nStandardArgs = 1;
-datatype = 'lat';
+datatype = 'none';
 method = 'map';
 outputfile = '';
 if nargin > nStandardArgs
@@ -99,6 +98,8 @@ switch lower(datatype)
                 disp('Interpolating data ...');
                 pointdata = generateInterpData(userdata, 'uni-map');
         end
+    case 'none'
+        pointdata = [];
 end
 
 writeTriRep2VTK(getMesh(userdata), pointdata, 'outputfile', path2VTKfile);

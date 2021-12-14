@@ -51,20 +51,8 @@ newSurfaces = hc.cutMesh()
 tf = local_labelSurfaceData(getVertices(userdata), newSurfaces{1}.Points);
 userdata1 = local_splitSurfaceData(userdata, newSurfaces{1}, tf);
 
-% userdata1 = userdata;
-% userdata1.surface.triRep = newSurfaces{1};
-% userdata1.surface.isVertexAtRim = local_isVertexAtRim(newSurfaces{1});
-% userdata1.surface.act_bip = userdata.surface.act_bip(tf,:);
-% userdata1.surface.uni_imp_frc = userdata.surface.uni_imp_frc(tf,:);
-
 tf = local_labelSurfaceData(getVertices(userdata), newSurfaces{2}.Points);
 userdata2 = local_splitSurfaceData(userdata, newSurfaces{2}, tf);
-
-% userdata2 = userdata;
-% userdata2.surface.triRep = newSurfaces{2};
-% userdata2.surface.isVertexAtRim = local_isVertexAtRim(newSurfaces{2});
-% userdata2.surface.act_bip = userdata.surface.act_bip(tf,:);
-% userdata2.surface.uni_imp_frc = userdata.surface.uni_imp_frc(tf,:);
 
 % repack the surface data
 newUserdata{1} = repackUserdata(userdata1);
@@ -110,8 +98,12 @@ newUserdata{2} = local_splitElectricData(newUserdata{2}, electricIds, 1);
         userdata1 = userdata;
         userdata1.surface.triRep = newSurface;
         userdata1.surface.isVertexAtRim = local_isVertexAtRim(newSurface);
-        userdata1.surface.act_bip = userdata.surface.act_bip(tf,:);
-        userdata1.surface.uni_imp_frc = userdata.surface.uni_imp_frc(tf,:);
+        if ~isempty(userdata.surface.act_bip)
+            userdata1.surface.act_bip = userdata.surface.act_bip(tf,:);
+        end
+        if ~isempty(userdata.surface.uni_imp_frc)
+            userdata1.surface.uni_imp_frc = userdata.surface.uni_imp_frc(tf,:);
+        end
     end
 
     function userdata = local_splitElectricData(userdata,electricIds,id)
