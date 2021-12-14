@@ -37,9 +37,15 @@ x = nan(3*n,1);
 y = nan(size(x));
 z = nan(size(x));
 
-for i = 0:(n-1);
-    loc1 = tr.X(rimEdges(i+1,1),:);
-    loc2 = tr.X(rimEdges(i+1,2),:);
+if isa(tr, 'TriRep')
+    X = tr.X;
+elseif isa(tr, 'triangulation')
+    X = tr.Points;
+end
+
+for i = 0:(n-1)
+    loc1 = X(rimEdges(i+1,1),:);
+    loc2 = X(rimEdges(i+1,2),:);
     
     x(3*i+1) = loc1(1);
     y(3*i+1) = loc1(2);
