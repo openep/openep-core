@@ -7,12 +7,11 @@ function tr = getMesh(userdata, varargin)
 %   tr - a TriRep, or Triangulation, object
 %
 % GETMESH accepts the following parameter-value pairs
-%   'type'     {'trirep'}|'triangulation'
+%   'type'     {'trirep'}|'triangulation'|'struct'
 %       - Specifies whether to return the mesh as a TriRep object or as a
-%       Triangulation object
+%       Triangulation object or as a struct
 %   'limitToTriangulation' {'false'}|true
 %       - Specifies whether to repack the triangulation
-%   'repack'    {false}|true
 %
 % GETMESH Returns a face/vertex representation of the anatomical model. 
 % Supported data types include istances of the Matlab objects Trirep and 
@@ -43,13 +42,13 @@ if nargin > nStandardArgs
             case 'type'
                 type = varargin{i+1};
             case 'limittotriangulation'
-                limitToTriangulation - varargin{i+1};
+                limitToTriangulation = varargin{i+1};
             case 'repack'
                 dorepack = varargin{i+1};
         end
     end
 end
-if ~any(strcmpi({'trirep' 'triangulation'}, type))
+if ~any(strcmpi({'trirep' 'triangulation' 'struct'}, type))
     error(['OPENEP/GETMESH: Value: ' type ' for parameter: type not recognised']);
 end
 
@@ -61,10 +60,7 @@ if isa(userdata.surface.triRep, 'TriRep')
 elseif isa(userdata.surface.triRep, 'triangulation')
     FV.vert = userdata.surface.triRep.Points;
     FV.faces = userdata.surface.triRep.ConnectivityList;
-else
-    error('OPENEP/getMesh: userdata.surface.TriRep should be a TriRep or a triangulation object')
-end
-if isa(userdata.surface.triRep, 'struct')
+elseif isa(userdata.surface.triRep, 'struct')
     if ~isfield(userdata.surface.triRep, 'X')
         error('OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
@@ -88,12 +84,15 @@ switch lower(type)
         else
             tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
         end
+    case 'struct'
+        if isa(userdata.surface.triRep, 'struct')
+            tr = userdata.surface.triRep;
+        else
+            tr.X = FV.vert;
+            tr.Points = FV.faces;
+        end
 end
 
 if limitToTriangulation
-    tr = repack(tr);
-end
-
-if dorepack
     tr = repack(tr);
 end
