@@ -60,7 +60,7 @@ switch type
         t.Triangulation = tNew.ConnectivityList;
 
     case lower('struct')
-        tNew.X = tNew.X;
+        t.X = tNew.X;
         t.Triangulation = tNew.Triangulation;
 end
 newUserdata.surface.triRep = t;
