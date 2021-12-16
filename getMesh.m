@@ -63,7 +63,8 @@ elseif isa(userdata.surface.triRep, 'triangulation')
     FV.faces = userdata.surface.triRep.ConnectivityList;
 else
     error('OPENEP/getMesh: userdata.surface.TriRep should be a TriRep or a triangulation object')
-elseif isa(userdata.surface.triRep, 'struct')
+end
+if isa(userdata.surface.triRep, 'struct')
     if ~isfield(userdata.surface.triRep, 'X')
         error('OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
