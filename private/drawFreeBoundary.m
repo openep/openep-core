@@ -31,14 +31,16 @@ if nargin==3
 end
 
 if isa(tr, 'triangulation')
-    Vertices = tr.Points;
+    X = tr.Points;
 elseif isa(tr, 'TriRep')
-    Vertices = tr.X;
+    X = tr.X;
+elseif isa(tr, 'struct')
+    X = tr.X;
 else
-    error('OPENEP/drawFreeBoundary.m the input "tr" should be a TriRep or triangulation object');
+    error('OPENEP/drawFreeBoundary.m the input "tr" should be a TriRep object, a triangulation object or a structure');
 end
 
-rimEdges= freeBoundary(tr);
+rimEdges = freeBoundary(tr);
 
 n = size(rimEdges,1);
 x = nan(3*n,1);
@@ -46,22 +48,13 @@ y = nan(size(x));
 z = nan(size(x));
 
 for i = 0:(n-1)
-    loc1 = Vertices(rimEdges(i+1,1),:);
-    loc2 = Vertices(rimEdges(i+1,2),:);
-if isa(tr, 'TriRep')
-    X = tr.X;
-elseif isa(tr, 'triangulation')
-    X = tr.Points;
-end
-
-for i = 0:(n-1)
     loc1 = X(rimEdges(i+1,1),:);
     loc2 = X(rimEdges(i+1,2),:);
-    
+
     x(3*i+1) = loc1(1);
     y(3*i+1) = loc1(2);
     z(3*i+1) = loc1(3);
-    
+
     x(3*i+2) = loc2(1);
     y(3*i+2) = loc2(2);
     z(3*i+2) = loc2(3);
