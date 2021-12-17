@@ -6,7 +6,7 @@ function userdata = openep_createuserdata()
 % Output:
 %   info - see 'format' below for details
 % Inputs:
-%   
+%
 % OPENEP_CREATEUSERDATA creates an empty userdata structure
 %
 % Author: Steven Williams, Nick Linton (2020)
@@ -25,11 +25,11 @@ function userdata = openep_createuserdata()
     for i = 1:numel(fNames)
         userdata.(fNames{i}) = [];
     end
-            
+
     fNames = {   'tags','names','electrodeNames_bip','egmX','egm','electrodeNames_uni'...
                 ,'egmUniX','egmUni','egmRef','ecg','sampleFrequency','annotations','voltages'...
                 ,'impedances','egmSurfX','barDirection'};
-            
+
     for i = 1:numel(fNames)
         tempstruct.(fNames{i}) = [];
     end
@@ -50,12 +50,12 @@ function userdata = openep_createuserdata()
 
 
     userdata.electric = tempstruct;
-    
-    
+
+
     fNames = {   'triRep','isVertexAtRim','act_bip','uni_imp_frc','signalMaps'};
     for i = 1:numel(fNames)
         tempstruct.(fNames{i}) = [];
     end
-    userdata.surface = tempstruct;    
-    
+    userdata.surface = tempstruct;
+
 end
