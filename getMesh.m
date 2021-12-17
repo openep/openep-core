@@ -7,13 +7,14 @@ function tr = getMesh(userdata, varargin)
 %   tr - a TriRep, or Triangulation, object
 %
 % GETMESH accepts the following parameter-value pairs
-%   'type'     {'trirep'}|'triangulation'
+%   'type'     {'trirep'}|'triangulation'|'struct'
 %       - Specifies whether to return the mesh as a TriRep object or as a
-%       Triangulation object
-%   'repack'    {false}|true
+%       Triangulation object or as a struct
+%   'limitToTriangulation' {'false'}|true
+%       - Specifies whether to repack the triangulation
 %
-% GETMESH Returns a face/vertex representation of the anatomical model. 
-% Supported data types include istances of the Matlab objects Trirep and 
+% GETMESH Returns a face/vertex representation of the anatomical model.
+% Supported data types include istances of the Matlab objects Trirep and
 % Triangulation.
 %
 % Author: Steven Williams (2020) (Copyright)
@@ -32,18 +33,22 @@ function tr = getMesh(userdata, varargin)
 
 nStandardArgs = 1; % UPDATE VALUE
 type = 'trirep';
+limitToTriangulation = false;
 dorepack = false;
+
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
-        switch varargin{i}
+        switch lower(varargin{i})
             case 'type'
                 type = varargin{i+1};
+            case 'limittotriangulation'
+                limitToTriangulation = varargin{i+1};
             case 'repack'
                 dorepack = varargin{i+1};
         end
     end
 end
-if ~any(strcmpi({'trirep' 'triangulation'}, type))
+if ~any(strcmpi({'trirep' 'triangulation' 'struct'}, type))
     error(['OPENEP/GETMESH: Value: ' type ' for parameter: type not recognised']);
 end
 
@@ -79,8 +84,15 @@ switch lower(type)
         else
             tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
         end
+    case 'struct'
+        if isa(userdata.surface.triRep, 'struct')
+            tr = userdata.surface.triRep;
+        else
+            tr.X = FV.vert;
+            tr.Points = FV.faces;
+        end
 end
 
-if dorepack
+if limitToTriangulation
     tr = repack(tr);
 end
