@@ -13,8 +13,8 @@ function tr = getMesh(userdata, varargin)
 %   'limitToTriangulation' {'false'}|true
 %       - Specifies whether to repack the triangulation
 %
-% GETMESH Returns a face/vertex representation of the anatomical model. 
-% Supported data types include istances of the Matlab objects Trirep and 
+% GETMESH Returns a face/vertex representation of the anatomical model.
+% Supported data types include istances of the Matlab objects Trirep and
 % Triangulation.
 %
 % Author: Steven Williams (2020) (Copyright)
