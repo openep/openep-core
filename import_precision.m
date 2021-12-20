@@ -105,20 +105,40 @@ end
 % Electric data - PARTIALLY COMPLETE
 % userdata.electric.tags = ;
 % userdata.electric.names = ;
-userdata.electric.electrodeNames_bip = dxldata.rovtrace_pts';
-userdata.electric.egmX = [dxldata.rovingx' dxldata.rovingy' dxldata.rovingz'];
-userdata.electric.egmSurfX = [dxldata.surfPtx' dxldata.surfPty' dxldata.surfPtz'];
-userdata.electric.egm = rovtrace';
+if length(dxldata) > 2
+    warning(['Currently unable to process more than one combined set ',...
+        'of experiments (one unipolar and one bipolar'])
+end
+for i_dxl = 1:length(dxldata)
+    if dxldata(1).bipole
+        userdata.electric.electrodeNames_bip = dxldata(i_dxl).rovtrace_pts';
+        userdata.electric.egmX = [dxldata(i_dxl).rovingx',...
+            dxldata(i_dxl).rovingy', dxldata(i_dxl).rovingz'];
+        userdata.electric.egmSurfX = [dxldata(i_dxl).surfPtx',...
+            dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
+        userdata.electric.egmRef = dxldata(i_dxl).rovtrace';
+        userdata.electric.annotations.referenceAnnot = dxldata(i_dxl).refLAT';
+        userdata.electric.annotations.mapAnnot = dxldata(i_dxl).rovLAT';
+        userdata.electric.voltages.bipolar = dxldata(i_dxl).peak2peak';
+    else
+        userdata.electric.electrodeNames_uni = dxldata(i_dxl).rovtrace_pts';
+        userdata.electric.egmUniX = [dxldata(i_dxl).rovingx',...
+            dxldata(i_dxl).rovingy', dxldata(i_dxl).rovingz'];
+        userdata.electric.egmUniSurfX = [dxldata(i_dxl).surfPtx',...
+            dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
+        userdata.electric.egmUniRef = dxldata(i_dxl).rovtrace';
+        userdata.electric.annotations.referenceAnnotUni = dxldata(i_dxl).refLAT';
+        userdata.electric.annotations.mapAnnotUni = dxldata(i_dxl).rovLAT';
+        userdata.electric.voltages.unipolar = dxldata(i_dxl).peak2peak';
+    end
+end
+% userdata.electric.egm = rovtrace';
 % TODO: IMPORTING UNIPOLE DATA *** Github Issue #43: https://github.com/openep/openep-core/issues/43***
 % userdata.electric.electrodeNames_uni = ; 
 % userdata.electric.egmUniX = ;
 % userdata.electric.egmUni = ;
-userdata.electric.egmRef = dxldata.rovtrace';
 % userdata.electric.ecg =
 % userdata.electric.annotations.woi = 
-userdata.electric.annotations.referenceAnnot = dxldata.refLAT';
-userdata.electric.annotations.mapAnnot = dxldata.rovLAT';
-userdata.electric.voltages.bipolar = dxldata.peak2peak';
 % userdata.electric.voltages.unipolar = 
 % userdata.electric.impedances.time = 
 % userdata.electric.impedances.value = 
