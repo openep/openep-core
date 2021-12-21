@@ -2,4 +2,5 @@ codecov:
   require_ci_to_pass: true
   branch: develop
 ignore:
-  - "tests/**/*"
+  - "tests"
+  - "tests/*Test.m"
