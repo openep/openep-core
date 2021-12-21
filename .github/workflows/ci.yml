@@ -37,14 +37,13 @@ jobs:
 
       # Add example data sets from the openep-examples repository
       - name: Add data files
-        run: git clone https://github.com/openep/openep-examples.git
+        run: git clone https://github.com/openep/openep-examples.git $HOME
 
       # Runs the tests
       - name: Run all tests
         uses: matlab-actions/run-tests@v1
         with:
           source-folder: ./; $HOME/openep-examples
-          select-by-folder: tests/
           code-coverage-cobertura: coverage.xml
 
       # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
