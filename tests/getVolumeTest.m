@@ -1,14 +1,19 @@
 classdef getVolumeTest < matlab.unittest.TestCase
+
+    properties
+        dataset_2
+    end
+
     methods(TestClassSetup)
-        function loadData()
-            load 'openep_dataset_2.mat' dataset_2;
+        function loadData(testCase)
+            testCase.dataset_2 = load('openep_dataset_2.mat').userdata;
         end
     end
     methods(Test)
         function dataset2Volume(testCase)
-            expected_volume = 173.8810;
-            calculated_volume = getVolume(dataset_2);
-            testCase.verifyEqual(expected_volume,calculated_volume)
+            expected_volume = 173.881;
+            actual_volume = getVolume(testCase.dataset_2);
+            testCase.verifyEqual(round(actual_volume, 3), expected_volume)
         end
     end
 end
