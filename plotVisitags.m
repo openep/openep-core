@@ -18,6 +18,8 @@ function plotVisitags(userdata, varargin)
 %       colorscale
 %   'orientation'   
 %       - see `drawMap.m`
+%   'tagindices'    {':'} | array
+%       - the indices of the visitags to display
 %
 % PLOTVISITAG Requires a userdata structure which contains .rfindex as
 % its input, which can be created using importvisitag.m
@@ -44,6 +46,7 @@ toplot = 'tags';
 shell = 'on';
 colour = 'r';
 orientation = 'pa';
+indices = ':';
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
         switch varargin{i}
@@ -55,8 +58,13 @@ if nargin > nStandardArgs
                 colour = varargin{i+1};
             case 'orientation'
                 orientation = varargin{i+1};
+            case 'tagindices'
+                indices = varargin{i+1};
         end
     end
+end
+if strcmpi(indices, ':')
+    indices = 1:size(userdata.rfindex.tag.X,1);
 end
 %TODO add error checking for the input param/value pairs
 
@@ -87,14 +95,16 @@ if isnumeric(colour)
     cInd = round((colour-min(colour)+1)/range(colour) * (size(cMap,1)-1));
 end
 if strcmpi(toplot, 'tags') || strcmpi(toplot, 'both')
-    for i = 1:size(userdata.rfindex.tag.X,1)
+
+    for i = 1:numel(indices) %size(userdata.rfindex.tag.X,1)
         % get the colour
         if ischar(colour)
             C = colour;
         else
             C = cMap(cInd(i),:);
         end
-        X = userdata.rfindex.tag.X(i,:);
+        %X = userdata.rfindex.tag.X(i,:);
+        X = userdata.rfindex.tag.X(indices(i),:);
         h = plotsphere(X(1), X(2), X(3), C, 3, 16);
         set(h ...
             , 'facealpha', facealpha ...
