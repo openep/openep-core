@@ -40,18 +40,19 @@ jobs:
         run: git clone https://github.com/openep/openep-examples.git
 
       # Runs the tests
-      - name: Run all tests
-        uses: matlab-actions/run-tests@v1
-        with:
-          source-folder: $HOME/openep-examples
-          select-by-folder: tests/
-          code-coverage-cobertura: coverage.xml
+      #- name: Run all tests
+      #  uses: matlab-actions/run-tests@v1
+      #  with:
+      #    source-folder: $HOME/openep-examples
+      #    select-by-folder: tests/
+      #    code-coverage-cobertura: coverage.xml
 
       # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
-      #- name: Run all tests
-      #  uses: matlab-actions/run-command@v0
-      #  with:
-      #    command: addpath('$HOME/openep-examples'); results = runtests('IncludeSubfolders', true); assertSuccess(results);
+      - name: Run all tests
+        uses: matlab-actions/run-command@v0
+        with:
+          command: addpath('$HOME/openep-examples'); results = runtests(pwd,'IncludeSubfolders',true); assertSuccess(results);
+          code-coverage-cobertura: coverage.xml
 
       # Using Codecov's action, upload the coverage report for the triggering commit/PR
       - name: Upload coverage
