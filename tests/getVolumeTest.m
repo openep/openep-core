@@ -11,7 +11,7 @@ classdef getVolumeTest < matlab.unittest.TestCase
     end
     methods(Test)
         function dataset2Volume(testCase)
-            expected_volume = 173.881;
+            expected_volume = 100;
             actual_volume = getVolume(testCase.dataset_2);
             testCase.verifyEqual(round(actual_volume, 3), expected_volume)
         end
