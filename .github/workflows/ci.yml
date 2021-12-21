@@ -53,8 +53,8 @@ jobs:
       #  with:
       #    command: addpath('$HOME/openep-examples'); results = runtests('IncludeSubfolders', true); assertSuccess(results);
 
-    # Using Codecov's action, upload the coverage report for the triggering commit/PR
-    - name: Upload coverage
-      uses: codecov/codecov-action@v1
-      with:
-        file: code-coverage/coverage.xml
+      # Using Codecov's action, upload the coverage report for the triggering commit/PR
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          file: code-coverage/coverage.xml
