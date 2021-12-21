@@ -37,7 +37,7 @@ jobs:
 
       # Add example data sets from the openep-examples repository
       - name: Add data files
-        run: git clone https://github.com/openep/openep-examples.git $HOME
+        run: git clone https://github.com/openep/openep-examples.git $HOME/openep-examples
 
       # Runs the tests
       - name: Run all tests
