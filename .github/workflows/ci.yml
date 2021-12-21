@@ -45,7 +45,7 @@ jobs:
         with:
           source-folder: $HOME/openep-examples
           select-by-folder: tests/
-          code-coverage-cobertura: coverage.xml
+          code-coverage-cobertura: code-cov/coverage.xml
 
       # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
       #- name: Run all tests
@@ -57,5 +57,5 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v2
         with:
-          file: coverage.xml
+          file: code-cov/coverage.xml
           verbose: true
