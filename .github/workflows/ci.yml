@@ -29,14 +29,14 @@ jobs:
       - uses: actions/checkout@master
         with:
           repository: openep/openep-examples
-          path: $HOME/openep-examples
+          path: /home/runner/work/openep-examples
       
       # Add test data sets from the openep-testingdata repository
       - uses: actions/checkout@master
         with:
           lfs: true
           repository: openep/openep-testingdata
-          path: $HOME/openep-testingdata
+          path: /home/runner/work/openep-testingdata
 
       # Sets up MATLAB on the GitHub Actions runner
       - name: Setup MATLAB
@@ -46,10 +46,10 @@ jobs:
       - name: Run all tests
         uses: matlab-actions/run-tests@v1
         with:
-          source-folder: ./; $HOME/openep-examples
+          source-folder: ./; /home/runner/work/openep-examples; /home/runner/work/openep-testingdata
           code-coverage-cobertura: coverage.xml
         env:
-          OPENEP_TESTING_DATA: $HOME/openep-testingdata
+          OPENEP_TESTING_DATA: /home/runner/work/openep-testingdata
 
       # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
       #- name: Run all tests
