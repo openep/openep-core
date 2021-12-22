@@ -34,6 +34,7 @@ jobs:
       # Add test data sets from the openep-testingdata repository
       - uses: actions/checkout@master
         with:
+          lfs: true
           repository: openep/openep-testingdata
           path: $HOME/openep-testingdata
 
