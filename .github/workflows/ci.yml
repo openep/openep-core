@@ -49,7 +49,7 @@ jobs:
           source-folder: ./; $HOME/openep-examples
           code-coverage-cobertura: coverage.xml
         env:
-          - OPENEP_TESTING_DATA=$HOME/openep-testingdata
+          OPENEP_TESTING_DATA: $HOME/openep-testingdata
 
       # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
       #- name: Run all tests
