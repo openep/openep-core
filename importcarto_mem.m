@@ -126,7 +126,7 @@ userdata = [];
 hWait = [];
 
 if nargin >= 1
-    userinput = varargin{1};
+    userinput = varargin{1}
 else
     dialog_title = 'Select the Carto Study xml in the unzipped folder (eg "Study 1 11_20_2012 21-02-32.xml"), or mat file.';
     filterSpec = {'*.zip;*.xml;*.mat', 'Appropriate files (*.zip;*.xml;*.mat)' ; '*.zip','Zip (*.zip)' ; '*.xml','XML (*.xml)' ; '*.mat','Matlab (*.mat)' ; '*.*','All files (*.*)'};
@@ -152,7 +152,7 @@ elseif strcmpi(userinput((end-3):end),'.mat')
     matFileFullPath = userinput;
     return
 else
-    studyDir = fileparts(userinput);
+    studyDir = fileparts(userinput)
     homeDir = studyDir;
 end
 
