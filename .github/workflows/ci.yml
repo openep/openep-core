@@ -36,7 +36,7 @@ jobs:
         with:
           lfs: true
           repository: openep/openep-testingdata
-          path: /home/runner/work/openep-testingdata
+          path: /home/runner/work/openep-core/openep-core/openep-testingdata
 
       # Sets up MATLAB on the GitHub Actions runner
       - name: Setup MATLAB
