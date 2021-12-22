@@ -50,7 +50,7 @@ jobs:
       - name: Run all tests
         uses: matlab-actions/run-tests@v1
         with:
-          source-folder: ./; "${{ env.OPENEP_EXAMPLES }}"; "${{ env.OPENEP_TESTING_DATA }}"
+          source-folder: ./; ${{ env.OPENEP_EXAMPLES }}; ${{ env.OPENEP_TESTING_DATA }}
           code-coverage-cobertura: coverage.xml
 
       # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
