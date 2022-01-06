@@ -25,6 +25,7 @@ function [ newUserdata, newSurfaces ] = cutMesh( userdata )
 % ---------------------------------------------------------------
 
 hT = drawMap(userdata, 'type', 'none');
+set(hT, 'facealpha', 0.8);
 
 % set the tool tip format
 hDt = datatip(hT, 'dataindex', 1);
