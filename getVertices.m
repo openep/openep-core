@@ -45,8 +45,10 @@ if isa(userdata.surface.triRep, 'TriRep')
     vertices = userdata.surface.triRep.X;
 elseif isa(userdata.surface.triRep, 'triangulation')
     vertices = userdata.surface.triRep.Points;
+elseif isa(userdata.surface.triRep, 'struct')
+    vertices = userdata.surface.triRep.X;
 else
-    error('OPENEP/getVertices: userdata.surface.TriRep should be a TriRep or a triangulation object')
+    error('OPENEP/getVertices: userdata.surface.TriRep should be a TriRep, structure or a triangulation object')
 end
 [~, isVertUsed] = repack(getMesh(userdata));
 
