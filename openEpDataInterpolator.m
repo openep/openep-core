@@ -119,6 +119,21 @@ classdef openEpDataInterpolator
                 
         end
         
+        function obj = set(obj, property, value)
+          switch property
+          case 'basisFunction'    
+          if ismember(value, {'cubic', 'linear', 'thinplate', 'gaussian', 'multiquadric'})
+              obj.basisFunction = value;
+          else
+              error('Basis must be one of ''cubic'', ''linear'', ''thinplate'', ''gaussian'' or ''multiquadric''');
+          end
+          case 'doOptimisation' 
+              obj.doOptimisation = value;
+          case 'shapeParameter'
+              obj.shapeParameter = value;  
+         end  
+       end
+        
         function f_q = interpolate(obj, x, f_x, q)
             
             f_q = obj.call_interpolator.interpolate(x, f_x, q);

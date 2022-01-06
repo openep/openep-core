@@ -62,7 +62,7 @@ function [cv, cvX, interpCv] = getConductionVelocity( userdata, varargin )
 
 nStandardArgs = 1; % UPDATE VALUE
 method = 'radialbasis';
-interpolator = 'scatteredinterpolant';
+interpolator = 'scatteredinterpolant'; %COS: Changed default from scatteredinterpolant
 if nargin > nStandardArgs
     if ischar(varargin{2})
         for i = 1:2:nargin-nStandardArgs
@@ -71,6 +71,7 @@ if nargin > nStandardArgs
                     method = varargin{i+1};
                 case 'interpolator'
                     interpolator = varargin{i+1};
+
             end
         end
     else
@@ -84,7 +85,30 @@ if ischar(interpolator)
 else
     int = interpolator;
 end
-    
+
+
+%RBF option setting  - COS
+rbfoptions.doOptimisation=false; %defaults
+rbfoptions.shapeParameter=1;
+rbfoptions.basisFunction='multiquadratic';
+if nargin > nStandardArgs
+    if ischar(varargin{2})
+        for i = 1:2:nargin-nStandardArgs
+             switch varargin{i}
+                case 'doOptimisation'
+                     doOptimisation = varargin{i+1};
+                     rbfoptions.doOptimsation=doOptimisation;
+                case 'shapeParameter'
+                     shapeParameter = varargin{i+1};
+                     rbfoptions.shapeParameter=shapeParameter;
+                case 'basisFunction'
+                     basisFunction = varargin{i+1};
+                     rbfoptions.basisFunction=basisFunction;
+             end
+        end
+    end
+end
+
     switch lower(method)
         case 'triangulation'
             [cv, cvX, interpCv] = doCvMapping_Triangulation(userdata, int);
@@ -93,7 +117,7 @@ end
             [cv, cvX, interpCv] = doCvMapping_CosineFit(userdata, int);
             
         case 'radialbasis'
-            [cv, cvX, interpCv] = doCvMapping_RadialBasis(userdata, int);
+            [cv, cvX, interpCv] = doCvMapping_RadialBasis(userdata, int, rbfoptions);
             
         case 'omnipole'
             [cv, cvX, interpCv] = doCvMapping_Omnipole(userdata, int);
