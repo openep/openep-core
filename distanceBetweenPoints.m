@@ -32,9 +32,16 @@ function distance = distanceBetweenPoints(userdata, P1, P2, varargin)
 % code
 % ---------------------------------------------------------------
 
-% set up global variables
-global geodesic_library;
-geodesic_library = 'geodesic_matlab_api';
+% Initialise the geodesic library and algorithm
+global geodesic_library
+
+if ismac
+    geodesic_library = 'geodesic_matlab_api_macos';
+elseif isunix
+    geodesic_library = 'geodesic_matlab_api';
+else
+    disp('Platform not supported')
+end
 
 % parse input arguments
 nStandardArgs = 3;
