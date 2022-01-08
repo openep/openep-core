@@ -15,7 +15,7 @@ function op = getEgmTriangulation(userdata, varargin)
 % GETEGMTRIANGULATION returns a triangulation representing the boundary of
 % all the maping points. 
 %
-% Author: Steven Williams (2016)
+% Author: Steven Williams (2022)
 % Modifications -
 %
 % See also BOUNDARY
