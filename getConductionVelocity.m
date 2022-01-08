@@ -18,6 +18,7 @@ function [cv, cvX, u, n] = getConductionVelocity( userdata, varargin )
 %                     `'gradient'`
 %   `'interpolator'`  `{'scatteredInterpolant'}` | `'radialbasis'` |
 %                     `'localsmoothing'`; or an instance of openEpDataInterpolator
+%   TODO add the rbf options
 %
 % GETCONDUCTIONVELOCITY Returns the conduction velocity data of the chamber.
 % Five methods for calculating conduction velocity are provided as

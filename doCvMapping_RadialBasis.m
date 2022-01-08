@@ -2,7 +2,7 @@ function [cv, cvX, u, n] = doCvMapping_RadialBasis( userdata, rbfoptions)
 % DOCVMAPPING_RADIALBASIS Calculates conduction velocities using radial
 % basis functions
 % Usage:
-%   [cvX, cv, u, n] = doCvMapping_RadialBasis( userdata )
+%   [cvX, cv, u, n] = doCvMapping_RadialBasis( userdata, rbfoptions )
 % Where:
 %   userdata - an OpenEP data structure
 %   cv       - the calculated conduction velocity data, in m/s
@@ -10,6 +10,7 @@ function [cv, cvX, u, n] = doCvMapping_RadialBasis( userdata, rbfoptions)
 %              has been calculated. size(cvX) = [length(cv), 3].
 %   u        - wave velocity vectors
 %   n        - wave direction vectors (the unit vector field)
+%   rbfoptions  - TODO COMPLETE THE DOCUMENTATION FOR this structure
 %   
 % DOCVMAPPING_RADIALBASIS Calculates conduction velocities using radial
 % basis functions
