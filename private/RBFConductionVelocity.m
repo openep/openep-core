@@ -21,12 +21,12 @@ function [interpLATs,d_interpLATs,u,n,speed]=RBFConductionVelocity(lats,x_lats,x
 % in5: scaling constant for RBF (testing shows 1 works well, but it's problem dependent)
 %     
 % Outputs:
-% out1: interpolated scalar field (1,N)
-% out2: gradient of interpolated scalar field (d,N)
+% interpLATs: interpolated scalar field (1,N)
+% d_interpLATs: gradient of interpolated scalar field (d,N)
 % [Outputs 3 to 5 are specific to cardiac mapping]
-% out3: wave velocity (d,N)
-% out4: wave direction (d,N) (the unit-vector field)
-% out5: velocity magnitude, or speed (1,N)
+% u: wave velocity (d,N)
+% n: wave direction (d,N) (the unit-vector field)
+% speed: velocity magnitude, or speed (1,N)
 %
 % Notes: this function indicates the quality of the interpolation, if this
 % much greater than 1e-9 then play with the RBF scale parameter ('const')

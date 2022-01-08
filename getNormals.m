@@ -2,13 +2,13 @@ function [normals, userdata] = getNormals( userdata )
 % GETNORMALS computes or returns surface normals on OpenEP anatomy
 %
 % Usage:
-%   normals = computeNormals( userdata )
-%   [normals, userdata] = computeNormals( userdata )
+%   normals = getNormals( userdata )
+%   [normals, userdata] = getNormals( userdata )
 % Where:
 %   userdata  - see importcarto_mem
 %   normals - the surface normals at each vertex
 %
-% COMPUTENORMALS Returns the normals but also returns a new userdata
+% GETNORMALS Returns the normals but also returns a new userdata
 % structure with normals saved
 %
 % Author: Steven Williams (2021) (Copyright)

@@ -1,11 +1,11 @@
-classdef openEpDataInterpolator
+classdef openEpDataInterpolator < matlab.mixin.SetGet
     % OPENEPDATAINTERPOLATOR Creates objects for performing spatial
     % interpolation for OpenEP data
     %
     % Usage (Constructor):
     %   int = openEpDataInterpolator()
     %   int = openEpDataInterpolator(method)
-    %   int = openEpDataInterpolator(method, options)
+    %   int = openEpDataInterpolator(method, options) %%% DELETE THIS
     %
     % Usage (interpolator):
     %   interpolated_function_at_query_points = int.interpolate(points,
@@ -13,7 +13,10 @@ classdef openEpDataInterpolator
     %
     % Where:
     %   method  - the method to use for interpolation, can be
-    %             'scatteredInterpolant', 'localSmoothing' or 'radialBasis'
+    %             'scatteredInterpolant', 'localSmoothing' or
+    %             'radialBasis'
+    %
+    %%% DELETE ALL OF THIS BELOW AND MOVE INTO THE RELEVANT SUBCLASSES
     %   options - a structure containing options pertaining to each
     %             interpolation method. Options which are not relevant to a
     %             particular interpolation method will be ignored.
@@ -36,6 +39,7 @@ classdef openEpDataInterpolator
     %       .distanceThreshold
     %           - The distance threshold from known data to truncate the
     %           interpolated data.
+    %
     %
     % OPENEPDATAINTERPOLATOR Instances of openEpDataInterpolator perform
     % spatial interpolation. When instantiated, objects of this type
@@ -70,30 +74,38 @@ classdef openEpDataInterpolator
     % ---------------------------------------------------------------
     % code
     % ---------------------------------------------------------------
-        
+
     % Properties
     properties
         method
-        distanceThreshold
     end
-    
+
     properties (Access = private)
         call_interpolator
     end
-    
+
+    properties (Dependent)
+        interMethod
+        exterMethod
+        basisFunction
+        doOptimisation
+        shapeParameter
+        smoothingLength
+        fillWith
+        distanceThreshold
+    end
+
     methods
         % Contructor
         function obj = openEpDataInterpolator(method)
-                        
+
             possibleMethods = {'scatteredinterpolant' ...
                 , 'localsmoothing' ...
                 , 'radialbasis' ...
                 };
-            
+
             defaultMethod = 'scatteredinterpolant';
-            
-            obj.distanceThreshold = 10;
-            
+
             if nargin == 0
                 obj.method = defaultMethod;
                 obj.call_interpolator = openEpScatteredInterpolant;
@@ -114,34 +126,54 @@ classdef openEpDataInterpolator
                                 obj.call_interpolator = openEpRadialBasisInterpolant;
                         end
                     end
-                end      
+                end
             end
-                
         end
-        
+
+        % overloaded set method
         function obj = set(obj, property, value)
-          switch property
-          case 'basisFunction'    
-          if ismember(value, {'cubic', 'linear', 'thinplate', 'gaussian', 'multiquadric'})
-              obj.basisFunction = value;
-          else
-              error('Basis must be one of ''cubic'', ''linear'', ''thinplate'', ''gaussian'' or ''multiquadric''');
-          end
-          case 'doOptimisation' 
-              obj.doOptimisation = value;
-          case 'shapeParameter'
-              obj.shapeParameter = value;  
-         end  
-       end
-        
-        function f_q = interpolate(obj, x, f_x, q)
-            
-            f_q = obj.call_interpolator.interpolate(x, f_x, q);
-            
+            set(obj.call_interpolator, property, value)
         end
-        
+
+        % overloaded get methods
+        function value = get(obj, property)
+            value = get(obj.call_interpolator, property);
+        end
+
+        % overloaded dot syntax
+        function set.interMethod(obj, value)
+            obj.call_interpolator.interMethod = value;
+        end
+        function set.exterMethod(obj, value)
+            obj.call_interpolator.exterMethod = value;
+        end
+        function set.basisFunction(obj, value)
+            obj.call_interpolator.basisFunction = value;
+        end
+        function set.doOptimisation(obj, value)
+            obj.call_interpolator.doOptimisation = value;
+        end
+        function set.shapeParameter(obj, value)
+            obj.call_interpolator.shapeParameter = value;
+        end
+        function set.smoothingLength(obj, value)
+            obj.call_interpolator.smoothingLength = value;
+        end
+        function set.fillWith(obj, value)
+            obj.call_interpolator.fillWith = value;
+        end
+        function set.distanceThreshold(obj, value)
+            obj.call_interpolator.distanceThreshold = value;
+        end
+
+        % overloaded display method
         function disp(obj)
             display(obj.call_interpolator);
+        end
+
+        % main interpolation function
+        function f_q = interpolate(obj, x, f_x, q)
+            f_q = obj.call_interpolator.interpolate(x, f_x, q);
         end
     end
 end

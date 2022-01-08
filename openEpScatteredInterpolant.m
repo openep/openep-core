@@ -1,9 +1,9 @@
-classdef openEpScatteredInterpolant
+classdef openEpScatteredInterpolant < matlab.mixin.SetGet
     
     properties
         interMethod = 'linear';
         exterMethod = 'nearest';
-        distanceThreshold;
+        distanceThreshold = 10;
     end
     
     methods

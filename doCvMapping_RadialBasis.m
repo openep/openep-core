@@ -1,23 +1,20 @@
-function [cv, cvX, interpCv] = doCvMapping_RadialBasis( userdata, int, rbfoptions)
+function [cv, cvX, u, n] = doCvMapping_RadialBasis( userdata, rbfoptions)
 % DOCVMAPPING_RADIALBASIS Calculates conduction velocities using radial
 % basis functions
-%
 % Usage:
-%   [cv, cvX, interpCv] = doCvMapping_RadialBasis( userdata )
+%   [cvX, cv, u, n] = doCvMapping_RadialBasis( userdata )
 % Where:
-%   userdata - see importcarto_mem
-%   int      - see openEpDataInterpolator.m
+%   userdata - an OpenEP data structure
 %   cv       - the calculated conduction velocity data, in m/s
 %   cvX      - the Cartesian co-ordinates at which conduction velocity data
 %              has been calculated. size(cvX) = [length(cv), 3].
-%   interpCv - conduction velocity data interpolated across the surface of
-%              the shell.
-%              size(interpCv) = [length(userdata.surface.triRep.X), 1].
+%   u        - wave velocity vectors
+%   n        - wave direction vectors (the unit vector field)
 %   
 % DOCVMAPPING_RADIALBASIS Calculates conduction velocities using radial
 % basis functions
 %
-% Author: Steven Williams (2021) (Copyright)
+% Author: Steven Willians / Chris O'Shea (2022) (Copyright)
 % SPDX-License-Identifier: Apache-2.0
 %
 % Modifications -
@@ -31,9 +28,6 @@ function [cv, cvX, interpCv] = doCvMapping_RadialBasis( userdata, int, rbfoption
 % code
 % ---------------------------------------------------------------
 
-CVLIMIT = 10; %m/s
-DISTANCETHRESHOLD = 10; %mm
-
 % get relevant mapping points
 X = userdata.electric.egmX(getMappingPointsWithinWoI(userdata),:);
 
@@ -46,33 +40,35 @@ lats = mapAnnot - refAnnot;
 x_all=getVertices(userdata);
 
 % perform global interpolation of the activation field
-latMap = int.interpolate(X, lats, x_all);
-size(latMap)
+% latMap = int.interpolate(X, lats, x_all);
+% size(latMap)
+
 % fit rbf field to the lat map
-[interpLATs]=rbf_interpolator(latMap,x_all,x_all,rbfoptions);
+[interpLATs, d_interpLATs]=rbf_interpolator(lats,X,x_all,rbfoptions);
 
 % calculate the gradeint of this field
-[cvX, grad] = trigrad(getMesh(userdata), interpLATs);
+%[cvX, d_interp_values] = trigrad(getMesh(userdata), interp_values);
 
 % calculate conduction velocities
-sgrad = grad .* grad;
-dp = sum(sgrad,2);
-cv = 1./sqrt(dp);
+cvX = x_all;
+mag_df=sqrt(d_interpLATs(1,:).^2+d_interpLATs(2,:).^2+d_interpLATs(3,:).^2);
+cv=1./mag_df;
+n=[cv.*d_interpLATs(1,:);cv.*d_interpLATs(2,:);cv.*d_interpLATs(3,:)];
+u=[cv.*n(1,:);cv.*n(2,:);cv.*n(3,:)];
 
-% accept only those conduction velocity values in proximity to electrodes
-vtx = getVerticesNearMappingPoints(userdata, DISTANCETHRESHOLD);
-cv(~vtx) = [];
-cvX(~vtx,:) = [];
-disp(['OPENEP/DOCVMAPPING_RADIALBASIS: ' num2str(sum(~vtx)) ' CV values were removed which were more than ' num2str(DISTANCETHRESHOLD) 'mm from a mapping point']);
+% transpose output
+cv = cv';
+n = n';
+u = u';
 
-% remove any non physiological values over the CVLIMIT
-isOverCvLimit = cv>CVLIMIT;
-cv(isOverCvLimit) = [];
-cvX(isOverCvLimit,:) = [];
-disp(['OPENEP/DOCVMAPPING_RADIALBASIS: ' num2str(sum(isOverCvLimit)) ' CV values were removed which were greater than ' num2str(CVLIMIT) 'm/s']);
+% calculate conduction velocities
+% sgrad = d_interp_values .* d_interp_values;
+% dp = sum(sgrad,2);
+% cv = 1./sqrt(dp);
 
-% now do interpolation, using the interpolator specified, so we have a full
-% dataset at each of the mesh nodes.
-interpCv = int.interpolate(cvX, cv, getVertices(userdata));
+% We decided no longer to return the interpolated field
+% % now do interpolation, using the interpolator specified, so we have a full
+% % dataset at each of the mesh nodes.
+% interpCv = int.interpolate(cvX, cv, getVertices(userdata));
 
 end

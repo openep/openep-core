@@ -1,21 +1,19 @@
-function [cv, cvX, interpCv] = doCvMapping_Gradient( userdata, int )
+function [cv, cvX, n, u] = doCvMapping_Gradient( userdata, int )
 % DOCVMAPPING_GRADIENT Calculates conduction velocities using
 % the gradient of the scalar activation time field
 %
 % Usage:
 %   [cv, cvX, interpCv] = doCvMapping_Gradient( userdata, int )
 % Where:
-%   userdata - see importcarto_mem
-%   int      - see openEpDataInterpolator.m
+%   userdata - an OpenEP data structure
 %   cv       - the calculated conduction velocity data, in m/s
 %   cvX      - the Cartesian co-ordinates at which conduction velocity data
 %              has been calculated. size(cvX) = [length(cv), 3].
-%   interpCv - conduction velocity data interpolated across the surface of
-%              the shell.
-%              size(interpCv) = [length(userdata.surface.triRep.X), 1].
+%   u        - wave velocity vectors
+%   n        - wave direction vectors (the unit vector field)
 %
-% DOCVMAPPING_GRADIENT Calculatess conduction velocities using
-% omnipoles
+% DOCVMAPPING_GRADIENT Calculatess conduction velocities using the gradient
+% of the interpolated local activation time field
 %
 % Author: 
 % SPDX-License-Identifier: Apache-2.0
@@ -35,9 +33,6 @@ function [cv, cvX, interpCv] = doCvMapping_Gradient( userdata, int )
 % code
 % ---------------------------------------------------------------
 
-CVLIMIT = 10; %m/s
-DISTANCETHRESHOLD = 10; %mm
-
 % get relevant mapping points
 X = userdata.electric.egmX(getMappingPointsWithinWoI(userdata),:);
 
@@ -51,25 +46,22 @@ latMap = int.interpolate(X, lats, getVertices(userdata));
 
 % calculate the gradeint of this field
 [cvX, grad] = trigrad(getMesh(userdata), latMap);
+d_interpLATs = grad';
+
+% % calculate conduction velocities
+% sgrad = grad .* grad;
+% dp = sum(sgrad,2);
+% cv = 1./sqrt(dp);
 
 % calculate conduction velocities
-sgrad = grad .* grad;
-dp = sum(sgrad,2);
-cv = 1./sqrt(dp);
+mag_df=sqrt(d_interpLATs(1,:).^2+d_interpLATs(2,:).^2+d_interpLATs(3,:).^2);
+cv=1./mag_df;
+n=[cv.*d_interpLATs(1,:);cv.*d_interpLATs(2,:);cv.*d_interpLATs(3,:)];
+u=[cv.*n(1,:);cv.*n(2,:);cv.*n(3,:)];
 
-% accept only those conduction velocity values in proximity to electrodes
-vtx = getVerticesNearMappingPoints(userdata, DISTANCETHRESHOLD);
-cv(~vtx) = [];
-cvX(~vtx,:) = [];
-disp(['OPENEP/DOCVMAPPING_GRADIENT: ' num2str(sum(~vtx)) ' CV values were removed which were more than ' num2str(DISTANCETHRESHOLD) 'mm from a mapping point']);
-
-% remove any non physiological values over the CVLIMIT
-isOverCvLimit = cv>CVLIMIT;
-cv(isOverCvLimit) = [];
-cvX(isOverCvLimit,:) = [];
-disp(['OPENEP/DOCVMAPPING_GRADIENT: ' num2str(sum(isOverCvLimit)) ' CV values were removed which were greater than ' num2str(CVLIMIT) 'm/s']);
-
-% interpolate
-interpCv = int.interpolate(cvX, cv, getVertices(userdata));
+% transpose output
+cv = cv';
+n = n';
+u = u';
 
 end
