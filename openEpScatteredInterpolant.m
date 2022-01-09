@@ -17,6 +17,9 @@ classdef openEpScatteredInterpolant < matlab.mixin.SetGet
             
             F = scatteredInterpolant(x(:,1), x(:,2), x(:,3), f_x, obj.interMethod, obj.exterMethod);
             f_q = F(q);
+
+            f_q = filterByDistance(f_q, q, x, obj.distanceThreshold);
+            %df_q = filterByDistance(df_q, q, x, obj.distanceThreshold);
             
         end
     end
@@ -24,7 +27,7 @@ classdef openEpScatteredInterpolant < matlab.mixin.SetGet
     % Getter and setter methods
     methods
 
-       function obj = set.interMethod(obj, value)
+       function set.interMethod(obj, value)
           if ismember(value, {'linear', 'nearest', 'natural'})
               obj.interMethod = value;
           else
@@ -36,7 +39,7 @@ classdef openEpScatteredInterpolant < matlab.mixin.SetGet
           value = obj.interMethod;
        end
        
-       function obj = set.exterMethod(obj, value)
+       function set.exterMethod(obj, value)
            if ismember(value, {'linear', 'nearest', 'none'})
               obj.exterMethod = value;
           else
@@ -46,6 +49,18 @@ classdef openEpScatteredInterpolant < matlab.mixin.SetGet
        
        function value = get.exterMethod(obj)
           value = obj.exterMethod;
+       end
+
+       function set.distanceThreshold(obj, value)
+           if isnumeric(value)
+               obj.distanceThreshold = value
+           else
+               error('OPENEP/OPENEPSCATTEREDINTERPOLANT: distanceThreshold must be numeric.')
+           end
+       end
+
+       function value = get.distanceThreshold(obj)
+           value = obj.distanceThreshold;
        end
 
     end

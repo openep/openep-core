@@ -18,6 +18,15 @@ classdef openEpRadialBasisInterpolant
             
             f_q = rbf_interpolator(f_x,x,q,rbfoptions);
             f_q=f_q';
+
+            % accept only those interpolated values in proximity to actual values
+            vtx = getVerticesNearMappingPoints(userdata, DISTANCETHRESHOLD);
+            cv(~vtx) = [];
+            cvX(~vtx,:) = [];
+            n(~vtx,:) = [];
+            u(~vtx,:) = [];
+            disp(['OPENEP/GETCONDUCTIONVELOCITY: ' num2str(sum(~vtx)) ' CV values were removed which were more than ' num2str(DISTANCETHRESHOLD) 'mm from a mapping point']);
+
         end
     end
 
