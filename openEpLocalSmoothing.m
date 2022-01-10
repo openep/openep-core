@@ -11,9 +11,9 @@ classdef openEpLocalSmoothing < matlab.mixin.SetGet
     %           interpolation for query points outside the smoothingLength.
 
     properties
-        smoothingLength = 5;
+        smoothingLength = 2.5;
         fillWith = 'nearest';
-        distanceThreshold = 10;
+        distanceThreshold = 5;
     end
 
     methods
@@ -27,6 +27,7 @@ classdef openEpLocalSmoothing < matlab.mixin.SetGet
 
             [f_q, df_q] = localSmoothing(x, f_x, q, obj.smoothingLength, obj.fillWith);
 
+            % filter by distance
             f_q = filterByDistance(f_q, q, x, obj.distanceThreshold);
             df_q = filterByDistance(df_q, q, x, obj.distanceThreshold);
 

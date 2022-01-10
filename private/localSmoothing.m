@@ -19,7 +19,7 @@ f_dash = zeros(length(x_dash), 1);
 df_dash = zeros(length(x_dash), 3);
 [Idx, dists] = rangesearch(x, x_dash, smoothingLength);
 no_smooth = cellfun(@isempty, Idx);
-if strcmp(fillWith, 'nearestneighbour')
+if strcmp(fillWith, 'nearest')
     nnIdx = knnsearch(x, x_dash(no_smooth, :));
     f_dash(no_smooth) = f(nnIdx);
 else

@@ -67,7 +67,12 @@ switch method
             getMapAnnotation(userdata) -  ...
             getReferenceAnnotation(userdata) ...
             );
-        
+
+        tf = false(size(activationTime));
+        tf(getMappingPointsWithinWoI(userdata)) = true;
+
+        activationTime(~tf) = NaN;
+
         % Using non-linear energy operator
     case 'nleo'
         iPoint = getMappingPointsWithinWoI(userdata);

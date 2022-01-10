@@ -21,8 +21,8 @@ function map = getMapAnnotation(userdata, varargin)
 %
 % Info on Code Testing:
 % ---------------------------------------------------------------
-% woi = getReferenceAnnotation(userdata)
-% woi = getReferenceAnnotation(userdata, 'iegm', 1)
+% woi = getMapAnnotation(userdata)
+% woi = getMapAnnotation(userdata, 'iegm', 1)
 % ---------------------------------------------------------------
 %
 % ---------------------------------------------------------------

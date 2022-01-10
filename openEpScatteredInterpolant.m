@@ -3,7 +3,7 @@ classdef openEpScatteredInterpolant < matlab.mixin.SetGet
     properties
         interMethod = 'linear';
         exterMethod = 'nearest';
-        distanceThreshold = 10;
+        distanceThreshold = 5;
     end
 
     methods
@@ -18,13 +18,15 @@ classdef openEpScatteredInterpolant < matlab.mixin.SetGet
             % calculate the interpolated values
             F = scatteredInterpolant(x(:,1), x(:,2), x(:,3), f_x, obj.interMethod, obj.exterMethod);
             f_q = F(q);
-            f_q = filterByDistance(f_q, q, x, obj.distanceThreshold);
-
+            
             % calculate the gradient of these values
             shrinkFactor = 1;
             tri = boundary(q, shrinkFactor);
             tr = TriRep(tri,q(:,1),q(:,2),q(:,3));
             [~, df_q] = trigrad(tr, f_q);
+
+            % filter by distance
+            f_q = filterByDistance(f_q, q, x, obj.distanceThreshold);
             df_q = filterByDistance(df_q, q, x, obj.distanceThreshold);
         end
     end

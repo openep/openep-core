@@ -2,59 +2,39 @@ classdef openEpDataInterpolator < matlab.mixin.SetGet
     % OPENEPDATAINTERPOLATOR Creates objects for performing spatial
     % interpolation for OpenEP data
     %
-    % Usage (Constructor):
+    % Usage:
     %   int = openEpDataInterpolator()
     %   int = openEpDataInterpolator(method)
-    %   int = openEpDataInterpolator(method, options) %%% DELETE THIS
-    %
-    % Usage (interpolator):
-    %   interpolated_function_at_query_points = int.interpolate(points,
-    %       function_at_points, query_points);
+    %   [f_q, df_q] = int.interpolate(x, f_x, q);
     %
     % Where:
     %   method  - the method to use for interpolation, can be
     %             'scatteredInterpolant', 'localSmoothing' or
     %             'radialBasis'
-    %
-    %%% DELETE ALL OF THIS BELOW AND MOVE INTO THE RELEVANT SUBCLASSES
-    %   options - a structure containing options pertaining to each
-    %             interpolation method. Options which are not relevant to a
-    %             particular interpolation method will be ignored.
-    %       .interMethod
-    %           - The interpolation method to use with
-    %           scatteredInterpolant. See `help scatteredInterpolant`
-    %       .exterMethod
-    %           - The extrapolation method to use with
-    %           scatteredInterpolant. See `help scatteredInterpolant`
-    %       .smoothingLength
-    %           - The smoothing length to use with localSmoothing.
-    %           Consider a value in the range 5-10. Large values may overly
-    %           smooth the resulting field, and small values may not
-    %           provide enough coverage.
-    %       .fillWith
-    %           - The value to assign to the field at query points which
-    %           fall outside the smoothingLength radius. Possible values
-    %           are "nearest" or NaN. "nearest" performs nearest neighbour
-    %           interpolation for query points outside the smoothingLength.
-    %       .distanceThreshold
-    %           - The distance threshold from known data to truncate the
-    %           interpolated data.
-    %
+    %   x       - location points of data
+    %   data    - data
+    %   q       - location of query points
     %
     % OPENEPDATAINTERPOLATOR Instances of openEpDataInterpolator perform
     % spatial interpolation. When instantiated, objects of this type
     % describe the interpolation scheme to be used. When ready to perform
-    % interpolation, the `interpolation(...)` function should be called.
+    % interpolation, the `interpolate(...)` function should be called.
+    % Interpolation-scheme specific settings can be configured. See help
+    % <scheme name> for details:
+    %       help OPENEPRADIALBASISINTERPOLANT
+    %       help OPENEPSCATTEREDINTERPOLANT
+    %       help OPENEPLOCALSMOOTHING
     %
-    % Author: Steven Williams (2021) (Copyright)
+    % Author: Steven Williams / Adam Connolly (2022) (Copyright)
     % SPDX-License-Identifier: Apache-2.0
     %
     % Modifications -
     %
+    % See also: openEpRadialBasisInterpolant, openEpLocalSmoothing, openEpScatteredInterpolant
+    %
     % Info on Code Testing:
     % ---------------------------------------------------------------
-    % (1) Perform interpolation of electrogram voltage data using
-    %     localSmoothing with default options.
+    % (1) Perform interpolation of electrogram voltage data using default options.
     %
     % int = openEpDataInterpolator('localSmoothing');
     % egmX = getElectrogramX(userdata);
@@ -62,11 +42,11 @@ classdef openEpDataInterpolator < matlab.mixin.SetGet
     % vtx = getVertices(userdata, 'used', false);
     % vertexVoltageData = int.interpolate(egmX, bip, vtx);
     %
-    % (2) Visualise the above data
+    % (2) Visualise
     %
     % figure;histogram(vertexVoltageData);
     % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2])
-    % title('Carto voltage data')
+    % title('Original voltage data')
     % figure;drawMap(userdata, 'type', 'bip', 'coloraxis', [0.05 2], 'data', vertexVoltageData)
     % title('OpenEP voltage data')
     % ---------------------------------------------------------------
@@ -172,8 +152,13 @@ classdef openEpDataInterpolator < matlab.mixin.SetGet
         end
 
         % main interpolation function
-        function f_q = interpolate(obj, x, f_x, q)
-            f_q = obj.call_interpolator.interpolate(x, f_x, q);
+        function [f_q, df_q] = interpolate(obj, x, f_x, q)
+
+            % preprocess to f_x and x to handle duplicate data points
+            [x, f_x] = removeDuplicateDataPoints(x, f_x);
+
+            % perform interpolation using the specified interpolation method
+            [f_q, df_q] = obj.call_interpolator.interpolate(x, f_x, q);
         end
     end
 end

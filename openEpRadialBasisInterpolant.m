@@ -1,32 +1,73 @@
 classdef openEpRadialBasisInterpolant
+    % OPENEPRADIALBASISINTERPOLANT Perform radial basis function
+    % interpolation
+    %
+    % Usage:
+    %   int = openEpDataInterpolator('radialbasis')
+    %   [f_q, df_q] = int.interpolate(x, f_x, q);
+    %
+    % Where:
+    %   x       - location points of data
+    %   data    - data
+    %   q       - location of query points
+    %
+    % OPENEPRADIALBASISINTERPOLANT is used for performing radial basis
+    % function interpolation. Instantiate an object of the
+    % OPENEEPDATAINTERPOLATOR class, setting `'method'` to 'radialbasis'.
+    % The following properties may then be set:
+    %       .basisFunction
+    %           - TODO
+    %       .doOptimisation
+    %           - TODO
+    %       .shapeParameter
+    %           - TODO
+    %       .distanceThreshold
+    %           - The distance threshold from known data to truncate the
+    %           interpolated data.
+    %
+    % Author: Steven Williams / Chris O'Shea / Adam Connolly(2022) (Copyright)
+    % SPDX-License-Identifier: Apache-2.0
+    %
+    % Modifications -
+    %
+    % See also: openEpDataInterpolator, openEpLocalSmoothing, openEpScatteredInterpolant
+    %
+    % Info on Code Testing:
+    % ---------------------------------------------------------------
+    % 
+    % ---------------------------------------------------------------
+    %
+    % ---------------------------------------------------------------
+    % code
+    % ---------------------------------------------------------------
 
     properties
         basisFunction = 'multiquadric';
         doOptimisation = 'false';
         shapeParameter = 1;
-        distanceThreshold = 10;
+        distanceThreshold = 5;
     end
 
     methods
 
         % Main method
-        function f_q = interpolate(obj, x, f_x, q)
+        function [f_q, df_q] = interpolate(obj, x, f_x, q)
 
             rbfoptions.basisFunction=obj.basisFunction;
             rbfoptions.shapeParameter=obj.shapeParameter;
             rbfoptions.doOptimisation=obj.doOptimisation;
+
+            % remove any NaN values from data
+            iNan = isnan(f_x);
+            x(iNan,:) = [];
+            f_x(iNan) = [];
             
-            f_q = rbf_interpolator(f_x,x,q,rbfoptions);
+            [f_q, df_q] = rbf_interpolator(f_x,x,q,rbfoptions);
             f_q=f_q';
-
-            % accept only those interpolated values in proximity to actual values
-            vtx = getVerticesNearMappingPoints(userdata, DISTANCETHRESHOLD);
-            cv(~vtx) = [];
-            cvX(~vtx,:) = [];
-            n(~vtx,:) = [];
-            u(~vtx,:) = [];
-            disp(['OPENEP/GETCONDUCTIONVELOCITY: ' num2str(sum(~vtx)) ' CV values were removed which were more than ' num2str(DISTANCETHRESHOLD) 'mm from a mapping point']);
-
+            
+            % filter by distance
+            f_q = filterByDistance(f_q, q, x, obj.distanceThreshold);
+            df_q = filterByDistance(df_q, q, x, obj.distanceThreshold);
         end
     end
 
