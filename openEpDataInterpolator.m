@@ -121,7 +121,7 @@ classdef openEpDataInterpolator < matlab.mixin.SetGet
                             case 'scatteredinterpolant'
                                 obj.call_interpolator = openEpScatteredInterpolant;
                             case 'localsmoothing'
-                                obj.call_interpolator = openEpLocalSmoothingInterpolant;
+                                obj.call_interpolator = openEpLocalSmoothing;
                             case 'radialbasis'
                                 obj.call_interpolator = openEpRadialBasisInterpolant;
                         end
