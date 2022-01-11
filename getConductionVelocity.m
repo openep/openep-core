@@ -87,6 +87,9 @@ if nargin > nStandardArgs
                 rbfoptions.basisFunction=basisFunction;
             case 'distancethreshold'
                 DISTANCETHRESHOLD = varargin{i+1};
+            case 'cvlimit'
+                CVLIMIT = varargin{i+1};
+        
         end
     end
 end
@@ -99,6 +102,7 @@ if strcmpi(method, 'gradient')
         int = interpolator;
     end
 end
+int.distanceThreshold = DISTANCETHRESHOLD;
 
 % %RBF option setting  - COS
 % rbfoptions.doOptimisation=false; %defaults
