@@ -72,6 +72,7 @@ end
 if isempty(regionDefinition)
     regionDefinition.shape = 'sphere';
     regionDefinition.params = 5;
+    disp('Default region definition used');
 end
 
 % get the potential data positions
