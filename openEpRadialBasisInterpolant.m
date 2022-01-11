@@ -16,11 +16,13 @@ classdef openEpRadialBasisInterpolant
     % OPENEEPDATAINTERPOLATOR class, setting `'method'` to 'radialbasis'.
     % The following properties may then be set:
     %       .basisFunction
-    %           - TODO
+    %           - The basis function for interpolation. Possible options include {'multiquadric'} 
+    %              | ‘gaussian’ | ‘linear’ | ‘cubic’ | ‘thinplate’
     %       .doOptimisation
-    %           - TODO
+    %           - Option whether to perform optimisation of the shape parameter. 
+    %             Possible options include {‘false'} | ‘true’
     %       .shapeParameter
-    %           - TODO
+    %           - Value for the shape parameter for the gaussian and multiquadric basis functions. Default value is 1.
     %       .distanceThreshold
     %           - The distance threshold from known data to truncate the
     %           interpolated data.
