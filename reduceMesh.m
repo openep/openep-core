@@ -26,6 +26,7 @@ V = getVertices(userdata);
 
 [nf, nv] = reducepatch(F, V, R);
 
-newUserdata.surface.triRep = TriRep(nf, nv);
+newUserdata = userdata;
+newUserdata = setMesh(newUserdata, TriRep(nf,nv));
 
 end

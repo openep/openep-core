@@ -25,4 +25,8 @@ function numpts = getNumPts( userdata )
 
 numpts = numel(userdata.electric.names);
 
+if numpts==0
+    numpts = size(userdata.electric.egmX,1);
+end
+
 end

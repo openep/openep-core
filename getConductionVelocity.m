@@ -70,27 +70,24 @@ rbfoptions.doOptimisation=false; %defaults
 rbfoptions.shapeParameter=1;
 rbfoptions.basisFunction='multiquadratic';
 if nargin > nStandardArgs
-    if ischar(varargin{2})
-        for i = 1:2:nargin-nStandardArgs
-            switch varargin{i}
-                case 'method'
-                    method = varargin{i+1};
-                case 'interpolator'
-                    interpolator = varargin{i+1};
-                case 'doOptimisation'
-                    doOptimisation = varargin{i+1};
-                    rbfoptions.doOptimsation=doOptimisation;
-                case 'shapeParameter'
-                    shapeParameter = varargin{i+1};
-                    rbfoptions.shapeParameter=shapeParameter;
-                case 'basisFunction'
-                    basisFunction = varargin{i+1};
-                    rbfoptions.basisFunction=basisFunction;
-            end
+    for i = 1:2:nargin-nStandardArgs
+        switch lower(varargin{i})
+            case 'method'
+                method = varargin{i+1};
+            case 'interpolator'
+                interpolator = varargin{i+1};
+            case 'doOptimisation'
+                doOptimisation = varargin{i+1};
+                rbfoptions.doOptimsation=doOptimisation;
+            case 'shapeParameter'
+                shapeParameter = varargin{i+1};
+                rbfoptions.shapeParameter=shapeParameter;
+            case 'basisFunction'
+                basisFunction = varargin{i+1};
+                rbfoptions.basisFunction=basisFunction;
+            case 'distancethreshold'
+                DISTANCETHRESHOLD = varargin{i+1};
         end
-    else
-        error('OPENEP/GETCONDUCTIONVELOCITY: Unrecognised input data type')
-        %interpolator = varargin{2};
     end
 end
 
@@ -141,18 +138,18 @@ end
 
 % accept only those conduction velocity values in proximity to electrodes
 vtx = getVerticesNearMappingPoints(userdata, DISTANCETHRESHOLD);
-cv(~vtx) = [];
-cvX(~vtx,:) = [];
-n(~vtx,:) = [];
-u(~vtx,:) = [];
+cv(~vtx) = NaN;
+cvX(~vtx,:) = NaN;
+n(~vtx,:) = NaN;
+u(~vtx,:) = NaN;
 disp(['OPENEP/GETCONDUCTIONVELOCITY: ' num2str(sum(~vtx)) ' CV values were removed which were more than ' num2str(DISTANCETHRESHOLD) 'mm from a mapping point']);
 
 % remove any non physiological values over the CVLIMIT
 isOverCvLimit = cv>CVLIMIT;
-cv(isOverCvLimit) = [];
-cvX(isOverCvLimit,:) = [];
-n(isOverCvLimit,:) = [];
-u(isOverCvLimit,:) = [];
+cv(isOverCvLimit) = NaN;
+cvX(isOverCvLimit,:) = NaN;
+n(isOverCvLimit,:) = NaN;
+u(isOverCvLimit,:) = NaN;
 disp(['OPENEP/GETCONDUCTIONVELOCITY: ' num2str(sum(isOverCvLimit)) ' CV values were removed which were greater than ' num2str(CVLIMIT) 'm/s']);
 
 

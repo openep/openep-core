@@ -60,7 +60,7 @@ p.addParameter('colorbarlocation', 'westoutside', @(x)ischar(x) && (strcmpi(x, '
     || strcmpi(x, 'northoutside') || strcmpi(x, 'southoutside') ...
     || strcmpi(x, 'eastoutside') || strcmpi(x, 'westoutside') ...
     ));
-p.addParameter('orientation', 'ap', @ischar);
+p.addParameter('orientation', 'none', @ischar);
 p.addParameter('colorfillthreshold', 10, @isnumeric);
 p.parse(userdata, varargin{:});
 inputs = p.Results;
@@ -183,6 +183,8 @@ switch lower(orientation)
         set(gca, 'cameraposition', get(gca, 'cameratarget') + [0 0 700])
     case 'pa'
         set(gca, 'cameraposition', get(gca, 'cameratarget') - [0 0 700])
+    case 'none'
+        % do nothing
 end
 set(gca, 'cameraupvector', [0 1 0]);
 

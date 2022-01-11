@@ -40,25 +40,63 @@ iRemove = indices(requiredNumberOfPoints+1:end);
 
 % Remove the data we do not need
 userdata_ds = userdata;
-userdata_ds.electric.tags(iRemove,:) = [];
-userdata_ds.electric.names(iRemove,:) = [];
-userdata_ds.electric.electrodeNames_bip(iRemove,:) = [];
-userdata_ds.electric.egmX(iRemove,:) = [];
-userdata_ds.electric.egm(iRemove,:) = [];
-userdata_ds.electric.electrodeNames_uni(iRemove,:) = [];
-userdata_ds.electric.egmUniX(iRemove,:,:) = [];
-userdata_ds.electric.egmUni(iRemove,:,:) = [];
-userdata_ds.electric.egmRef(iRemove,:) = [];
-userdata_ds.electric.ecg(iRemove,:) = [];
-userdata_ds.electric.annotations.woi(iRemove,:) = [];
-userdata_ds.electric.annotations.referenceAnnot(iRemove,:) = [];
-userdata_ds.electric.annotations.mapAnnot(iRemove,:) = [];
-userdata_ds.electric.voltages.bipolar(iRemove,:) = [];
-userdata_ds.electric.voltages.unipolar(iRemove,:) = [];
-userdata_ds.electric.impedances.time(:,iRemove) = [];
-userdata_ds.electric.impedances.value(:,iRemove) = [];
-userdata_ds.electric.egmSurfX(iRemove,:) = [];
-userdata_ds.electric.barDirection(iRemove,:) = [];
+if ~isempty(userdata.electric.tags)
+    userdata_ds.electric.tags(iRemove,:) = [];
+end
+if ~isempty(userdata.electric.names)
+    userdata_ds.electric.names(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.electrodeNames_bip)
+    userdata_ds.electric.electrodeNames_bip(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.egmX)
+    userdata_ds.electric.egmX(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.egm)
+    userdata_ds.electric.egm(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.electrodeNames_uni)
+    userdata_ds.electric.electrodeNames_uni(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.egmUniX)
+    userdata_ds.electric.egmUniX(iRemove,:,:) = [];
+end
+if ~isempty(userdata_ds.electric.egmUni)
+    userdata_ds.electric.egmUni(iRemove,:,:) = [];
+end
+if ~isempty(userdata_ds.electric.egmRef)
+    userdata_ds.electric.egmRef(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.ecg)
+    userdata_ds.electric.ecg(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.annotations.woi)
+    userdata_ds.electric.annotations.woi(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.annotations.referenceAnnot)
+    userdata_ds.electric.annotations.referenceAnnot(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.annotations.mapAnnot)
+    userdata_ds.electric.annotations.mapAnnot(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.voltages.bipolar)
+    userdata_ds.electric.voltages.bipolar(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.voltages.unipolar)
+    userdata_ds.electric.voltages.unipolar(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.impedances.time)
+    userdata_ds.electric.impedances.time(:,iRemove) = [];
+end
+if ~isempty(userdata_ds.electric.impedances.value)
+    userdata_ds.electric.impedances.value(:,iRemove) = [];
+end
+if ~isempty(userdata_ds.electric.egmSurfX)
+    userdata_ds.electric.egmSurfX(iRemove,:) = [];
+end
+if ~isempty(userdata_ds.electric.barDirection)
+    userdata_ds.electric.barDirection(iRemove,:) = [];
+end
 
 % Work out the new density
 numPts_ds = getNumPts(userdata_ds);
