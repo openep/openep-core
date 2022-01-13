@@ -11,7 +11,7 @@ classdef openEpLocalSmoothing < matlab.mixin.SetGet
     %           interpolation for query points outside the smoothingLength.
 
     properties
-        smoothingLength = 2.5;
+        smoothingLength = 5;
         fillWith = 'nearest';
         distanceThreshold = 5;
     end

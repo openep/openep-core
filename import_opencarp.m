@@ -128,8 +128,8 @@ delete(hWait);
 
 % Load the surface mesh files
 hWait = waitbar(0, 'Looking for surface mesh files');
-%surfaceMeshName = 'Labelled';
-[~, surfaceMeshName, ~] = fileparts(userinput); % defined on electrograms
+surfaceMeshName = 'Labelled';
+%[~, surfaceMeshName, ~] = fileparts(userinput); % defined on electrograms
 surfacePtsFilename = [surfaceMeshName '.pts'];
 surfacePtsFilename = mycheckfilename(surfacePtsFilename, allfilenames, studyDir);
 if isempty(surfacePtsFilename)

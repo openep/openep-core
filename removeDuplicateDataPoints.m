@@ -7,7 +7,7 @@ function [x1, f_x1] = removeDuplicateDataPoints(x, f_x)
 %   x       - locations
 %   f_x     - data values
 %   x1      - locations with duplicates removed
-%   f_X     - new data values
+%   f_x1     - new data values
 %
 % REMOVEDUPLICATEDATAPOINTS Detects duplicate data points in x and removes
 % these. The algorithm averages the corresponding values in f_x; unless
