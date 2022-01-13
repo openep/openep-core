@@ -172,8 +172,8 @@ userdata = openep_createuserdata();
 if exist('study_dir_new') == 0
 for i=1:numel(tempfolder);
     fname=tempfolder(i).name;
-    [a,b,c]=fileparts(fname)
-    if strcmp(c,'.json') == 1
+    [a,b,c]=fileparts(fname);
+    if strcmp(c,'.json') == 1 && contains(b,'LAT')
                 egm_count=egm_count+1;
                 x=kodex_egm_import([egm_folder,'\',fname]);
                 value = jsondecode(x);
@@ -314,8 +314,9 @@ if save_option == true
 uisave('userdata')
 end
 
-if isempty('savefilename') == 0
-save('savefilename','userdata')
+savefilename
+if isempty('savefilename') == 1
+save(savefilename,'userdata')
 end
 
 
