@@ -169,6 +169,9 @@ egm_count=0;
 userdata = openep_createuserdata();
 %% this is to fill in from 'raw' electrogram data if avalable (think of better way)
 
+
+userdata.electric.sampleFrequency=Fs; %TO DO - Find where this is stored
+
 if exist('study_dir_new') == 0
 for i=1:numel(tempfolder);
     fname=tempfolder(i).name;
@@ -264,8 +267,18 @@ if egm_count == 0 %This means no json file, so got to work just off csv file
     
 end
 
-%% calcualte LATs and BiPs (mean of all values with same index on mesh)
+%% Get surface data
+TR = TriRep(obj.f.vt, obj.v(:,1), obj.v(:,2), obj.v(:,3));
+userdata.surface.triRep=TR;
+%is vertex at rim (all 0 for these examples, but need to see if this will always be the case)
+for i=1:size(obj.v,1)
+    userdata.surface.isVertexAtRim(i)=false;
+end
 
+number_of_vertices = size(userdata.surface.triRep.X,1);
+
+%% calcualte LATs and BiPs (mean of all values with same index on mesh)
+userdata.surface.act_bip=NaN(number_of_vertices,2);
 %first find 'extreme' indecies for exclusion from 'mean' measurements
 [max_voltage,ind_temp]=max(Volts); ind_max_voltage=index(ind_temp);
 %userdata.electric.voltages.bipolar(ind_max_voltage,1)=max_voltage;
@@ -297,16 +310,8 @@ for i=1:numel(index);
     end
 end
 
-userdata.surface.act_bip(userdata.surface.act_bip==0)=NaN;
 
 
-%% Get surface data
-TR = TriRep(obj.f.vt, obj.v(:,1), obj.v(:,2), obj.v(:,3));
-userdata.surface.triRep=TR;
-%is vertex at rim (all 0 for these examples, but need to see if this will always be the case)
-for i=1:size(obj.v,1)
-    userdata.surface.isVertexAtRim(i)=false;
-end
 
 
 %% Save data
