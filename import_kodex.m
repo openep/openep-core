@@ -93,7 +93,7 @@ end
 
 %check format and if study directory needs to be changed to 'full' format
 if any(strcmp(studies,'dump_state')) && any(strcmp(studies,'Report'))
-    study_dir_new=[study_dir_overall,'\dump_state\MainEntry\']; %update study_dir
+    study_dir_new=[study_dir_overall,filesep(),'dump_state',filesep(),'MainEntry',filesep()]; %update study_dir
     tempfolder=dir(study_dir_new);
     map_count=0;
     studies=[];
@@ -110,18 +110,18 @@ if exist('study_dir_new') == 0
         [indx,tf] = listdlg('Liststring',studies);
         chamber=char(studies(indx));
     end
-    egm_folder=[study_dir_overall,'\',chamber,'\LAT'];
+    egm_folder=[study_dir_overall,filesep(),chamber,filesep(),'LAT'];
     tempfolder=dir(egm_folder);
-    mesh_folder=[study_dir_overall,'\',chamber,'\','LAT'];
+    mesh_folder=[study_dir_overall,filesep(),chamber,filesep(),'LAT'];
     files=dir(mesh_folder);
 elseif exist('study_dir_new') == 1
     if isempty(chamber) == 1
         [indx,tf] = listdlg('Liststring',studies);
         chamber=char(studies(indx))
     end
-    egm_folder=[study_dir_new,'\',chamber,'\LAT'];
+    egm_folder=[study_dir_new,filesep(),chamber,filesep(),'LAT'];
     tempfolder=dir(egm_folder);
-    mesh_folder=[study_dir_overall,'\Report\',chamber];
+    mesh_folder=[study_dir_overall,filesep(),'Report',filesep(),chamber];
     files=dir(mesh_folder);
 end
 
@@ -134,13 +134,13 @@ for n=3:numel(files)
     fname=files(n).name;
     [a,b,c]=fileparts(fname);
     if strcmp('.obj',c) == 1
-        object_file=[mesh_folder,'\',b,c];
+        object_file=[mesh_folder,filesep(),b,c];
     end
     if strcmp('.csv',c) == 1 && strcmp('lat_points',b) == 1
-        csv_file=[mesh_folder,'\',b,c];
+        csv_file=[mesh_folder,filesep(),b,c];
     end
     if strcmp('.csv',c) == 1 && strcmp('landmark_points',b) == 1
-        csv_landmark_file=[mesh_folder,'\',b,c];
+        csv_landmark_file=[mesh_folder,filesep(),b,c];
     end
 end
 
@@ -175,7 +175,7 @@ for i=1:numel(tempfolder);
     [a,b,c]=fileparts(fname);
     if strcmp(c,'.json') == 1 && contains(b,'LAT')
                 egm_count=egm_count+1;
-                x=kodex_egm_import([egm_folder,'\',fname]);
+                x=kodex_egm_import([egm_folder,filesep(),fname]);
                 value = jsondecode(x);
                 
                 index(egm_count)=value.index_on_mesh;
@@ -213,7 +213,7 @@ for i=1:numel(tempfolder);
     [a,b,c]=fileparts(fname);
     if strcmp(c,'.json') == 1 && contains(b,chamber)
                 egm_count=egm_count+1;
-                x=kodex_egm_import([egm_folder,'\',fname]);
+                x=kodex_egm_import([egm_folder,filesep(),fname]);
                 value = jsondecode(x);
                 
                 index(egm_count)=value.index_on_mesh;
