@@ -64,3 +64,9 @@ switch type
         t.Triangulation = tNew.Triangulation;
 end
 newUserdata.surface.triRep = t;
+
+% Find the closest values in act_bip
+if ~isempty(userdata.surface.act_bip)
+    iV = findclosestvertex(getMesh(userdata), getVertices(newUserdata), true);
+    newUserdata.surface.act_bip = userdata.surface.act_bip(iV,:);
+end
