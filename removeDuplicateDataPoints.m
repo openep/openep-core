@@ -59,7 +59,7 @@ if hasDuplicates
 
         if min(theseValues) == min_f_x && max(theseValues) == max_f_x
             newValue = mean(theseValues);
-            warning('OPENEP/REMOVEDUPLICATEDATAPOINTS: A duplicate is detected at both the global minimum and global maximum of f_x');
+            warning('OPENEP:information','OPENEP/REMOVEDUPLICATEDATAPOINTS: A duplicate is detected at both the global minimum and global maximum of f_x');
         end
 
         % assign this value to the first occurence
