@@ -1,6 +1,6 @@
 classdef distanceBetweenPointsTest < matlab.unittest.TestCase
 
-    properties (TestParameter)
+    properties(TestParameter)
         method = {'linear', 'geodesic'};
         expected_distance = {25.562, 27.4};
     end
@@ -21,7 +21,7 @@ classdef distanceBetweenPointsTest < matlab.unittest.TestCase
 
     % Don't show plots when testing. Snippet from:
     % https://uk.mathworks.com/matlabcentral/answers/124174-suppress-figures-in-unit-tests#answer_131776
-    methods ( TestMethodSetup )
+    methods(TestMethodSetup)
         function hidePlots(testCase)
             origDefault = get(0,'DefaultFigureVisible');
             set(0,'DefaultFigureVisible','off');
