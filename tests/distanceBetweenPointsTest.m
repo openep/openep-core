@@ -19,8 +19,18 @@ classdef distanceBetweenPointsTest < matlab.unittest.TestCase
         end
     end
 
+    % Don't show plots when testing. Snippet from:
+    % https://uk.mathworks.com/matlabcentral/answers/124174-suppress-figures-in-unit-tests#answer_131776
+    methods ( TestMethodSetup )
+        function hidePlots(testCase)
+            origDefault = get(0,'DefaultFigureVisible');
+            set(0,'DefaultFigureVisible','off');
+            testCase.addTeardown(@set, 0, 'DefaultFigureVisible', origDefault);
+        end
+    end
+
     methods(Test, ParameterCombination = 'sequential')
-        function dataset1Distances(testCase, method, expected_distance);
+        function dataset1Distances(testCase, method, expected_distance)
             
             actual_distance = distanceBetweenPoints( ...
                 testCase.dataset_1, ...
@@ -31,4 +41,18 @@ classdef distanceBetweenPointsTest < matlab.unittest.TestCase
             testCase.verifyEqual(round(actual_distance, 3), expected_distance);
         end
     end
+    
+    methods(Test)
+        function dataset1Plot(testCase, method)
+            verifyWarningFree( ...
+                testCase, ...
+                @() distanceBetweenPoints( ...
+                    testCase.dataset_1, ...
+                    testCase.pointA, ...
+                    testCase.pointB, ...
+                    'method', method, ...
+                    'plot', true));
+        end
+    end
+
 end
