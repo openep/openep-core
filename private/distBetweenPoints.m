@@ -43,15 +43,15 @@ else
     warn = false;
 end
 if size(A,2) ~= size(B,2);
-    error('DISTBETWEENPOINTS: dimensions of points in A and B must be equal');
+    error('OPENEP:distances', 'DISTBETWEENPOINTS: dimensions of points in A and B must be equal');
 end
 if size(A,1) ~= size(B,1);
     if size(A,1) ~= 1
-        error('DISTBETWEENPOINTS: if npoints in A and B are different A must specify one and only one point');
+        error('OPENEP:distances', 'DISTBETWEENPOINTS: if npoints in A and B are different A must specify one and only one point');
     else
         A = repmat(A, size(B,1), 1);
         if warn
-            warning('DISTBETWEENPOINTS: A has been replicated size(B,1) times');
+            warning('OPENEP:distances', 'DISTBETWEENPOINTS: A has been replicated size(B,1) times');
         end
     end
 end
