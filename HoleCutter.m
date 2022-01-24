@@ -51,8 +51,6 @@ classdef HoleCutter < matlab.mixin.SetGet
         end
         
         function initialiseGeodesicCalculation(obj)
-            % Initialise the geodesic library and algorithm
-            initialiseGeodesic()
             mesh = geodesic_new_mesh(obj.Mesh.Points, obj.Mesh.ConnectivityList);
             obj.Algorithm = geodesic_new_algorithm(mesh, 'exact');
         end
