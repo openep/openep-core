@@ -90,7 +90,7 @@ switch lower(type)
             tr = userdata.surface.triRep;
         else
             tr.X = FV.vert;
-            tr.Points = FV.faces;
+            tr.Triangulation = FV.faces;
         end
 end
 
