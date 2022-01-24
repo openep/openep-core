@@ -32,9 +32,6 @@ function distance = distanceBetweenPoints(userdata, P1, P2, varargin)
 % code
 % ---------------------------------------------------------------
 
-% Initialise the geodesic library and algorithm
-initialiseGeodesic()
-
 % parse input arguments
 nStandardArgs = 3;
 method = 'linear';
@@ -74,12 +71,6 @@ switch method
         % get the co-ordinates of the surface points
         A = userdata.electric.egmSurfX(P1,:);
         B = userdata.electric.egmSurfX(P2,:);
-        
-        % calculate the geodesic distance (repacking and reducepatch
-        % necessary to prevent ?memory problem in exact geodesic)
-        %V = userdata.surface.triRep.X;
-        %F = userdata.surface.triRep.Triangulation;
-        %[faces,vertices] = reducepatch(F,V,size(F,1));
         
         % calculate the geodesic distance (repacking to remove points
         % not referenced in the triangulation)
