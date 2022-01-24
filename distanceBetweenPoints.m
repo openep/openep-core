@@ -77,9 +77,15 @@ switch method
         
         % calculate the geodesic distance (repacking and reducepatch
         % necessary to prevent ?memory problem in exact geodesic)
-        V = userdata.surface.triRep.X;
-        F = userdata.surface.triRep.Triangulation;
-        [faces,vertices] = reducepatch(F,V,size(F,1));
+        %V = userdata.surface.triRep.X;
+        %F = userdata.surface.triRep.Triangulation;
+        %[faces,vertices] = reducepatch(F,V,size(F,1));
+        
+        % calculate the geodesic distance (repacking to remove points
+        % not referenced in the triangulation)
+        tr = getMesh(userdata, 'limitToTriangulation', true);
+        vertices = tr.X;
+        faces = tr.Triangulation;
         
         % now find the closest vertex index to A and B
         P1new = findclosestvertex(vertices, A);
