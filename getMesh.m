@@ -34,7 +34,6 @@ function tr = getMesh(userdata, varargin)
 nStandardArgs = 1; % UPDATE VALUE
 type = 'trirep';
 limitToTriangulation = false;
-dorepack = false;
 
 if nargin > nStandardArgs
     for i = 1:2:nargin-nStandardArgs
@@ -44,7 +43,9 @@ if nargin > nStandardArgs
             case 'limittotriangulation'
                 limitToTriangulation = varargin{i+1};
             case 'repack'
-                dorepack = varargin{i+1};
+                warning("OPENEP:deprecation", "The 'repack' argument is " + ...
+                    "deprecated. Please use 'limitToTriangulation instead.'")
+                limitToTriangulation = varargin{i+1};
         end
     end
 end
