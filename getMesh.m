@@ -50,7 +50,7 @@ if nargin > nStandardArgs
     end
 end
 if ~any(strcmpi({'trirep' 'triangulation' 'struct'}, type))
-    error(['OPENEP/GETMESH: Value: ' type ' for parameter: type not recognised']);
+    error('OPENEP:invalidArgument', ['OPENEP/GETMESH: Value: ' type ' for parameter: type not recognised']);
 end
 
 % Check the type of surface data stored in the OpenEP datastructure and
@@ -63,13 +63,15 @@ elseif isa(userdata.surface.triRep, 'triangulation')
     FV.faces = userdata.surface.triRep.ConnectivityList;
 elseif isa(userdata.surface.triRep, 'struct')
     if ~isfield(userdata.surface.triRep, 'X')
-        error('OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
+        error('OPENEP:invalidData', 'OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
     if ~isfield(userdata.surface.triRep, 'Triangulation')
-        error('OPENEP/SETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
+        error('OPENEP:invalidData', 'OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
     FV.vert = userdata.surface.triRep.X;
     FV.faces = userdata.surface.triRep.Triangulation;
+else
+    error('OPENEP:invalidData', 'OPENEP/GETMESH: userdata.surface.triRep must be one of: TriRep, triangulation or struct');
 end
 
 switch lower(type)
