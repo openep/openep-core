@@ -95,4 +95,61 @@ classdef getMeshTest < matlab.unittest.TestCase
 
     end
 
+    methods(Test)
+
+        function repackArgumentDeprecated(testCase)
+            
+            verifyWarning( ...
+                testCase, ...
+                @() getMesh(testCase.userdata, 'repack', 'true'), ...
+                "OPENEP:deprecation");
+
+        end
+
+        function invalidArgument(testCase)
+            
+            verifyError( ...
+                testCase, ...
+                @() getMesh(testCase.userdata, 'type', 'invalidType'), ...
+                "OPENEP:invalidArgument");
+
+        end
+
+        function missingVertices(testCase)
+
+            testCase.userdata.surface.triRep = testCase.struct_surface;
+            testCase.userdata.surface.triRep = rmfield(testCase.userdata.surface.triRep, 'X');
+
+            verifyError(...
+                testCase, ...
+                @() getMesh(testCase.userdata), ...
+                "OPENEP:invalidData");
+
+        end 
+
+        function missingFaces(testCase)
+
+            testCase.userdata.surface.triRep = testCase.struct_surface;
+            testCase.userdata.surface.triRep = rmfield(testCase.userdata.surface.triRep, 'Triangulation');
+
+            verifyError(...
+                testCase, ...
+                @() getMesh(testCase.userdata), ...
+                "OPENEP:invalidData");
+
+        end 
+
+        function invalidData(testCase)
+
+            testCase.userdata.surface.triRep =  "Bad input type";
+
+            verifyError(...
+                testCase, ...
+                @() getMesh(testCase.userdata), ...
+                "OPENEP:invalidData");
+        
+        end
+
+    end
+
 end
