@@ -51,6 +51,48 @@ classdef getMeshTest < matlab.unittest.TestCase
 
         end
 
+        function triangulationInput(testCase, type, limitToTriangulation)
+
+            testCase.userdata.surface.triRep = testCase.triangulation_surface;
+            [limit, expected_num_vertices, expected_num_faces] = limitToTriangulation{:};
+
+            tr = getMesh( ...
+                testCase.userdata, ...
+                'type', type, ...
+                'limitToTriangulation', limit);
+
+            switch type
+                case 'triangulation'
+                    testCase.verifyEqual(length(tr.Points), expected_num_vertices);
+                    testCase.verifyEqual(length(tr.ConnectivityList), expected_num_faces);
+                otherwise
+                    testCase.verifyEqual(length(tr.X), expected_num_vertices);
+                    testCase.verifyEqual(length(tr.Triangulation), expected_num_faces);
+            end
+
+        end
+
+        function structInput(testCase, type, limitToTriangulation)
+
+            testCase.userdata.surface.triRep = testCase.struct_surface;
+            [limit, expected_num_vertices, expected_num_faces] = limitToTriangulation{:};
+
+            tr = getMesh( ...
+                testCase.userdata, ...
+                'type', type, ...
+                'limitToTriangulation', limit);
+
+            switch type
+                case 'triangulation'
+                    testCase.verifyEqual(length(tr.Points), expected_num_vertices);
+                    testCase.verifyEqual(length(tr.ConnectivityList), expected_num_faces);
+                otherwise
+                    testCase.verifyEqual(length(tr.X), expected_num_vertices);
+                    testCase.verifyEqual(length(tr.Triangulation), expected_num_faces);
+            end
+
+        end
+
     end
 
 end
