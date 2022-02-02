@@ -80,6 +80,7 @@ end
 % plot
 if plot
     drawFreeBoundaries(FF, trMesh);
+    legend({'Boundary 1' 'Boundary 2' 'Boundary 3' 'Boundary 4' 'Boundary 5' 'Boundary 6' 'Boundary 7'})
     hold on
     hS = trisurf(userdata.surface.triRep);
     set(hS ...
@@ -89,7 +90,7 @@ if plot
         );
     set(gcf, 'color', 'w' ...
         );
-    axis off;
+    axis off equal vis3d;
 end
 
 end
