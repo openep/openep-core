@@ -4,6 +4,15 @@
 function object = geodesic_delete(object)
 
 global geodesic_library;
+
+if ismac
+    geodesic_library = 'geodesic_matlab_api_macos';
+elseif isunix
+    geodesic_library = 'geodesic_matlab_api';
+else
+    disp('Platform not supported')
+end
+
 if ~libisloaded(geodesic_library)       %everything is already cleared
     object = [];
     return;

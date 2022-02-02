@@ -1,16 +1,7 @@
 function [mesh, edge_to_vertex, edge_to_face] = geodesic_new_mesh(points, tri)
 
-global geodesic_library
-if ~libisloaded(geodesic_library)
-    hfile = 'geodesic_matlab_api.h';
-    if ispc
-        loadlibrary([geodesic_library '.dll'], hfile);
-    elseif isunix
-        loadlibrary([geodesic_library '.so'], hfile);
-    else
-        disp('Platform not supported')
-    end
-end
+global geodesic_library;
+initialiseGeodesic();
 
 dim = find(size(points) == 3);
 if dim == 1
