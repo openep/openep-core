@@ -97,7 +97,7 @@ plotTag(userdata, 'coord', surfaceMesh.Points(ivcPointOnSurface,:), 'color', 'g'
 % Initialise the geodesic library and algorithm
 initialiseGeodesic()
 mesh = geodesic_new_mesh(surfaceMesh.Points, surfaceMesh.ConnectivityList);
-algorithm = geodesic_new_algorithm(mesh, 'exact');
+algorithm = geodesic_new_algorithm(mesh, 'dijkstra');
 
 source_points{1} = geodesic_create_surface_point('vertex', svcPointOnSurface, surfaceMesh.Points(svcPointOnSurface,:));
 geodesic_propagate(algorithm, source_points);
