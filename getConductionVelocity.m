@@ -76,13 +76,13 @@ if nargin > nStandardArgs
                 method = varargin{i+1};
             case 'interpolator'
                 interpolator = varargin{i+1};
-            case 'doOptimisation'
+            case 'dooptimisation'
                 doOptimisation = varargin{i+1};
                 rbfoptions.doOptimsation=doOptimisation;
-            case 'shapeParameter'
+            case 'shapeparameter'
                 shapeParameter = varargin{i+1};
                 rbfoptions.shapeParameter=shapeParameter;
-            case 'basisFunction'
+            case 'basisfunction'
                 basisFunction = varargin{i+1};
                 rbfoptions.basisFunction=basisFunction;
             case 'distancethreshold'
