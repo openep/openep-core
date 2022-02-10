@@ -51,13 +51,11 @@ userdata.notes{1} = [date() ': Created'];
 if isfield(data, 'directory')
     userdata.precisionFolder = data.directory;
 end
-if isfield(data.epcath_bip_raw, 'sampleFreq')
-    userdata.electric.sampleFrequency = data.epcath_bip_raw.sampleFreq;
+if exist('dxldata', 'var')
+    if isfield(dxldata, 'sampleFreq')
+        userdata.electric.sampleFrequency = dxldata.sampleFreq;
+    end
 end
-
-
-
-
 
 % Geometry data - NOT COMPLETE
 % if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
@@ -71,18 +69,36 @@ end
 %     isVertexAtRim(FF(:,1)) = true;
 %     userdata.surface.isVertexAtRim = isVertexAtRim;
 % end
-% Test code:
-iMap = 1;
-for i = 1:numel(data.modelgroups)
-    for j = 1:numel(data.modelgroups(i).dxgeo)
-        TRI = data.modelgroups(i).dxgeo(j).triangles;
-        X = data.modelgroups(i).dxgeo(j).vertices(:,1);
-        Y = data.modelgroups(i).dxgeo(j).vertices(:,2);
-        Z = data.modelgroups(i).dxgeo(j).vertices(:,3);
-        tr{iMap} = TriRep(TRI, X, Y, Z);
-        iMap = iMap + 1;
+
+% iMap = 1;
+% for i = 1:numel(data.modelgroups)
+%     for j = 1:numel(data.modelgroups(i).dxgeo)
+%         TRI = data.modelgroups(i).dxgeo(j).triangles;
+%         X = data.modelgroups(i).dxgeo(j).vertices(:,1);
+%         Y = data.modelgroups(i).dxgeo(j).vertices(:,2);
+%         Z = data.modelgroups(i).dxgeo(j).vertices(:,3);
+%         tr{iMap} = TriRep(TRI, X, Y, Z);
+%         iMap = iMap + 1;
+%     end
+% end
+
+% find the Dx Landmark Geo file index
+iDxInd = [];
+for i = 1: numel(data.modelgroups)
+    if strstartcmpi('St. Jude Medical Dx Landmark Geo', data.modelgroups(i).dxgeo.comment{i})
+        iDxInd = i;
     end
 end
+TRI = data.modelgroups(iDxInd).dxgeo.triangles;
+X = data.modelgroups(iDxInd).dxgeo.vertices(:,1);
+Y = data.modelgroups(iDxInd).dxgeo.vertices(:,2);
+Z = data.modelgroups(iDxInd).dxgeo.vertices(:,3);
+tr = TriRep(TRI, X, Y, Z);
+userdata = setMesh(userdata, tr);
+surfaceData = data.modelgroups(iDxInd).dxgeo.surface_of_origin;
+userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceData, 'definedOn', 'elements');
+
+
 % TODO: HOW TO DEAL WITH GEOMETRY *** Github Issue #42: https://github.com/openep/openep-core/issues/42 ***
 % (1) Find the dxgeo with the first comment 'St. Jude Medical Dx Landmark Geo data export; file format revision 0'
 %     - best to do this by identifying the comment which contains the string 'Dx Landmark Geo'
@@ -97,6 +113,10 @@ end
 % refer to image data sets merged into the system. Will need to think of
 % how/where to store this information, but it probably needs another data
 % field, and is not likley to be specific to Precision
+
+% this section deals with geometry
+% sometimes there may be model groups; sometimes not
+
 
 
 
@@ -151,11 +171,19 @@ end
 % THERE DOES NOT APPEAR TO BE VOLTAGE MAPPING DATA AVAILABLE BUT THERE DOES
 % APPEAR TO BE ACTIVATION TIME DATA AVAILABLE IN THE Dx Landmark Geo data file
 % Get the activation time 
-act = dxldata.latmap';
+if isfield(dxldata, 'latmap')
+    act = dxldata.latmap';
+else 
+    act = NaN;
+end
 bip = zeros(size(act));
 act_bip = [act bip];
 userdata.surface.act_bip = act_bip;
 % userdata.surface.uni_imp_frc = 
+
+% if isfield(data.modelgroups(i).dxgeo(j).vertices(:,3);)
+% userdata = setSurfaceProperty(userdata, 'name', 'surfaceregion', info.dxgeo.surface_of_origin);
+
 
 
 
