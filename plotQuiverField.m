@@ -3,7 +3,7 @@ function h = plotQuiverField(userdata, varargin)
 %
 % Usage:
 %   h = plotQuiverField(userdata)
-%   h = plotQuiverField(userdata, cvX, u)
+%   h = plotQuiverField(userdata, 'X', cvX, 'u', u)
 %
 % Where:
 %   userdata - an OpenEP data structure
