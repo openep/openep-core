@@ -61,7 +61,8 @@ function info = loadprecision_wavefile(filename)
     % The 'header' finishes at the end of the line starting with "t_dws,t_secs,t_usecs,t_ref"
     [ind1,ind2] = regexp(fData, 't_dws,t_secs,t_usecs,t_ref,[^\n]*\n', 'once','start','end');
     if isempty(ind1)
-        error('End of header not found. Double check that maxBytes is large enough to cover header.')
+        warning('End of header not found. Double check that maxBytes is large enough to cover header.')
+        return;
     end
     ind2 = ind2-1; %remove the last \n
     

@@ -87,7 +87,11 @@ iDxInd = [];
 for i = 1: numel(data.modelgroups)
     if strstartcmpi('St. Jude Medical Dx Landmark Geo', data.modelgroups(i).dxgeo.comment{i})
         iDxInd = i;
+        break; % after finding the Dx Landmark Geo file we can proceed
     end
+end
+if isempty(iDxInd)
+    error('OPENEP/IMPORT_PRECISION: No DxLandmarkGeo.xml file located.')
 end
 TRI = data.modelgroups(iDxInd).dxgeo.triangles;
 X = data.modelgroups(iDxInd).dxgeo.vertices(:,1);
@@ -97,6 +101,29 @@ tr = TriRep(TRI, X, Y, Z);
 userdata = setMesh(userdata, tr);
 surfaceData = data.modelgroups(iDxInd).dxgeo.surface_of_origin;
 userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceData, 'definedOn', 'elements');
+
+
+% Surface data - TODO
+% THERE DOES NOT APPEAR TO BE VOLTAGE MAPPING DATA AVAILABLE BUT THERE DOES
+% APPEAR TO BE ACTIVATION TIME DATA AVAILABLE IN THE Dx Landmark Geo data file
+% Get the activation time 
+if isfield(data.modelgroups(iDxInd).dxgeo, 'act')
+    act = data.modelgroups(iDxInd).dxgeo.act;
+else 
+    act = repmat(NaN, size(X));
+end
+if isfield(data.modelgroups(iDxInd).dxgeo, 'bip')
+    bip = data.modelgroups(iDxInd).dxgeo.bip;
+else
+    bip = repmat(NaN, size(X));
+end
+userdata.surface.act_bip = [act bip];
+% userdata.surface.uni_imp_frc = 
+
+% if isfield(data.modelgroups(i).dxgeo(j).vertices(:,3);)
+% userdata = setSurfaceProperty(userdata, 'name', 'surfaceregion', info.dxgeo.surface_of_origin);
+
+
 
 
 % TODO: HOW TO DEAL WITH GEOMETRY *** Github Issue #42: https://github.com/openep/openep-core/issues/42 ***
@@ -169,24 +196,6 @@ end
 
 
 
-
-
-% Surface data - TODO
-% THERE DOES NOT APPEAR TO BE VOLTAGE MAPPING DATA AVAILABLE BUT THERE DOES
-% APPEAR TO BE ACTIVATION TIME DATA AVAILABLE IN THE Dx Landmark Geo data file
-% Get the activation time 
-if isfield(dxldata, 'latmap')
-    act = dxldata.latmap';
-else 
-    act = NaN;
-end
-bip = zeros(size(act));
-act_bip = [act bip];
-userdata.surface.act_bip = act_bip;
-% userdata.surface.uni_imp_frc = 
-
-% if isfield(data.modelgroups(i).dxgeo(j).vertices(:,3);)
-% userdata = setSurfaceProperty(userdata, 'name', 'surfaceregion', info.dxgeo.surface_of_origin);
 
 
 

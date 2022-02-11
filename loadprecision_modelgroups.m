@@ -63,6 +63,30 @@ for i = 1:tree.DIFBody.Volumes.ATTRIBUTE.number
     if isfield(tree.DIFBody.Volumes.Volume(i), 'Surface_of_origin')
         dxgeo(i).surface_of_origin = str2num(tree.DIFBody.Volumes.Volume(i).Surface_of_origin.CONTENT);
     end
+    if isfield(tree.DIFBody.Volumes.Volume(i), 'Map_data')
+        % identify the type of data that we have
+        stub = 'Data values at each vertex of DxL map';
+        iComment = [];
+        for j=1:numel(dxgeo.comment)
+            if isstr(dxgeo.comment{j})
+                if strstartcmpi(stub, dxgeo.comment{j})
+                    iComment = j;
+                end
+            end
+        end
+        if isempty(iComment)
+            warning('OPENEP/LOADPRECISION_MODELGROUPS: Map data was found but no comment describing its type was identified');
+        else
+            dataTypeString = dxgeo.comment{iComment};
+            if contains(dataTypeString, 'P-P Voltage')
+                dxgeo(i).bip = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
+            elseif contains(dataTypeString, 'LAT Isochronal')
+                dxgeo(i).act = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
+            else
+                warning('OPENEP/LOADPRECISION_MODELGROUPS: Map data was found but its type was not identifiable as P-P Voltage or LAT Isochronal');
+            end
+        end
+    end
 
     %get the labels
     if isfield(tree.DIFBody.Labels, 'Label')
