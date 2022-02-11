@@ -136,9 +136,12 @@ for i_dxl = 1:length(dxldata)
             dxldata(i_dxl).rovingy', dxldata(i_dxl).rovingz'];
         userdata.electric.egmSurfX = [dxldata(i_dxl).surfPtx',...
             dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
-        userdata.electric.egmRef = dxldata(i_dxl).rovtrace';
+        userdata.electric.egmRef = dxldata(i_dxl).rovtrace'; % TODO: import the reference egm
+        userdata.electric.egm = dxldata(i_dxl).rovtrace';
         userdata.electric.annotations.referenceAnnot = dxldata(i_dxl).refLAT';
         userdata.electric.annotations.mapAnnot = dxldata(i_dxl).rovLAT';
+        userdata.electric.annotations.woi = -userdata.electric.annotations.referenceAnnot;
+        userdata.electric.annotations.woi(:,2) = length(userdata.electric.egm)-userdata.electric.annotations.referenceAnnot;
         userdata.electric.voltages.bipolar = dxldata(i_dxl).peak2peak';
     else
         userdata.electric.electrodeNames_uni = dxldata(i_dxl).rovtrace_pts';
@@ -147,6 +150,7 @@ for i_dxl = 1:length(dxldata)
         userdata.electric.egmUniSurfX = [dxldata(i_dxl).surfPtx',...
             dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
         userdata.electric.egmUniRef = dxldata(i_dxl).rovtrace';
+        userdata.electric.egmUni = dxldata(i_dxl).rovtrace';
         userdata.electric.annotations.referenceAnnotUni = dxldata(i_dxl).refLAT';
         userdata.electric.annotations.mapAnnotUni = dxldata(i_dxl).rovLAT';
         userdata.electric.voltages.unipolar = dxldata(i_dxl).peak2peak';
