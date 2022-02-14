@@ -42,8 +42,9 @@ classdef PointPicker < matlab.mixin.SetGet
         function plotFiducialMarker(obj, m, ind)
             markerSize = 3;
             markerColor = 'r';
-            hS = drawSphere(m.Points(ind,1), m.Points(ind,2), m.Points(ind,3), markerSize);
-            set(hS, 'facecolor', markerColor);           
+            %hS = drawSphere(m.Points(ind,1), m.Points(ind,2), m.Points(ind,3), markerSize);
+            plotsphere(m.Points(ind,1), m.Points(ind,2), m.Points(ind,3), markerColor, markerSize, 16);
+            %set(hS, 'facecolor', markerColor);           
         end
         
         function local_configurePicker(obj)
