@@ -1,23 +1,20 @@
-function batchConvert(inputDir, outputDir)
-% batchConvert Converts original style OpenEP datasets into the new format.
+function batchAnonymise(inputDir, outputDir)
+% batchAnonymise Anonymises userdata.
 %
-% In the newer format, userdata.surface.triRep is a regular struct rather
-% than a TriRep. This is to allow for interopability with OpenEP-Py, which
-% cannot load TriRep objects.
+% In order to anonymise userdata, the fields containing the path to the
+% original data are removed as we cannot guarantee this do not contain
+% potentially identifiable data in other centres.
 %
 % Usage:
-%   batchConvert(inputDir, outputDir)
+%   batchAnonymise(inputDir, outputDir)
 %
 % Where:
 %   inputDir - the full path to the directory containing the .mat files to be
-%              converted.
+%              anonymised.
 %   outputDir - the directory to which the new files will be written. The filenames
 %               will be the same as those in inputDir.
 %
-% Author: Paul Smith (2021) (Copyright)
-% Modifications -
-%       Steven Williams (2022) Updated documentation and added notes
-%
+% Author: Steven Williams (2021) (Copyright)
 % SPDX-License-Identifier: Apache-2.0
 %
 
@@ -30,23 +27,24 @@ end
 disp('Getting list of filenames')
 allFiles = nameFiles(inputDir, 'showhiddenfiles', false, 'extension', 'mat');
 
-% Iterate through each file and convert the OpenEP dataset to the newer
-% format
+% Iterate through each file and anonymise the OpenEP dataset
 for i = 1:numel(allFiles)
 
    disp(['working on file:  ' allFiles{i}])
    load([inputDir filesep() allFiles{i}]);
 
-   t.X = userdata.surface.triRep.X;
-   t.Triangulation = userdata.surface.triRep.Triangulation;
-   userdata.surface.triRep = t;
+   if isfield(userdata, 'cartoFolder')
+       userdata.cartoFolder = [];
+   end
 
    % Store comment about what we have done
-   userdata.notes{end+1} = [date ': data set converted using batchConvert.m'];
+   userdata.notes{end+1} = [date ': data set anonymised using batchAnonymise.m'];
 
    outputFile = [outputDir filesep() allFiles{i}];
    disp(['saving file: ' outputFile])
    save(outputFile, 'userdata', '-v6');  % v6 is faster to load in OpenEP-Py
+
+
 
 end
 
