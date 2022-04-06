@@ -42,7 +42,7 @@ for i = 1:numel(allFiles)
 
    outputFile = [outputDir filesep() allFiles{i}];
    disp(['saving file: ' outputFile])
-   save(outputFile, 'userdata', '-v6');  % v6 is faster to load in OpenEP-Py
+   save(outputFile, 'userdata', '-v7.3');  % v6 is faster to load in OpenEP-Py
 
 
 
