@@ -116,8 +116,8 @@ end
 % Plot the grid
 if strcmpi(toplot, 'grid') || strcmpi(toplot, 'both')
     for i = 1:numel(userdata.rfindex.grid)
-        for j = 1:numel(visitag.grid{i})
-            X = visitag.grid{i}(j).X;
+        for j = 1:numel(userdata.rfindex.grid{i})
+            X = userdata.rfindex.grid{i}(j).X;
             plot3(X(1), X(2), X(3), '.' ...
                 , 'color', [0 0 0] ...
                 , 'markersize', 8 ...
