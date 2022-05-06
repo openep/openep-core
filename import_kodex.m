@@ -61,7 +61,7 @@ function [userdata] = import_kodex(varargin)
 if nargin == 0
     study_dir_overall=uigetdir;
 else
-    study_dir_overall=varargin{1}
+    study_dir_overall=varargin{1};
 end
 chamber={};
 savefilename={};
@@ -111,7 +111,11 @@ if exist('study_dir_new') == 0
         chamber=char(studies(indx));
     end
     egm_folder=[study_dir_overall,filesep(),chamber,filesep(),'LAT'];
+    abl_folder=[study_dir_new,filesep(),chamber,filesep(),'ABL'];
+    lm_folder=[study_dir_new,filesep(),chamber,filesep(),'LM'];
     tempfolder=dir(egm_folder);
+    tempfolder_abl=dir(abl_folder);
+    tempfolder_lm=dir(lm_folder);
     mesh_folder=[study_dir_overall,filesep(),chamber,filesep(),'LAT'];
     files=dir(mesh_folder);
 elseif exist('study_dir_new') == 1
@@ -120,7 +124,11 @@ elseif exist('study_dir_new') == 1
         chamber=char(studies(indx))
     end
     egm_folder=[study_dir_new,filesep(),chamber,filesep(),'LAT'];
+    abl_folder=[study_dir_new,filesep(),chamber,filesep(),'ABL'];
+    lm_folder=[study_dir_new,filesep(),chamber,filesep(),'LM'];
     tempfolder=dir(egm_folder);
+    tempfolder_abl=dir(abl_folder);
+    tempfolder_lm=dir(lm_folder);
     mesh_folder=[study_dir_overall,filesep(),'Report',filesep(),chamber];
     files=dir(mesh_folder);
 end
@@ -150,6 +158,9 @@ end
 T = readtable(csv_file);
 W = width(T);
 Values=T(:,W);
+if size(Values,1) == 0
+    error('No data contained in Map');
+end
 datas=split(table2array(Values),',');
 LATs=str2double(datas(:,5));
 LATs=LATs-min(LATs);
@@ -166,13 +177,17 @@ Lpoints=str2double(datas2(:,2:4));
 
 %% Get 'raw' electirc data
 egm_count=0;
+abl_count=0;
+lm_count=0;
 userdata = openep_createuserdata();
-%% this is to fill in from 'raw' electrogram data if avalable (think of better way)
+%% this is to fill in from 'raw' electrogram and ablation data if avalable (think of better way)
 
 
 userdata.electric.sampleFrequency=Fs; %TO DO - Find where this is stored
 
 if exist('study_dir_new') == 0
+
+%egm data    
 for i=1:numel(tempfolder);
     fname=tempfolder(i).name;
     [a,b,c]=fileparts(fname);
@@ -200,13 +215,70 @@ for i=1:numel(tempfolder);
                 userdata.electric.egmSurfX(egm_count,:)=value.projected; %%This is the one on the surface
                 
                 
-                %added to get index infomation for translating egm to shell (PROBABLY WRONG)
-                userdata.electric.valid_for_map(egm_count,1)=value.valid_for_map;
+                %added to get index infomation for translating egm to shell
+                userdata.electric.include(egm_count,1)=value.valid_for_map;
                 userdata.electric.clipped(egm_count,1)=value.clipped;
-                userdata.electric.discarded(egm_count,1)=value.discarded;
+                userdata.electric.discarded(egm_count,1)=value.discarded; %discarded will be opposite of include, can proabably remove
                 
             end
-        end
+end
+
+%ablation data
+for i=1:numel(tempfolder_abl)
+    fname=tempfolder_abl(i).name;
+    [a,b,c]=fileparts(fname);
+    
+    
+    if strcmp(c,'.json') == 1 && contains(b,'ablation')
+                abl_count=abl_count+1;
+                x=kodex_egm_import([abl_folder,filesep(),fname]);
+                value = jsondecode(x);
+                
+                %% POPULATE ABLATION DATA HERE (rfindex)
+                userdata.rfindex.tag.X(abl_count,:)=value.position;
+                userdata.rfindex.tag.avgForce(abl_count,1)=value.average_cf;
+                userdata.rfindex.tag.maxTemp(abl_count,1)=max(value.rf_temp_vec);
+                userdata.rfindex.tag.maxPower(abl_count,1)=max(value.rf_power_vec);
+                userdata.rfindex.tag.impedance.baseImp(abl_count,1)=value.first_imp;
+                userdata.rfindex.tag.impedance.impDrop(abl_count,1)=value.first_imp-value.min_imp;
+                userdata.rfindex.tag.fti(abl_count,1)=value.cf_time_integral_vec(end); %%this is an assumption that each point is the total 'so far': need to check 
+                userdata.rfindex.tag.index.name(abl_count,1)=value.transmural_prediction; %is this correct?
+                userdata.rfindex.tag.index.value(abl_count,1)=value.transmural_prediction;
+                
+                %time stuff
+                t1=split(value.start_timestamp_str,'_');
+                t1=split(t1{2},'-');
+                t1_day = str2num(t1{1}); t1_hr = str2num(t1{2}); t1_sec=str2num(t1{3});
+                t2=split(value.timestamp_finished,'_');
+                t2=split(t2{2},'-');
+                t2_day = str2num(t1{1}); t2_hr = str2num(t2{2}); t2_sec=str2num(t2{3});
+                
+                hr=(t2_hr-t1_hr)*60; sec=t2_sec-t1_sec;
+                time=hr+sec;
+                
+                userdata.rfindex.tag.time(abl_count,1)=time;
+    end
+    
+      %% POPULATE ABLATION DATA HERE (rf all data concentrated) - Need to work out
+end
+
+%landmark data
+for i=1:numel(tempfolder_lm)
+    fname=tempfolder_lm(i).name;
+    [a,b,c]=fileparts(fname);
+    if strcmp(c,'.json') == 1 && contains(b,'LM')
+                lm_count=lm_count+1;
+                x=kodex_egm_import([lm_folder,filesep(),fname]);
+                value = jsondecode(x);
+                assignin('base','LMvalue',value)
+                %% POPULATE LANDMARK DATA HERE
+                userdata.surface.landmarks.X(lm_count,:)=value.position;
+                userdata.surface.landmarks.type{lm_count}=value.landmark_type;
+                userdata.surface.landmarks.name{lm_count}=value.landmark_sub_type;
+    end
+end
+
+                
 end
 
 
@@ -244,7 +316,64 @@ for i=1:numel(tempfolder);
                 userdata.electric.discarded(egm_count,1)=value.discarded;
                 
             end
-        end
+end
+        
+%ablation data
+for i=1:numel(tempfolder_abl)
+    fname=tempfolder_abl(i).name;
+    [a,b,c]=fileparts(fname);
+    
+    
+    if strcmp(c,'.json') == 1 && contains(b,'ablation')
+                abl_count=abl_count+1;
+                x=kodex_egm_import([abl_folder,filesep(),fname]);
+                value = jsondecode(x);
+                
+                %% POPULATE ABLATION DATA HERE (rfindex)
+                userdata.rfindex.tag.X(abl_count,:)=value.position;
+                userdata.rfindex.tag.avgForce(abl_count,1)=value.average_cf;
+                userdata.rfindex.tag.maxTemp(abl_count,1)=max(value.rf_temp_vec);
+                userdata.rfindex.tag.maxPower(abl_count,1)=max(value.rf_power_vec);
+                userdata.rfindex.tag.impedance.baseImp(abl_count,1)=value.first_imp;
+                userdata.rfindex.tag.impedance.impDrop(abl_count,1)=value.first_imp-value.min_imp;
+                userdata.rfindex.tag.fti(abl_count,1)=value.cf_time_integral_vec(end); %%this is an assumption that each point is the total 'so far': need to check 
+                userdata.rfindex.tag.index.name(abl_count,1)=value.transmural_prediction; %is this correct?
+                userdata.rfindex.tag.index.value(abl_count,1)=value.transmural_prediction;
+                
+                %time stuff
+                t1=split(value.start_timestamp_str,'_');
+                t1=split(t1{2},'-');
+                t1_day = str2num(t1{1}); t1_hr = str2num(t1{2}); t1_sec=str2num(t1{3});
+                t2=split(value.timestamp_finished,'_');
+                t2=split(t2{2},'-');
+                t2_day = str2num(t1{1}); t2_hr = str2num(t2{2}); t2_sec=str2num(t2{3});
+                
+                hr=(t2_hr-t1_hr)*60; sec=t2_sec-t1_sec;
+                time=hr+sec;
+                
+                userdata.rfindex.tag.time(abl_count,1)=time;
+    end
+    
+      %% POPULATE ABLATION DATA HERE (rf all data concentrated) - Need to work out
+end
+
+%landmark data
+for i=1:numel(tempfolder_lm)
+    fname=tempfolder_lm(i).name;
+    [a,b,c]=fileparts(fname);
+    if strcmp(c,'.json') == 1 && contains(b,'LM')
+                lm_count=lm_count+1;
+                x=kodex_egm_import([lm_folder,filesep(),fname]);
+                value = jsondecode(x);
+                assignin('base','LMvalue',value)
+                %% POPULATE LANDMARK DATA HERE
+                userdata.surface.landmarks.X(lm_count,:)=value.position;
+                userdata.surface.landmarks.type{lm_count}=value.landmark_type;
+                userdata.surface.landmarks.name{lm_count}=value.landmark_sub_type;
+    end
+end
+
+
 end
 
 
@@ -278,6 +407,7 @@ end
 number_of_vertices = size(userdata.surface.triRep.X,1);
 
 %% calcualte LATs and BiPs (mean of all values with same index on mesh)
+% This is the method used by Kodex, possibly could be changed/updated?
 userdata.surface.act_bip=NaN(number_of_vertices,2);
 %first find 'extreme' indecies for exclusion from 'mean' measurements
 [max_voltage,ind_temp]=max(Volts); ind_max_voltage=index(ind_temp);

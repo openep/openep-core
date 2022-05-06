@@ -10,7 +10,7 @@ function userdata = openep_createuserdata()
 % OPENEP_CREATEUSERDATA creates an empty userdata structure
 %
 % Author: Steven Williams, Nick Linton (2020)
-%
+% COS 2022: Added kodexFolder
 % Info on Code Testing:
 % ---------------------------------------------------------------
 %
@@ -21,7 +21,7 @@ function userdata = openep_createuserdata()
 % ---------------------------------------------------------------
 
     fNames = {    'systemName','cartoFolder','velocityFolder','precisionFolder' ...
-                ,'rhythmiaFolder','electric','notes','surface','rf','rfindex'};
+                ,'rhythmiaFolder','kodexFolder','electric','notes','surface','rf','rfindex'};
     for i = 1:numel(fNames)
         userdata.(fNames{i}) = [];
     end
