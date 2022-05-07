@@ -202,7 +202,7 @@ for i=1:numel(tempfolder);
                 
                 %electric data
                 userdata.electric.tags{egm_count,1}=value.tag;
-                userdata.electric.names(egm_count,1)=value.current_point;
+                userdata.electric.names{egm_count,1}=value.current_point;
                 userdata.electric.egmX(egm_count,:)=value.position; %%is raw position
                 userdata.electric.voltages.bipolar(egm_count,1)=Volts(value.current_point);
                 userdata.electric.LATs(egm_count,1)=LATs(value.current_point);
@@ -271,10 +271,27 @@ for i=1:numel(tempfolder_lm)
                 x=kodex_egm_import([lm_folder,filesep(),fname]);
                 value = jsondecode(x);
                 assignin('base','LMvalue',value)
-                %% POPULATE LANDMARK DATA HERE
-                userdata.surface.landmarks.X(lm_count,:)=value.position;
-                userdata.surface.landmarks.type{lm_count}=value.landmark_type;
-                userdata.surface.landmarks.name{lm_count}=value.landmark_sub_type;
+                %% POPULATE LANDMARK DATA HERE (added to electrogram data)
+                
+                userdata.electric.tags{egm_count+lm_count,1}=value.landmark_type;
+                userdata.electric.names{egm_count+lm_count,1}=value.landmark_sub_type;
+                userdata.electric.egmX(egm_count+lm_count,:)=value.position; %%is raw position
+                userdata.electric.indexmesh(egm_count,1)=NaN;
+                userdata.electric.voltages.bipolar(egm_count+lm_count,1)=NaN;
+                userdata.electric.LATs(egm_count+lm_count,1)=NaN;
+                userdata.electric.egm(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egm,2));
+                userdata.electric.elctrodeNames_uni(egm_count+lm_count,:)=NaN(1,size(userdata.electric.electrodeNames_uni,2));
+                userdata.electric.egmRef(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egmRef,2));
+                userdata.electric.annotations.woi(egm_count+lm_count,:)=NaN(1,2);
+                userdata.electric.annotations.referenceAnnot(egm_count+lm_count,1)=NaN;
+                userdata.electric.annotations.mapAnnot(egm_count+lm_count,1)=NaN;
+                userdata.electric.egmSurfX(egm_count+lm_count,:)=NaN(1,3); %%This is the one on the surface
+                
+                
+                %added to get index infomation for translating egm to shell
+                userdata.electric.include(egm_count+lm_count,1)=1;
+                userdata.electric.clipped(egm_count+lm_count,1)=NaN;
+                userdata.electric.discarded(egm_count+lm_count,1)=NaN; %discarded will be opposite of include, can proabably remove
     end
 end
 
@@ -297,7 +314,7 @@ for i=1:numel(tempfolder);
                 
                 %electric data
                 userdata.electric.tags{egm_count,1}=value.tag;
-                userdata.electric.names(egm_count,1)=value.current_point;
+                userdata.electric.names{egm_count,1}=value.current_point;
                 userdata.electric.egmX(egm_count,:)=value.position; %%is raw position
                 userdata.electric.voltages.bipolar(egm_count,1)=Volts(value.current_point);
                 userdata.electric.LATs(egm_count,1)=LATs(value.current_point);
@@ -311,7 +328,7 @@ for i=1:numel(tempfolder);
                 
                 
                 %added to get index infomation for translating egm to shell (PROBABLY WRONG)
-                userdata.electric.valid_for_map(egm_count,1)=value.valid_for_map;
+                userdata.electric.include(egm_count,1)=value.valid_for_map;
                 userdata.electric.clipped(egm_count,1)=value.clipped;
                 userdata.electric.discarded(egm_count,1)=value.discarded;
                 
@@ -366,10 +383,27 @@ for i=1:numel(tempfolder_lm)
                 x=kodex_egm_import([lm_folder,filesep(),fname]);
                 value = jsondecode(x);
                 assignin('base','LMvalue',value)
-                %% POPULATE LANDMARK DATA HERE
-                userdata.surface.landmarks.X(lm_count,:)=value.position;
-                userdata.surface.landmarks.type{lm_count}=value.landmark_type;
-                userdata.surface.landmarks.name{lm_count}=value.landmark_sub_type;
+                %% POPULATE LANDMARK DATA HERE (added to electrogram data)
+                
+                userdata.electric.tags{egm_count+lm_count,1}=value.landmark_type;
+                userdata.electric.names{egm_count+lm_count,1}=value.landmark_sub_type;
+                userdata.electric.egmX(egm_count+lm_count,:)=value.position; %%is raw position
+                userdata.electric.indexmesh(egm_count,1)=NaN;
+                userdata.electric.voltages.bipolar(egm_count+lm_count,1)=NaN;
+                userdata.electric.LATs(egm_count+lm_count,1)=NaN;
+                userdata.electric.egm(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egm,2));
+                userdata.electric.elctrodeNames_uni(egm_count+lm_count,:)=NaN(1,size(userdata.electric.elctrodeNames_uni(1,:),2));
+                userdata.electric.egmRef(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egmRef,2));
+                userdata.electric.annotations.woi(egm_count+lm_count,:)=NaN(1,2);
+                userdata.electric.annotations.referenceAnnot(egm_count+lm_count,1)=NaN;
+                userdata.electric.annotations.mapAnnot(egm_count+lm_count,1)=NaN;
+                userdata.electric.egmSurfX(egm_count+lm_count,:)=NaN(1,3); %%This is the one on the surface
+                
+                
+                %added to get index infomation for translating egm to shell
+                userdata.electric.include(egm_count+lm_count,1)=1;
+                userdata.electric.clipped(egm_count+lm_count,1)=0;
+                userdata.electric.discarded(egm_count+lm_count,1)=0; %discarded will be opposite of include, can proabably remove
     end
 end
 
