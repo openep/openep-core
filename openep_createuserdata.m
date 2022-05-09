@@ -52,7 +52,7 @@ function userdata = openep_createuserdata()
     userdata.electric = tempstruct;
 
     clear tempstruct;
-    fNames = {   'triRep','isVertexAtRim','act_bip','uni_imp_frc','signalMaps'};
+    fNames = {   'triRep','isVertexAtRim','act_bip','uni_imp_frc','signalMaps','normals'};
     for i = 1:numel(fNames)
         tempstruct.(fNames{i}) = [];
     end
