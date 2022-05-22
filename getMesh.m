@@ -76,13 +76,13 @@ switch lower(type)
         if isa(userdata.surface.triRep, 'TriRep')
             tr = userdata.surface.triRep;
         else
-            tr = TriRep(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
+            tr = TriRep(double(FV.faces), FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
         end
     case 'triangulation'
         if isa(userdata.surface.triRep, 'triangulation')
             tr = userdata.surface.triRep;
         else
-            tr = triangulation(FV.faces, FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
+            tr = triangulation(double(FV.faces), FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
         end
     case 'struct'
         if isa(userdata.surface.triRep, 'struct')
