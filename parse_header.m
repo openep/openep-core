@@ -36,30 +36,39 @@ while ~isempty(startIndex)
     end
 end
 
-indNL = 1 + find(header==char(10));    %#ok<*CHARTEN> %indNL = index of first character after newline
+indNL = [1, 1 + find(header==char(10))];    %#ok<*CHARTEN> %indNL = index of first character after newline
 iL = 0;
 while iL < (numel(indNL)-1)
     iL = iL + 1;
     line = header(indNL(iL):(indNL(iL+1)-2));
 
+    % look for - "Export File Version : TEXT"
+    tokens = regexp(line, 'Export File Version\s*:\s*([a-zA-Z_.0-9]*)R', 'tokens');
+    if ~isempty(tokens)
+        exportFileVersion = str2double(tokens{1}{1});
+    end
+
     % look for - "Export Data Element : NAME"
     tokens = regexp(line, 'Export Data Element\s*:\s*(\w*)', 'tokens');
-    if ~isempty(tokens); dataElement = tokens{1}{1};
+    if ~isempty(tokens)
+        dataElement = tokens{1}{1};
     end
 
     % look for - "Export from Study : NAME"
     tokens = regexp(line, 'Export from Study\s*:\s*(\w*)', 'tokens');
-    if ~isempty(tokens); study = tokens{1}{1};
+    if ~isempty(tokens)
+        study = tokens{1}{1};
     end
 
     % look for - "Export from Segment : NAME"
-    tokens = regexp(line, 'Export from Segment\s*:\s*(\w*\s*\d*)', 'tokens');
+    %tokens = regexp(line, 'Export from Segment\s*:\s*(\w*\s*\d*)', 'tokens'); % changed 22nd May 2022
+    tokens = regexp(line, 'Export from Segment\s*:\s*(.*)', 'tokens');
     if ~isempty(tokens)
         studySegment = tokens{1}{1};
     end
 
     % look for - "Export User Comments : TEXT"
-    tokens = regexp(line, 'Export User Comments\s*:\s*(\w*)', 'tokens');
+    tokens = regexp(line, 'Export User Comments\s*:\s*(.*)', 'tokens');
     if ~isempty(tokens)
         userComments = tokens{1}{1};
     end
@@ -68,21 +77,29 @@ while iL < (numel(indNL)-1)
     tokens = regexp(line, '\s*Export Start Time \(h:m:s\.msec\)\s*:\s*(\d*:\d*:\d*\.\d*)', 'tokens');
     if ~isempty(tokens)
         startTime = tokens{1}{1};
+    else
+        startTime = NaN;
     end
 
     % look for - "Export End Time (h:m:s.msec) : HH:MM:SS.MS"
     tokens = regexp(line, '\s*Export End Time \(h:m:s\.msec\)\s*:\s*(\d*:\d*:\d*\.\d*)', 'tokens');
     if ~isempty(tokens)
         endTime = tokens{1}{1};
+    else
+        endTime = NaN;
     end
 
     % look for - "Export Start Time (secs usecs) : sec usec"
     tokens = regexp(line, '\s*Export Start Time \(secs usecs)\s*:\s*(\d*\s*\d*)', 'tokens');
     if ~isempty(tokens)
-        % Extract and convert to float
-        startTimeAbs = strsplit(tokens{1}{1}, ' ');
-        startTimeAbs{2} = ['0.', startTimeAbs{2}];
-        startTimeAbs = str2double(startTimeAbs{1})+str2double(startTimeAbs{2});
+        if ~isempty(tokens{1}{1})
+            % Extract and convert to float
+            startTimeAbs = strsplit(tokens{1}{1}, ' ');
+            startTimeAbs{2} = ['0.', startTimeAbs{2}];
+            startTimeAbs = str2double(startTimeAbs{1})+str2double(startTimeAbs{2});
+        else
+            startTimeAbs = NaN;
+        end
     end
 
     % look for - "Export End Time (secs usecs) : sec usec"
@@ -94,9 +111,16 @@ while iL < (numel(indNL)-1)
     end
 
     % look for - "Total number of data points (columns): , "
-    [~, ind2] = regexp(line, 'Total number of data points \(columns\)\:\s*\,\s*', 'start', 'end');
-    if ~isempty(ind2)
-        numPoints = str2double(line(ind2+1:end));
+    if exportFileVersion < 10.0
+        [~, ind2] = regexp(line, 'Total number of data points \(columns\)\:\s*\,\s*', 'start', 'end');
+        if ~isempty(ind2)
+            numPoints = str2double(line(ind2+1:end));
+        end
+    else
+        tokens = regexp(line, '# mapping pts\s*:\s*,\s*(\d*)', 'tokens');
+        if ~isempty(tokens)
+            numPoints = str2double(tokens{1}{1});
+        end
     end
 
     % look for - "This is file X of Y for map, "
@@ -107,7 +131,11 @@ while iL < (numel(indNL)-1)
     end
 
     % look for - "Seg data len:"
-    tokens = regexp(line, 'Seg data len\:\,(\d*.?\d*)', 'tokens');
+    if exportFileVersion < 10.0
+        tokens = regexp(line, 'Seg data len\:\,(\d*.?\d*)', 'tokens');
+    else
+        tokens = regexp(line, 'Segment data length \(sec\)\s*:\s*,\s*(\d*.?\d*)', 'tokens');
+    end
     if ~isempty(tokens)
         segmentDataLength = str2double(tokens{1}{1});
     end
@@ -141,8 +169,15 @@ while iL < (numel(indNL)-1)
     if ~isempty(tokens)
         cfeRefractory = str2double(tokens{1}{1});
     end
+
+    % Look for - "Data starts in row"
+    tokens = regexp(line, 'Data starts in row\s*,\s*(\d*)', 'tokens');
+    if ~isempty(tokens)
+        dataStartRow = str2double(tokens{1}{1});
+    end
 end
 
+info.exportFileVersion = exportFileVersion;
 info.dataElement = dataElement;
 info.study = study;
 info.userComments = userComments;
@@ -152,16 +187,27 @@ info.endTime = endTime;
 info.startTimeAbs = startTimeAbs;
 info.endTimeAbs = endTimeAbs;
 info.header = header;
-if strcmpi(filetype, 'dxl')
-    info.numPoints = numPoints;
-    info.fileIndices = fileIndices;
-    info.mapId = mapId;
-    info.segmentDataLength = segmentDataLength;
-    info.exportedSeconds = exportedSeconds;
-    info.sampleFreq = sampleFreq;
-    info.CFE_PP_Sensitivity = cfePpSensitivity;
-    info.CFE_Width = cfeWidth;
-    info.CFE_Refractory = cfeRefractory;
+
+% only do this next part if we have wave data, i.e. if sampleFreq is
+% populated
+if exist('sampleFreq', 'var')
+    if exportFileVersion < 10.0
+        info.numPoints = numPoints;
+        info.fileIndices = fileIndices;
+        info.mapId = mapId;
+        info.segmentDataLength = segmentDataLength;
+        info.exportedSeconds = exportedSeconds;
+        info.sampleFreq = sampleFreq;
+        info.CFE_PP_Sensitivity = cfePpSensitivity;
+        info.CFE_Width = cfeWidth;
+        info.CFE_Refractory = cfeRefractory;
+    else
+        info.numPts = numPoints;
+        info.segmentDataLength = segmentDataLength;
+        info.exportedSeconds = segmentDataLength; % we no longer have exported seconds in DxL version above at least 10.0R
+        info.sampleFreq = sampleFreq;
+        info.dataStartRow = dataStartRow;
+    end
 end
 
 end
