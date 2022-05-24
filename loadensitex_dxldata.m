@@ -1,28 +1,12 @@
-function [info, points, egms, dataHeaderRowLine] = loadensitex_dxldata(filename)
+function [info, varnames, data] = loadensitex_dxldata(filename)
 % LOADPRECISION_DXLDATA loads the map stored in an EnSiteX DxL file.
 % Usage:
 %   [info, points, egms] = loadprecision_dxldata(filename)
 % Where:
 %   filename is the filename
 %   info - contains header information about the file
-%       info.dataElement
-%       info.study
-%       info.studySegment
-%       info.startTime
-%       info.endTime
-%       info.header
-%       *info.numPoints
-%       *info.fileIndices
-%       *info.mapId
-%       *info.segmentDataLength
-%       *info.exportedSeconds
-%       info.sampleFreq
-%       *info.CFE_PP_Sensitivity
-%       *info.CFE_Width
-%       *info.CFE_Refractory
-%       info.userComments
-%   points - contains map data
-%   egms - contains electrogram data
+%   varnames - contains the variable names stored in the data
+%   data - contains the data
 %
 % LOADENSITE_DXLDATA Columns in egms correspond to indices in points
 %
@@ -39,8 +23,8 @@ function [info, points, egms, dataHeaderRowLine] = loadensitex_dxldata(filename)
 % ---------------------------------------------------------------
 
 info = [];
-points = [];
-egms = [];
+varnames = [];
+data = [];
 
 [~, ~, ext] = fileparts(filename);
 if ~strcmpi(ext, '.csv')
@@ -86,27 +70,28 @@ header = fData(1:indEndofHeader);
 
 % Parse the header
 info = parse_header(header, 'dxl');
+info.filename = filename;
 
-% READ THE MAP DATA
-% -----------------
-% The map data starts at the line that starts 'pt number:' and ends before
-% the line that starts 'Seg data len:';
-ind1 = regexp(fData, 'pt number:', 'start');
-ind2 = regexp(fData, 'Seg data len:', 'start');
+% % This section commented out since map data no longer appears to exist
+% % READ THE MAP DATA
+% % -----------------
+% % The map data starts at the line that starts 'pt number:' and ends before
+% % the line that starts 'Seg data len:';
+% ind1 = regexp(fData, 'pt number:', 'start');
+% ind2 = regexp(fData, 'Seg data len:', 'start');
+%
+% if isempty(ind1) || isempty(ind2)
+%     points = [];
+% else
+%     % Parse the map data: this section is left over from Precision export
+%     % formats and may not work for EnSiteX export formats
+%     mapdatastring = fData(ind1:ind2-2);
+%     points = local_parsemapdata(mapdatastring, info.numPoints);
+% end
 
-if isempty(ind1) || isempty(ind2)
-    points = [];
-else
-    % Parse the map data: this section is left over from Precision export
-    % formats and may not work for EnSiteX export formats
-    mapdatastring = fData(ind1:ind2-2);
-    points = local_parsemapdata(mapdatastring, info.numPoints);
-end
 
-
-
-% READ THE ELECTROGRAMS
-% ---------------------
+% READ THE ELECTROGRAMS / OTHER DATA
+% ----------------------------------
 
 % Read the header line at info.dataStartRow
 fseek(fileID, 0, 'bof')
@@ -114,8 +99,13 @@ for i = 1:info.dataStartRow-2
     fgetl(fileID);
 end
 dataHeaderRowLine = fgetl(fileID);
-dataHeaders = strsplit(dataHeaderRowLine, ',');
-if strcmpi(dataHeaderRowLline(end), ',')
+dataHeaders = regexp(dataHeaderRowLine,',','split'); % previously, this was: dataHeaders = strsplit(dataHeaderRowLine, ',');
+
+% Tidy up the heading data
+if strcmpi(dataHeaderRowLine(end), ',')
+    dataHeaders(end) = [];
+end
+if strcmpi(dataHeaders(end), '...')
     dataHeaders(end) = [];
 end
 
@@ -124,27 +114,25 @@ end
 if isfield(info, 'sampleFreq')
     headersAsNumbers = str2double(dataHeaders);
     tfNumHeaders = ~isnan(headersAsNumbers);
-    iWaveColumns = find(tfNumHeaders);
+else 
+    tfNumHeaders = false(size(dataHeaders));
 end
 
+% Return the variable headings, concatenating the ending numeric data into
+% a single variable. Note that we currently are assuming that NONE of the
+% other header names will be numeric, this may not always be the case.
+if isfield(info, 'sampleFreq')
+    varnames = dataHeaders(~tfNumHeaders);
+    varnames{end+1} = 'signals';
+else
+    varnames = dataHeaders;
+end
 
+numericColumnsToRead = tfNumHeaders;
+varColumnsToRead = ~tfNumHeaders;
+% we are already at the right line in the file as we just read the header line before the data
 
-disp('made  it')
-return
-
-
-% Work out the length of data
-nSamples = round(info.sampleFreq * info.exportedSeconds); %the number of sampes in the exported segment
-columnsToRead = true([1, info.numPoints+1]);
-columnsToRead(1) = false;
-
-% The electrorgam data starts at the second line beginning with 'rov trace:'
-ind = regexp(fData, 'rov trace', 'start');
-dataStartBytes = 1*(ind(2)-1); %1 byte for each character.
-fseek(fileID, dataStartBytes, 'bof'); %put the file marker at the start of the relevant data
-
-% Parse the electrogram data
-egms = local_parsedata(fileID, columnsToRead, nSamples);
+data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPts);
 
 end
 
@@ -166,159 +154,100 @@ for iPt=1:size(rawdata,2)
 end
 end
 
-function egmData = local_parsedata(fileID, columnsToRead, nSamples)
-    %   nSamples - the number of samples
-    %   columnsToRead - logical array indicating which columns will be read
-    %   fileID - the file ID
-    %
-    % CREATE THE FORMAT STRING
-    % The first column contains [,], all other columns can be read as %f format.
-    
-    if columnsToRead(1)
-        error('Code not written to read first column of data.')
-    end
-%     formatFirstCol = uint8(','); % Discards the first column, which is a literal [,]
-%     columnRead = uint8('%f,'); % A token that will be read
-%     columnLeave = uint8('%*f,'); % A token that will be discarded
-    nColToRead = sum(columnsToRead);
-%     nColToLeave = numel(columnsToRead) - nColToRead - 1;
-        % -1 because we are dealing with first column separately
-%     totalLength = numel(formatFirstCol)...
-%         + nColToRead*numel(columnRead)...
-%         + nColToLeave*numel(columnLeave);
-%     format = zeros(1, totalLength, 'uint8');
-%     format(1:numel(formatFirstCol)) = formatFirstCol;
-%     lastPlace = numel(formatFirstCol);
-%     for i = 2:numel(columnsToRead)
-%         if columnsToRead(i)
-%             format(lastPlace + (1:numel(columnRead))) = columnRead;
-%             lastPlace = lastPlace + numel(columnRead);
-%         else % Don't read
-%             format(lastPlace + (1:numel(columnLeave))) = columnLeave;
-%             lastPlace = lastPlace + numel(columnLeave);
-%         end
-%     end
-%     format = char(format); % Finally, we have made the format string
-%     format = [format, char(10)];
-%     format(end-1) = []; % Remove the trailing comma
+function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples)
+%   nSamples - the number of samples to read; which may be a number of
+%   points or a number of freeze groups
+%   columnsToRead - logical array indicating which columns will be read
+%   fileID - the file ID
 
-    % READ IN THE DATA IN CHUNKS
-%     allBytesToRead = filebytes2end(fileID);
+nNumericColToRead = sum(numericColumnsToRead);
+nCol = numel(numericColumnsToRead);
 
-    % Go through the file and read the data; if you come across a string use
-    % this as the variable name, appended with _egm
-
-    maxBytes = 10 * 1024 * 1024; % read in max 10MBytes at a time
-    remainder = [];
-    allData = zeros(nColToRead*nSamples, 1, 'single');
-    lastDataPosition = 0;
-
-
-e = [];
-egmVarName = [];
-while isempty(e)
+maxBytes = 10 * 1024 * 1024; % read in max 10MBytes at a time
+allNumericData = zeros(nSamples, nNumericColToRead, 'double');
+allVarData = cell(nSamples, nCol - nNumericColToRead);
+currentLine = 1;
+remainingBytes = filebytes2end(fileID);
+totalBytes = remainingBytes;
+remainingData = [];
+f = waitbar(0, 'loading data');
+while remainingBytes>0
     % Read chunk of data
-    remainingBytes = filebytes2end(fileID);
-    bytesToRead = min([maxBytes, remainingBytes+1]); 
-        % The +1 ensures we read into the end of the file.
+    bytesToRead = min([maxBytes, remainingBytes+1]);     % The +1 ensures we read into the end of the file.
     dataChunk = fread(fileID, bytesToRead, '*char');
-    fileText = [  remainder ; dataChunk  ];
 
-    % Determine if we are at the end of the electrograms which stop before
-    % the line beginning "FFT spectrum is available ..."
-    e = regexp(fileText',... 
-        'FFT spectrum is available for FFT maps only',...
-        'start');
+    % Find the final newline character
+    iNewLine = regexp(dataChunk', '\n');
+    lastNewLine = iNewLine(end);
 
-    % Get the indices of any electrogram titles - we will store these to
-    % use as the variable names; and remove them from the text to allow all
-    % the data to be read in a single block which will later be divide
+    % identify the remaining data for the next time round
+    temp = dataChunk(lastNewLine+1:end);
 
-    % Matlab regexp
-    %[ind1, ind2] = regexp(fileText', '\w*\s*\w*:', 'start', 'end');
+    % removing overhanging data (since the data chunk will not be an exact number of lines)
+    dataChunk(lastNewLine:end) = [];
 
-    % Don't bother with regexp at all - much faster:
-    ind1 = [];
-    ind2 = strfind(fileText', ':');
-    if ~isempty(ind2)
-        ind1=zeros(size(ind2));
-        for i=1:numel(ind2)
-            counter=ind2(i)-7; %str(index-7) gives 'X' if str='X trace:'
-            dcounter=ind2(i);
-            if counter==0
-                counter=counter+1;
-            end
-            % Count back to start of word:
-            while ~isspace(fileText(counter))
-                counter = counter-1;
-                if counter == 0
-                    break
-                end
-            end
-            dcounter=dcounter-counter-1;
-            ind1(i)=ind2(i)-dcounter;
-        end
+    % add on remaining data from last time if appropriate
+    if ~isempty(remainingData)
+        dataChunk = [remainingData; dataChunk]; %#ok<*AGROW>
     end
 
-    if ~isempty(e)
-        ind2(ind1>e) = [];
-        ind1(ind1>e) = []; %#ok<AGROW>
+    % save the remaining data for the next time round
+    remainingData = temp;
+
+    % split the text at commas
+    dataChunkCellArray = regexp(dataChunk', ',', 'split'); % deals with successive delimiters correctly in contrast to strsplit(dataChunk', ',');
+
+    % remove any leading or trailing empty cells if needed
+    if isempty(dataChunkCellArray{1})
+        dataChunkCellArray(1) = [];
     end
-    if ~isempty(ind1)
-%         egmVarNameTemp = cell(numel(ind1), 1);
-        for iVarName = 1:numel(ind1)
-            egmVarNameTemp{iVarName} = fileText(ind1(iVarName):ind2(iVarName))';
-        end
-        egmVarName = [egmVarName egmVarNameTemp];
-        clear egmVarNameTemp;
-        iRemove = [];
-        for iVarName = 1:numel(ind1)
-            endOfLine = ind1(iVarName);
-            while fileText(endOfLine) ~= char(10)
-                endOfLine = endOfLine + 1;
-            end
-            iRemove = [iRemove ind1(iVarName):endOfLine];
-        end
-        fileText(iRemove) = [];
+    if isempty(dataChunkCellArray{end})
+        dataChunkCellArray(end) = [];
+    end
+    if strcmpi(dataChunkCellArray{end}(2:end), 'EOF')
+        dataChunkCellArray(end) = [];
     end
 
-    % Remove the hanging line
-    endOfLastLine = numel(fileText);
-    while fileText(endOfLastLine) ~= char(10)
-        endOfLastLine = endOfLastLine - 1;
-    end
-    remainder = fileText((endOfLastLine+1):end); %work out hanging line
-    fileText = fileText(1:(endOfLastLine-1)); %truncate to last full line
+    % work out the valid cells
+    numLinesRead = numel(dataChunkCellArray) / nCol;
+    wholeLinesRead = floor(numLinesRead);
 
-    % Read the data using sscanf
-    ft2=strrep(fileText',',',' ');
-    [data, count] = sscanf(ft2, '%f');
+    % check if we need to insert extra cells
 
-    if rem(count,nColToRead) ~=0
-        error('Unexpected amount of data read.')
-    end
-    allData(lastDataPosition + (1:count)) = data;
-    lastDataPosition = lastDataPosition + count;
-    clear data
+    % reshape the data
+    reshapedData = reshape(dataChunkCellArray,[nCol, wholeLinesRead]);
+    reshapedData = reshapedData';
+
+    % Deal first with the numeric data -----
+
+    % only keep the columns we want for signal data
+    thisSignalData = reshapedData(:,numericColumnsToRead);
+
+    % equivalent to, but much faster than
+    %allData(currentLine:currentLine+wholeLinesRead-1,1:nColToRead) = str2double(thisEgmData);
+    doubleValues = sscanf(sprintf(' %s',thisSignalData{:}),'%f',[1,Inf]);
+    doubleValueReshaped = reshape(doubleValues, size(thisSignalData));
+    allNumericData(currentLine:currentLine+wholeLinesRead-1,1:nNumericColToRead) = doubleValueReshaped;
+
+    % Now deal with the variables data -----
+
+    thisVarData = reshapedData(:,~numericColumnsToRead);
+    allVarData(currentLine:currentLine+wholeLinesRead-1,1:nCol - nNumericColToRead) = thisVarData;
+
+    % increment the current line index, waitbar and remaining bytes
+    currentLine = currentLine+wholeLinesRead;
+    waitbar((totalBytes-remainingBytes)/totalBytes, f);
+    remainingBytes = filebytes2end(fileID);
 end
 
-% Check the right amount of data has been read
-nSignals = numel(egmVarName);
-if lastDataPosition ~= nColToRead*nSamples*nSignals
-    beep()
-    warning('Not all samples read.')
-end
+% destroy the waitbar
+close(f)
 
-% REARRANGE THE DATA
-% Fread and sscanf reads the data into a long column (not row) and we have
-% read all the signals into one array
-allData = reshape(allData, nColToRead, nSamples*nSignals);
-allData = allData';
-
-egmVar = regexprep(egmVarName, '[^\w'']','');
-iRow = 1:nSamples;
-for iSig = 1:numel(egmVarName)
-    egmData.(egmVar{iSig}) = allData(iRow+((iSig-1)*nSamples),:);
+% assign the output
+allOutput = allVarData;
+widthOfAllOutput = size(allOutput,2);
+for i = 1:size(allNumericData,1)
+    allOutput{i,widthOfAllOutput+1} = allNumericData(i,:);
 end
 
 end

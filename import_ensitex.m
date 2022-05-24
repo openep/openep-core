@@ -1,4 +1,4 @@
-function [userdata] = import_ensitex(varargin)
+function userdata = import_ensitex(varargin)
 % IMPORT_ENSITEX is used to import an EnsiteX case.
 %
 % Usage:
@@ -21,6 +21,9 @@ function [userdata] = import_ensitex(varargin)
 % ---------------------------------------------------------------
 % code
 % ---------------------------------------------------------------
+
+% Create an empty OpenEP data structure
+userdata = openep_createuserdata;
 
 % General data
 userdata.systemName = 'ensitex';
@@ -61,177 +64,135 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
     , 'datatype', 'labels' ...
     );
 
-% next load the map file
+% % next load the map file and the wave files into memory
+% cMapDir = [varargin{1} filesep() 'Contact_Mapping'];
+% mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
+% for i = 1:numel(mappingFiles)
+%     [info varnames data] = loadensitex_dxldata([varargin{1} filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
+%     dataFile{i}.info = info;
+%     dataFile{i}.varnames = varnames;
+%     dataFile{i}.data = data;
+% end
 
-% then load the wave files
+load('/Users/steven/Desktop/dataFiles.mat');
+
+% then map the data into the OpenEP data format
+
+% I think we have to decide whether to import an 'along' map or an 'across'
+% map and these might need combining retrospectively for particular use
+% cases, but could be considered as separate OpenEP data structures at
+% import time. The default should possibly be to import to the 'along' as 
+% this is 'along the spline' and consistent with usual practice in EP, 
+% whereas 'across' may be influenced by HD grid geometry.
+
+% dataFile{1} Map_CV_omni.csv
+% dataFile{2} Wave_bi_across.csv
+% dataFile{3} Wave_bi_along.csv
+% dataFile{4} Wave_refs.csv
+% dataFile{5} Wave_rov.csv
+% dataFile{6} Wave_uni_across.csv
+% dataFile{7} Wave_uni_along.csv
+% dataFile{8} Wave_uni_corner.csv
+
+userdata.electric.sampleFrequency = dataFile{5}.info.sampleFreq;
+
+userdata.electric.tags                          = dataFile{1}.data(:,26);
+userdata.electric.names                         = dataFile{1}.data(:,5);
+userdata.electric.electrodeNames_bip            = dataFile{3}.data(:,1);
+userdata.electric.egmX                          = [str2double(dataFile{1}.data(:,7)) str2double(dataFile{1}.data(:,8)) str2double(dataFile{1}.data(:,9))];
+userdata.electric.egm                           = cell2mat(dataFile{3}.data(:,6));
+userdata.electric.electrodeNames_uni            = dataFile{7}.data(:,1);
+userdata.electric.egmUniX(:,:,1)                = [str2double(dataFile{1}.data(:,60)) str2double(dataFile{1}.data(:,61)) str2double(dataFile{1}.data(:,62))];
+userdata.electric.egmUniX(:,:,2)                = [str2double(dataFile{1}.data(:,64)) str2double(dataFile{1}.data(:,65)) str2double(dataFile{1}.data(:,66))];
+userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{8}.data(:,6));
+userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{7}.data(:,6));
+% Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
+userdata.electric.egmRef                        = userdata.electric.egm; % only for now
+% Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
+userdata.electric.ecg                           = userdata.electric.egm; % only for now
+userdata.electric.annotations.woi               = [str2double(dataFile{1}.data(:,23)) str2double(dataFile{1}.data(:,24))];
+userdata.electric.annotations.referenceAnnot    = str2double(dataFile{1}.data(:,74));
+userdata.electric.annotations.mapAnnot          = str2double(dataFile{3}.data(:,5)) ./ userdata.electric.sampleFrequency .* 1000;
+userdata.electric.voltages.bipolar              = str2double(dataFile{1}.data(:,32));
+userdata.electric.votlages.unipolar             = str2double(dataFile{1}.data(:,58));
+userdata.electric.egmSurfX                      = [str2double(dataFile{1}.data(:,10)) str2double(dataFile{1}.data(:,11)) str2double(dataFile{1}.data(:,12))];
+userdata.electric.barDirection                  = [str2double(dataFile{1}.data(:,13)) str2double(dataFile{1}.data(:,14)) str2double(dataFile{1}.data(:,15))];
+userdata.electric.include                       = str2double(dataFile{1}.data(:,17));
 
 
 
 
-
-
+% infoMapping = { ...
+%     'electric.sampleFrequency'                'Wave_rov.csv'                              'sampleFreq' ...
+%     ; ...
+% };
 % 
-% if exist('dxldata', 'var')
-%     if isfield(dxldata, 'sampleFreq')
-%         userdata.electric.sampleFrequency = dxldata.sampleFreq;
+% dataMapping = { ...
+%        'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
+%     ;  'electric.names'                       'Map_CV_omni.csv'                           '(Point #)' ...
+%     ;  'electric.electrodeNames_bip'          'Wave_bi_along.csv'                         'Trace' ...
+%     ;  'electric.egmX'                        'Map_CV_omni.csv'                           'roving x, roving y, roving z' ...
+%     ;  'electric.egm'                         'Wave_bi_along'                             'signals' ...
+%     ;  'electric.electrodeNames_uni'          'Wave_uni_along'                            'Trace' ...
+%     ;  'electric.egmUniX'                     'Map_CV_omni.csv'                           'Uni_CornerX, Uni_CornerY, Uni_CornerZ; Uni_AlongX, Uni_AlongY, Uni_AlongZ' ...
+%     ;  'electric.egmUni'                      'Wave_uni_corner.csv; Wave_uni_along.csv'   'signals' ...
+%     ;  'electric.egmRef'                      'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good reference'
+%     ;  'electric.ecg'                         'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good ECG'
+%     ;  'electric.annotations.woi'             'Map_CV_omni.csv'                           'left curtain (ms), right curtain (ms)' ... % this is in ms relative to samples!
+%     ;  'electric.annotations.referenceAnnot'  'Map_CV_omni.csv'                           'RefTick' ... % this is in samples!
+%     ;  'electric.annotations.mapAnnot'        'Wave_bi_along.csv'                         'rovTime (wave samples)' ... % this is _presumably_ in samples!
+%     ;  'electric.voltages.bipolar'            'Map_CV_omni.csv'                           'pp_Valong' ...
+%     ;  'electric.voltages.unipolar'           'Map_CV_omni.csv'                           'unipoleMaxPP' ...
+%     ;  'electric.impedances.time'             ''                                          '' ... % We do not seem to have impedance data
+%     ;  'electric.impedances.value'            ''                                          '' ... % We do not seem to have impedance data
+%     ;  'electric.egmSurfX'                    'Map_CV_omni.csv'                           'surface x, surface y, surface z' ...
+%     ;  'electric.barDirection'                'Map_CV_omni.csv'                           'normal x, normal y, normal z' ...
+%     ;  'electric.include'                     'Map_CV_omni.csv'                           'utilized' ...
+%     };
+% 
+% % Deal with the dataMapping array
+% for i = 1:size(dataMapping)
+% 
+%     fieldNames = strsplit(dataMapping{i,1}, '.');
+% 
+%     % parse the fieldnames
+%     switch numel(fieldNames)
+%         case 1
+%             userdata.(fieldNames{1}) = dataMapping{i,1};
+%         case 2
+%             userdata.(fieldNames{1}).(fieldNames{2}) = dataMapping{i,1};
+%         case 3
+%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = dataMapping{i,1};
+%         case 4
+%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = dataMapping{i,1};
+%         otherwise
+%             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
 %     end
+% 
 % end
 % 
-% % Geometry data - NOT COMPLETE
+% % Deal wtih the infoMapping array
+% for i = 1:size(infoMapping)
 % 
+%     fieldNames = strsplit(infoMapping{i,1}, '.');
 % 
-% % iMap = 1;
-% % for i = 1:numel(data.modelgroups)
-% %     for j = 1:numel(data.modelgroups(i).dxgeo)
-% %         TRI = data.modelgroups(i).dxgeo(j).triangles;
-% %         X = data.modelgroups(i).dxgeo(j).vertices(:,1);
-% %         Y = data.modelgroups(i).dxgeo(j).vertices(:,2);
-% %         Z = data.modelgroups(i).dxgeo(j).vertices(:,3);
-% %         tr{iMap} = TriRep(TRI, X, Y, Z);
-% %         iMap = iMap + 1;
-% %     end
-% % end
-% 
-% 
-% 
-% 
-% % Read the data
-% if nargin == 0
-%     data = importprecision();
-% else
-%     data = importprecision('direc', varargin{1});
-% end
-% 
-% % Load DxL data
-% dxldata = importprecision_dxldata(data.directory);
-% 
-% % Create a blank OpenEP data structure
-% userdata = openep_createuserdata();
-% 
-% 
-% 
-% 
-% 
-% % find the Dx Landmark Geo file index
-% iDxInd = [];
-% for i = 1: numel(data.modelgroups)
-%     if strstartcmpi('St. Jude Medical Dx Landmark Geo', data.modelgroups(i).dxgeo.comment{i})
-%         iDxInd = i;
-%         break; % after finding the Dx Landmark Geo file we can proceed
+%     % parse the fieldnames
+%     switch numel(fieldNames)
+%         case 1
+%             userdata.(fieldNames{1}) = infoMapping{i,1};
+%         case 2
+%             userdata.(fieldNames{1}).(fieldNames{2}) = infoMapping{i,1};
+%         case 3
+%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = infoMapping{i,1};
+%         case 4
+%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = infoMapping{i,1};
+%         otherwise
+%             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
 %     end
+% 
 % end
-% if isempty(iDxInd)
-%     error('OPENEP/IMPORT_PRECISION: No DxLandmarkGeo.xml file located.')
-% end
-% TRI = data.modelgroups(iDxInd).dxgeo.triangles;
-% X = data.modelgroups(iDxInd).dxgeo.vertices(:,1);
-% Y = data.modelgroups(iDxInd).dxgeo.vertices(:,2);
-% Z = data.modelgroups(iDxInd).dxgeo.vertices(:,3);
-% tr = TriRep(TRI, X, Y, Z);
-% userdata = setMesh(userdata, tr);
-% surfaceData = data.modelgroups(iDxInd).dxgeo.surface_of_origin;
-% userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceData, 'definedOn', 'elements');
-% 
-% 
-% % Surface data - TODO
-% % THERE DOES NOT APPEAR TO BE VOLTAGE MAPPING DATA AVAILABLE BUT THERE DOES
-% % APPEAR TO BE ACTIVATION TIME DATA AVAILABLE IN THE Dx Landmark Geo data file
-% % Get the activation time 
-% if isfield(data.modelgroups(iDxInd).dxgeo, 'act')
-%     act = data.modelgroups(iDxInd).dxgeo.act;
-% else 
-%     act = repmat(NaN, size(X));
-% end
-% if isfield(data.modelgroups(iDxInd).dxgeo, 'bip')
-%     bip = data.modelgroups(iDxInd).dxgeo.bip;
-% else
-%     bip = repmat(NaN, size(X));
-% end
-% userdata.surface.act_bip = [act bip];
-% % userdata.surface.uni_imp_frc = 
-% 
-% % if isfield(data.modelgroups(i).dxgeo(j).vertices(:,3);)
-% % userdata = setSurfaceProperty(userdata, 'name', 'surfaceregion', info.dxgeo.surface_of_origin);
-% 
-% 
-% 
-% 
-% % TODO: HOW TO DEAL WITH GEOMETRY *** Github Issue #42: https://github.com/openep/openep-core/issues/42 ***
-% % (1) Find the dxgeo with the first comment 'St. Jude Medical Dx Landmark Geo data export; file format revision 0'
-% %     - best to do this by identifying the comment which contains the string 'Dx Landmark Geo'
-% % (2) Use the geometry described in this file as userdata.surface.triRep
-% % (3) Find the dxgeo with the comment 'St. Jude Medical Model Groups data export; file format revision 0'
-% %     - best to do this be identifying the comment which contains the string 'Model Groups'
-% % (4) Use this file to tag each polygon in userdata.surface.triRep as
-% % belongining to one or more geometries. Will need to think of how/where to
-% % store this information, but it probably needs another data field and may
-% % be specific to Precision
-% % (5) Note that some dxgeo's do not contain a comment. These *probably*
-% % refer to image data sets merged into the system. Will need to think of
-% % how/where to store this information, but it probably needs another data
-% % field, and is not likley to be specific to Precision
-% 
-% % this section deals with geometry
-% % sometimes there may be model groups; sometimes not
-% 
-% 
-% 
-% 
-% 
-% 
-% % Electric data - PARTIALLY COMPLETE
-% % userdata.electric.tags = ;
-% % userdata.electric.names = ;
-% if length(dxldata) > 2
-%     warning(['Currently unable to process more than one combined set ',...
-%         'of experiments (one unipolar and one bipolar'])
-% end
-% for i_dxl = 1:length(dxldata)
-%     if dxldata(1).bipole
-%         userdata.electric.electrodeNames_bip = dxldata(i_dxl).rovtrace_pts';
-%         userdata.electric.egmX = [dxldata(i_dxl).rovingx',...
-%             dxldata(i_dxl).rovingy', dxldata(i_dxl).rovingz'];
-%         userdata.electric.egmSurfX = [dxldata(i_dxl).surfPtx',...
-%             dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
-%         userdata.electric.egmRef = dxldata(i_dxl).rovtrace'; % TODO: import the reference egm
-%         userdata.electric.egm = dxldata(i_dxl).rovtrace';
-%         userdata.electric.annotations.referenceAnnot = dxldata(i_dxl).refLAT';
-%         userdata.electric.annotations.mapAnnot = dxldata(i_dxl).rovLAT';
-%         userdata.electric.annotations.woi = -userdata.electric.annotations.referenceAnnot;
-%         userdata.electric.annotations.woi(:,2) = length(userdata.electric.egm)-userdata.electric.annotations.referenceAnnot;
-%         userdata.electric.voltages.bipolar = dxldata(i_dxl).peak2peak';
-%     else
-%         userdata.electric.electrodeNames_uni = dxldata(i_dxl).rovtrace_pts';
-%         userdata.electric.egmUniX = [dxldata(i_dxl).rovingx',...
-%             dxldata(i_dxl).rovingy', dxldata(i_dxl).rovingz'];
-%         userdata.electric.egmUniSurfX = [dxldata(i_dxl).surfPtx',...
-%             dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
-%         userdata.electric.egmUniRef = dxldata(i_dxl).rovtrace';
-%         userdata.electric.egmUni = dxldata(i_dxl).rovtrace';
-%         userdata.electric.annotations.referenceAnnotUni = dxldata(i_dxl).refLAT';
-%         userdata.electric.annotations.mapAnnotUni = dxldata(i_dxl).rovLAT';
-%         userdata.electric.voltages.unipolar = dxldata(i_dxl).peak2peak';
-%     end
-% end
-% % userdata.electric.egm = rovtrace';
-% % TODO: IMPORTING UNIPOLE DATA *** Github Issue #43: https://github.com/openep/openep-core/issues/43***
-% % userdata.electric.electrodeNames_uni = ; 
-% % userdata.electric.egmUniX = ;
-% % userdata.electric.egmUni = ;
-% % userdata.electric.ecg =
-% % userdata.electric.annotations.woi = 
-% % userdata.electric.voltages.unipolar = 
-% % userdata.electric.impedances.time = 
-% % userdata.electric.impedances.value = 
-% 
-% 
-% 
-% 
-% 
-% 
-% 
-% 
-% 
+
+ 
 % % Ablation data - TODO
 % % userdata.rf.originaldata.force.time = 
 % % userdata.rf.originaldata.force.force =

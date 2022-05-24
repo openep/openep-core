@@ -122,6 +122,15 @@ while iL < (numel(indNL)-1)
             numPoints = str2double(tokens{1}{1});
         end
     end
+    % if numPoints still does not exist, look for number of freeze groups
+    % in case this is a wave_refs file
+    if ~exist('numPoints', 'var')
+        tokens = regexp(line, '# freeze groups\s*:\s*,\s*(\d*)', 'tokens');
+        if ~isempty(tokens)
+            numPoints = str2double(tokens{1}{1});
+            warning('OPENEP/PARSE_HEADER: Using number of freeze groups rather than number of points which could not be found');
+        end
+    end
 
     % look for - "This is file X of Y for map, "
     tokens = regexp(line, '\s*This is file (\d*) of (\d*) for map,(\w*)', 'tokens');
@@ -177,6 +186,11 @@ while iL < (numel(indNL)-1)
     end
 end
 
+% if numPoints is still non-existent then throw and error
+if ~exist('numPoints', 'var')
+    error('OPENEP/PARSE_HEADER: Did not identify number of points or freeze groups - unknown data lenght and cannot proceed!');
+end
+
 info.exportFileVersion = exportFileVersion;
 info.dataElement = dataElement;
 info.study = study;
@@ -187,12 +201,15 @@ info.endTime = endTime;
 info.startTimeAbs = startTimeAbs;
 info.endTimeAbs = endTimeAbs;
 info.header = header;
+if exportFileVersion >= 10.0
+    info.dataStartRow = dataStartRow;
+end
+info.numPts = numPoints;
 
 % only do this next part if we have wave data, i.e. if sampleFreq is
 % populated
 if exist('sampleFreq', 'var')
     if exportFileVersion < 10.0
-        info.numPoints = numPoints;
         info.fileIndices = fileIndices;
         info.mapId = mapId;
         info.segmentDataLength = segmentDataLength;
@@ -202,11 +219,9 @@ if exist('sampleFreq', 'var')
         info.CFE_Width = cfeWidth;
         info.CFE_Refractory = cfeRefractory;
     else
-        info.numPts = numPoints;
         info.segmentDataLength = segmentDataLength;
         info.exportedSeconds = segmentDataLength; % we no longer have exported seconds in DxL version above at least 10.0R
         info.sampleFreq = sampleFreq;
-        info.dataStartRow = dataStartRow;
     end
 end
 
