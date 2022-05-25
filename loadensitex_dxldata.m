@@ -26,7 +26,7 @@ info = [];
 varnames = [];
 data = [];
 
-[~, ~, ext] = fileparts(filename);
+[~, thisFileName, ext] = fileparts(filename);
 if ~strcmpi(ext, '.csv')
     warning('LoadPrecision:InvalidFile',...
         'LOADENSITEX_DXLDATA: .csv file expected');
@@ -94,7 +94,7 @@ info.filename = filename;
 % ----------------------------------
 
 % Read the header line at info.dataStartRow
-fseek(fileID, 0, 'bof')
+fseek(fileID, 0, 'bof');
 for i = 1:info.dataStartRow-2
     fgetl(fileID);
 end
@@ -114,7 +114,7 @@ end
 if isfield(info, 'sampleFreq')
     headersAsNumbers = str2double(dataHeaders);
     tfNumHeaders = ~isnan(headersAsNumbers);
-else 
+else
     tfNumHeaders = false(size(dataHeaders));
 end
 
@@ -132,7 +132,7 @@ numericColumnsToRead = tfNumHeaders;
 varColumnsToRead = ~tfNumHeaders;
 % we are already at the right line in the file as we just read the header line before the data
 
-data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPts);
+data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPts, [thisFileName ext]);
 
 end
 
@@ -154,7 +154,7 @@ for iPt=1:size(rawdata,2)
 end
 end
 
-function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples)
+function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples, fname)
 %   nSamples - the number of samples to read; which may be a number of
 %   points or a number of freeze groups
 %   columnsToRead - logical array indicating which columns will be read
@@ -170,7 +170,7 @@ currentLine = 1;
 remainingBytes = filebytes2end(fileID);
 totalBytes = remainingBytes;
 remainingData = [];
-f = waitbar(0, 'loading data');
+f = waitbar(0, ['Loading data from file: ' fname]);
 while remainingBytes>0
     % Read chunk of data
     bytesToRead = min([maxBytes, remainingBytes+1]);     % The +1 ensures we read into the end of the file.

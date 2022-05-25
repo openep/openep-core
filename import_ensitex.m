@@ -32,14 +32,13 @@ if ~isfolder(saveDir)
 end
 
 if isempty(homeDir)
-    homeDir = userpath()';
+    homeDir = userpath();
 end
 if ~isfolder(homeDir)
     homeDir = saveDir;
 end
 
 userdata = [];
-hWait = [];
 
 if nargin >= 1
     userinput = varargin{1};
@@ -77,7 +76,6 @@ bipoleType = 'along';
 channelRef_cli = '';
 channelECG_cli = '';
 saveFileName_cli = '';
-verbose = true;
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
         switch lower(varargin{i})
@@ -95,14 +93,11 @@ if nargin > nStandardArgs
                 end
             case 'savefilename'
                 saveFileName_cli = varargin{i+1};
-            case 'verbose'
-                verbose = varargin{i+1};
             otherwise
-                error('IMPORTCARTO_MEM: Unrecognized input.')
+                error('OPENEP/IMPORT_ENSITEX: Unrecognized input.')
         end
     end
 end
-
 
 % Create an empty OpenEP data structure
 userdata = openep_createuserdata;
@@ -148,8 +143,8 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
 cMapDir = [studyDir filesep() 'Contact_Mapping'];
 mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
 for i = 1:numel(mappingFiles)
-    [info, varnames, data] = loadensitex_dxldata([varargin{1} filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
-    dataFile{i}.info = info; %#ok<*AGROW> 
+    [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
+    dataFile{i}.info = info; %#ok<*AGROW>
     dataFile{i}.varnames = varnames;
     dataFile{i}.data = data;
 end
@@ -158,7 +153,7 @@ end
 % dataFile = s.dataFile;
 
 % find the map name
-iContactMapFile = local_findFile('Map_CV_omni.csv');
+iContactMapFile = local_findFile('Map_CV_omni.csv', dataFile);
 map.name = dataFile{iContactMapFile}.info.mapName;
 map.type = dataFile{iContactMapFile}.info.mapType;
 map.study = dataFile{iContactMapFile}.info.study;
@@ -197,20 +192,73 @@ end
 % whereas 'across' may be influenced by HD grid geometry.
 
 % Deal wtih the dataMapping dictionary
+switch lower(bipoleType)
+    case 'along'
+        wave_bi = 'Wave_bi_along.csv';
+        wave_uni = 'Wave_uni_along.csv';
+    case 'across'
+        wave_bi = 'Wave_bi_across.csv';
+        wave_uni = 'Wave_uni_acrpss.csv';
+end
+
+% Ask, 'which signal is a good reference'
+referenceFile = 'Wave_refs.csv';
+iRefFile = local_findFile(referenceFile, dataFile);
+refNames = unique(dataFile{iRefFile}.data(:,1));
+refNames = regexp(refNames, '\s*(\w*\s*[a-zA-Z_0-9-]*)', 'tokens');
+for i = 1:numel(refNames)
+    newRefNames{i} = refNames{i}{1}{1};
+end
+refNames = unique(newRefNames);
+% ecgNames = refNames(strstartcmpi('ECG', refNames));
+% otherSignalNames = refNames(~strstartcmpi('ECG', refNames));
+
+if isempty(channelRef_cli)
+    [kRef,ok] = listdlg( 'ListString', refNames ...
+        , 'SelectionMode', 'single' ...
+        , 'PromptString', 'Which signal is Ref?' ...
+        , 'ListSize',[300 300] ...
+        ); 
+    if ~ok; return; end
+    channelRef_cli = refNames{kRef};
+else
+    kRef = find(strcmpi(channelRef_cli, refNames));
+    if isempty(kRef) || numel(kRef)>1
+        error(['OPENEP/IMPORT_ENSITEX: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
+    end
+end
+if isempty(channelECG_cli)
+    [kEcg,ok] = listdlg( 'ListString', refNames ...
+        , 'SelectionMode', 'multiple' ...
+        , 'PromptString', 'Which other signals should be downloaded with each point (typically one or more ECG signals)?' ...
+        , 'ListSize', [300 300] ...
+        ); 
+    if ~ok; return; end
+    channelECG_cli = refNames(kEcg);
+else
+    kEcg = zeros(1,numel(channelECG_cli));
+    for i = 1:numel(channelECG_cli)
+        kEcg(i) = find(strcmpi(channelECG_cli{i}, refNames));
+        if isempty(kEcg(i))
+            error(['OPENEP/IMPORT_ENSITEX: Unable to uniquely identify the specified additional channel: ' channelECG_cli]);
+        end
+    end
+end
+
 dataMapping = { ...
-       'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
+    'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
     ;  'electric.names'                       'Map_CV_omni.csv'                           '(Point #)' ...
-    ;  'electric.electrodeNames_bip'          'Wave_bi_along.csv'                         'Trace' ...
+    ;  'electric.electrodeNames_bip'          wave_bi                                    'Trace' ...
     ;  'electric.egmX'                        'Map_CV_omni.csv'                           'roving x,roving y,roving z' ...
-    ;  'electric.egm'                         'Wave_bi_along'                             'signals' ...
-    ;  'electric.electrodeNames_uni'          'Wave_uni_along'                            'Trace' ...
+    ;  'electric.egm'                         wave_bi                                     'signals' ...
+    ;  'electric.electrodeNames_uni'          wave_uni                                    'Trace' ...
     ;  'electric.egmUniX'                     'Map_CV_omni.csv'                           'Uni_CornerX,Uni_CornerY,Uni_CornerZ,Uni_AlongX,Uni_AlongY,Uni_AlongZ' ...
-    ;  'electric.egmUni'                      'Wave_uni_corner.csv,Wave_uni_along.csv'    'signals' ...
+    ;  'electric.egmUni'                      ['Wave_uni_corner.csv,' wave_uni]           'signals' ...
     ;  'electric.egmRef'                      'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good reference'
     ;  'electric.ecg'                         'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good ECG'
     ;  'electric.annotations.woi'             'Map_CV_omni.csv'                           'left curtain (ms),right curtain (ms)' ... % this is in ms relative to samples!
     ;  'electric.annotations.referenceAnnot'  'Map_CV_omni.csv'                           'Ref Tick' ... % this is in samples!
-    ;  'electric.annotations.mapAnnot'        'Wave_bi_along.csv'                         'rovTime (wave samples)' ... % this is _presumably_ in samples!
+    ;  'electric.annotations.mapAnnot'        wave_bi                                     'rovTime (wave samples)' ... % this is _presumably_ in samples!
     ;  'electric.voltages.bipolar'            'Map_CV_omni.csv'                           'pp_Valong' ...
     ;  'electric.voltages.unipolar'           'Map_CV_omni.csv'                           'unipoleMaxPP' ...
     ;  'electric.egmSurfX'                    'Map_CV_omni.csv'                           'surface x,surface y,surface z' ...
@@ -218,38 +266,40 @@ dataMapping = { ...
     ;  'electric.include'                     'Map_CV_omni.csv'                           'utilized' ...
     };
 
-   % ;  'electric.impedances.time'             ''                                          '' ... % We do not seem to have impedance data
-   % ;  'electric.impedances.value'            ''                                          '' ... % We do not seem to have impedance data
+% ;  'electric.impedances.time'             ''                                          '' ... % We do not seem to have impedance data
+% ;  'electric.impedances.value'            ''                                          '' ... % We do not seem to have impedance data
 
-for i = 1:size(dataMapping)
-    
-    fieldNames = strsplit(dataMapping{i,1}, '.');
+for i = 1:size(dataMapping,1)
+
     thisFileName = dataMapping{i,2};
     fileInd = local_findFile(thisFileName, dataFile);
 
     thisFieldName = dataMapping{i,3};
-    
+
     fieldInd = local_findField(thisFieldName, dataFile(fileInd));
     % parse the data
 
     switch dataMapping{i,1}
-        case 'electric.tags' 
+        case 'electric.tags'
             userdata.electric.tags                          = dataFile{fileInd}.data(:,fieldInd);
 
-        case 'electric.names'  
+        case 'electric.names'
             userdata.electric.names                         = dataFile{fileInd}.data(:,fieldInd);
 
-        case 'electric.electrodeNames_bip' 
+        case 'electric.electrodeNames_bip'
             userdata.electric.electrodeNames_bip            = dataFile{fileInd}.data(:,fieldInd);
 
-        case 'electric.egmX' 
+        case 'electric.egmX'
             X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
             Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
             Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
             userdata.electric.egmX                          = [X Y Z];
 
-        case 'userdata.electric.egm'
+        case 'electric.egm'
             userdata.electric.egm                           = cell2mat(dataFile{fileInd}.data(:,fieldInd));
+
+            fGroupInd = local_findField('Freeze Grp #', dataFile(fileInd));
+            freezeGroup = dataFile{fileInd}.data(:,fGroupInd);
 
         case 'electric.electrodeNames_uni'
             userdata.electric.electrodeNames_uni            = dataFile{fileInd}.data(:,fieldInd);
@@ -265,8 +315,45 @@ for i = 1:size(dataMapping)
             userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{fileInd(2)}.data(:,fieldInd));
 
         case 'electric.egmRef'
-            % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
-            userdata.electric.egmRef                        = userdata.electric.egm; % TODO only for now
+            % find the trace names in the reference wave file
+            traceInd = local_findField('Trace', dataFile(fileInd));
+            refTraceNames = dataFile{fileInd}.data(:,traceInd);
+
+            % remove any leadng white space and redundant nested cells
+            refTraceNames = regexp(refTraceNames, '\s*(\w*\s*[a-zA-Z_0-9-]*)', 'tokens');
+            for iPoint = 1:numel(refTraceNames)
+                temp{iPoint} = refTraceNames{iPoint}{1}{1}; %#ok<AGROW> 
+            end
+            refTraceNames = temp';
+
+            % identify all the reference traces with the required name
+            iValidTrace = strcmpi(channelRef_cli, refTraceNames);
+
+            % find the freeze group # for every reference trace
+            freezeGroupInd = local_findField('Freeze Grp #', dataFile(fileInd));
+            refFreezeGroup = dataFile{fileInd}.data(:,freezeGroupInd);
+
+            % convert freeze group strings to double
+            pointfG = sscanf(sprintf(' %s',freezeGroup{:}),'%f',[1,Inf]); % size is number of points
+            reffG = sscanf(sprintf(' %s',refFreezeGroup{:}),'%f',[1,Inf]); % size is number of reference waves
+            pointfG = pointfG';
+            reffG = reffG';
+
+            % work out the indices into the reference wave file for every
+            % mapping point (based on the mapping point's freeze group and
+            % the chosen reference signal channel)
+            for iP = 1:numel(freezeGroup) % iP for index point - we iterate through every mapping point
+                requiredFreezeGroupNumber = pointfG(i);
+                tffG = (reffG==requiredFreezeGroupNumber) & iValidTrace;
+                freezeGroupTable(iP) = find(tffG); %#ok<AGROW> 
+            end
+            freezeGroupTable = freezeGroupTable';
+
+            % finally store the reference signals
+            temp = dataFile{fileInd}.data(freezeGroupTable,fieldInd);
+            len = numel(temp);
+            temp = sscanf(sprintf(' %s',freezeGroup{:}),'%f',[1,Inf]);
+            userdata.electric.egmRef = reshape(temp, [len numel(temp/len)]);
 
         case 'electric.ecg'
             % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
@@ -280,28 +367,28 @@ for i = 1:size(dataMapping)
         case 'electric.annotations.referenceAnnot'
             userdata.electric.annotations.referenceAnnot    = str2double(dataFile{fileInd}.data(:,fieldInd));
 
-        case 'electric.annotations.mapAnnot'  
+        case 'electric.annotations.mapAnnot'
             userdata.electric.annotations.mapAnnot          = round(str2double(dataFile{fileInd}.data(:,fieldInd)) ./ userdata.electric.sampleFrequency .* userdata.electric.sampleFrequency);
 
-        case 'electric.voltages.bipolar' 
+        case 'electric.voltages.bipolar'
             userdata.electric.voltages.bipolar              = str2double(dataFile{fileInd}.data(:,fieldInd));
 
-        case 'electric.voltages.unipolar' 
+        case 'electric.voltages.unipolar'
             userdata.electric.votlages.unipolar             = str2double(dataFile{fileInd}.data(:,fieldInd));
 
         case 'electric.impedances.time'
             % TODO
 
-        case 'electric.impedances.value' 
+        case 'electric.impedances.value'
             % TODO
 
-        case 'electric.egmSurfX'  
+        case 'electric.egmSurfX'
             X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
             Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
             Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
             userdata.electric.egmSurfX                      = [X Y Z];
 
-        case 'electric.barDirection' 
+        case 'electric.barDirection'
             X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
             Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
             Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
@@ -310,22 +397,27 @@ for i = 1:size(dataMapping)
         case 'electric.include'
             userdata.electric.include                       = str2double(dataFile{fileInd}.data(:,fieldInd));
     end
-
-    % save the fieldnames
-%     switch numel(fieldNames)
-%         case 1
-%             userdata.(fieldNames{1}) = dataToSave;
-%         case 2
-%             userdata.(fieldNames{1}).(fieldNames{2}) = dataToSave;
-%         case 3
-%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = dataToSave;
-%         case 4
-%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = dataToSave;
-%         otherwise
-%             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
-%     end
 end
 
+% Encourage user to save the data
+if ~isempty(saveFileName_cli)
+    save(saveFileName_cli, 'userdata');
+    matFileFullPath = saveFileName_cli;
+else
+    defaultName = [map.study '_' map.name];
+    defaultName(isspace(defaultName)) = '_';
+    originalDir = cd();
+    matFileFullPath = fullfile(saveDir, defaultName); %default
+    cd(saveDir);
+    [filename,saveDir] = uiputfile('*.mat', 'Save the userdata to disc for future rapid access?',defaultName);
+    cd(originalDir);
+    if filename ~= 0
+        save([saveDir filename], 'userdata','-v7'); %needed as sometimes >2GB
+        matFileFullPath = fullfile(saveDir, filename);
+    end
+end
+
+% local helper functions
     function iF = local_findFile(f, d)
         % find the index into the cell array, d, of the filename f
         for iD = 1:numel(d)
@@ -334,7 +426,7 @@ end
         end
         requiredFiles = strsplit(f,',');
         for iFile = 1:numel(requiredFiles)
-            iF(iFile) = find(strstartcmpi(requiredFiles{iFile},allFileNames)); %#ok<AGROW> 
+            iF(iFile) = find(strstartcmpi(requiredFiles{iFile},allFileNames)); %#ok<AGROW>
         end
     end
 
@@ -348,32 +440,7 @@ end
         end
     end
 
-% userdata.electric.sampleFrequency = dataFile{5}.info.sampleFreq;
-
-% userdata.electric.tags                          = dataFile{1}.data(:,26);
-% userdata.electric.names                         = dataFile{1}.data(:,5);
-% userdata.electric.electrodeNames_bip            = dataFile{3}.data(:,1);
-% userdata.electric.egmX                          = [str2double(dataFile{1}.data(:,7)) str2double(dataFile{1}.data(:,8)) str2double(dataFile{1}.data(:,9))];
-% userdata.electric.egm                           = cell2mat(dataFile{3}.data(:,6));
-% userdata.electric.electrodeNames_uni            = dataFile{7}.data(:,1);
-% userdata.electric.egmUniX(:,:,1)                = [str2double(dataFile{1}.data(:,60)) str2double(dataFile{1}.data(:,61)) str2double(dataFile{1}.data(:,62))];
-% userdata.electric.egmUniX(:,:,2)                = [str2double(dataFile{1}.data(:,64)) str2double(dataFile{1}.data(:,65)) str2double(dataFile{1}.data(:,66))];
-% userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{8}.data(:,6));
-% userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{7}.data(:,6));
-% % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
-% userdata.electric.egmRef                        = userdata.electric.egm; % only for now
-% % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
-% userdata.electric.ecg                           = userdata.electric.egm; % only for now
-% userdata.electric.annotations.woi               = round([str2double(dataFile{1}.data(:,23)) str2double(dataFile{1}.data(:,24))] ./ 1000 .* userdata.electric.sampleFrequency);
-% userdata.electric.annotations.referenceAnnot    = str2double(dataFile{1}.data(:,74));
-% userdata.electric.annotations.mapAnnot          = round(str2double(dataFile{3}.data(:,5)) ./ userdata.electric.sampleFrequency .* userdata.electric.sampleFrequency);
-% userdata.electric.voltages.bipolar              = str2double(dataFile{1}.data(:,32));
-% userdata.electric.votlages.unipolar             = str2double(dataFile{1}.data(:,58));
-% userdata.electric.egmSurfX                      = [str2double(dataFile{1}.data(:,10)) str2double(dataFile{1}.data(:,11)) str2double(dataFile{1}.data(:,12))];
-% userdata.electric.barDirection                  = [str2double(dataFile{1}.data(:,13)) str2double(dataFile{1}.data(:,14)) str2double(dataFile{1}.data(:,15))];
-% userdata.electric.include                       = str2double(dataFile{1}.data(:,17));
-
-
+end
 
 % % Ablation data - TODO
 % % userdata.rf.originaldata.force.time =
@@ -385,25 +452,3 @@ end
 % % userdata.rf.originaldata.ablparams.power =
 % % userdata.rf.originaldata.ablparams.impedance =
 % % userdata.rf.originaldata.ablparams.distaltemp =
-
-
-    % Encourage user to save the data
-    if ~isempty(saveFileName_cli)
-        save(saveFileName_cli, 'userdata');
-        matFileFullPath = saveFileName_cli;
-    else
-        defaultName = [map.study '_' map.name];
-        defaultName(isspace(defaultName)) = '_';
-        originalDir = cd();
-        matFileFullPath = fullfile(saveDir, defaultName); %default
-        cd(saveDir);
-        [filename,saveDir] = uiputfile('*.mat', 'Save the userdata to disc for future rapid access?',defaultName);
-        cd(originalDir);
-        if filename ~= 0
-            save([saveDir filename], 'userdata','-v7.3'); %needed as sometimes >2GB
-            matFileFullPath = fullfile(saveDir, filename);
-        end
-    end
-
-
-end

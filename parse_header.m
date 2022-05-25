@@ -52,6 +52,8 @@ while iL < (numel(indNL)-1)
     tokens = regexp(line, 'Map type\s*:\s*,\s*(\w*)', 'tokens');
     if ~isempty(tokens)
         mapType = tokens{1}{1};
+    else
+        mapType = 'N/A';
     end
 
     % look for - "Export File Version : TEXT"
