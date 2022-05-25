@@ -74,15 +74,16 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
 %     dataFile{i}.data = data;
 % end
 
-load('/Users/steven/Desktop/dataFiles.mat');
+s = load('/Users/steven/Desktop/dataFiles.mat');
+dataFile = s.dataFile;
 
 % then map the data into the OpenEP data format
 
 % I think we have to decide whether to import an 'along' map or an 'across'
 % map and these might need combining retrospectively for particular use
 % cases, but could be considered as separate OpenEP data structures at
-% import time. The default should possibly be to import to the 'along' as 
-% this is 'along the spline' and consistent with usual practice in EP, 
+% import time. The default should possibly be to import to the 'along' as
+% this is 'along the spline' and consistent with usual practice in EP,
 % whereas 'across' may be influenced by HD grid geometry.
 
 % dataFile{1} Map_CV_omni.csv
@@ -94,7 +95,40 @@ load('/Users/steven/Desktop/dataFiles.mat');
 % dataFile{7} Wave_uni_along.csv
 % dataFile{8} Wave_uni_corner.csv
 
-userdata.electric.sampleFrequency = dataFile{5}.info.sampleFreq;
+% Deal wtih the infoMapping array
+infoMapping = { ...
+    'electric.sampleFrequency'                'Wave_rov.csv'                              'sampleFreq' ...
+    ; ...
+    };
+for i = 1:size(infoMapping)
+    fieldNames = strsplit(infoMapping{i,1}, '.');
+    thisFileName = infoMapping{i,2};
+    fileInd = local_findFile(thisFileName, dataFile);
+    thisFieldName = infoMapping{i,3};
+    switch numel(fieldNames)
+        case 1
+            userdata.(fieldNames{1}) = dataFile{fileInd}.info.(thisFieldName);
+        case 2
+            userdata.(fieldNames{1}).(fieldNames{2}) = dataFile{fileInd}.info.(thisFieldName);
+        case 3
+            userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = dataFile{fileInd}.info.(thisFieldName);
+        case 4
+            userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = dataFile{fileInd}.info.(thisFieldName);
+        otherwise
+            error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
+    end
+end
+
+    function iF = local_findFile(f, d)
+        % find the index into the cell array, d, of the filename f
+        for iD = 1:numel(d)
+            [~,n,e] = fileparts(d{iD}.info.filename);
+            allFileNames{iD} = [n e]; %#ok<AGROW>
+        end
+        iF = find(strcmpi(allFileNames, f));
+    end
+
+% userdata.electric.sampleFrequency = dataFile{5}.info.sampleFreq;
 
 userdata.electric.tags                          = dataFile{1}.data(:,26);
 userdata.electric.names                         = dataFile{1}.data(:,5);
@@ -122,13 +156,9 @@ userdata.electric.include                       = str2double(dataFile{1}.data(:,
 
 
 
-% infoMapping = { ...
-%     'electric.sampleFrequency'                'Wave_rov.csv'                              'sampleFreq' ...
-%     ; ...
-% };
-% 
+
 dataMapping = { ...
-       'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
+    'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
     ;  'electric.names'                       'Map_CV_omni.csv'                           '(Point #)' ...
     ;  'electric.electrodeNames_bip'          'Wave_bi_along.csv'                         'Trace' ...
     ;  'electric.egmX'                        'Map_CV_omni.csv'                           'roving x, roving y, roving z' ...
@@ -149,12 +179,12 @@ dataMapping = { ...
     ;  'electric.barDirection'                'Map_CV_omni.csv'                           'normal x, normal y, normal z' ...
     ;  'electric.include'                     'Map_CV_omni.csv'                           'utilized' ...
     };
-% 
+%
 % % Deal with the dataMapping array
 % for i = 1:size(dataMapping)
-% 
+%
 %     fieldNames = strsplit(dataMapping{i,1}, '.');
-% 
+%
 %     % parse the fieldnames
 %     switch numel(fieldNames)
 %         case 1
@@ -168,40 +198,21 @@ dataMapping = { ...
 %         otherwise
 %             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
 %     end
-% 
+%
 % end
-% 
-% % Deal wtih the infoMapping array
-% for i = 1:size(infoMapping)
-% 
-%     fieldNames = strsplit(infoMapping{i,1}, '.');
-% 
-%     % parse the fieldnames
-%     switch numel(fieldNames)
-%         case 1
-%             userdata.(fieldNames{1}) = infoMapping{i,1};
-%         case 2
-%             userdata.(fieldNames{1}).(fieldNames{2}) = infoMapping{i,1};
-%         case 3
-%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = infoMapping{i,1};
-%         case 4
-%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = infoMapping{i,1};
-%         otherwise
-%             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
-%     end
-% 
-% end
+%
 
- 
+
+
 % % Ablation data - TODO
-% % userdata.rf.originaldata.force.time = 
+% % userdata.rf.originaldata.force.time =
 % % userdata.rf.originaldata.force.force =
-% % userdata.rf.originaldata.force.axialangle = 
-% % userdata.rf.originaldata.force.lateralangle = 
-% % userdata.rf.originaldata.force.position = 
-% % userdata.rf.originaldata.ablparams.time = 
+% % userdata.rf.originaldata.force.axialangle =
+% % userdata.rf.originaldata.force.lateralangle =
+% % userdata.rf.originaldata.force.position =
+% % userdata.rf.originaldata.ablparams.time =
 % % userdata.rf.originaldata.ablparams.power =
-% % userdata.rf.originaldata.ablparams.impedance = 
-% % userdata.rf.originaldata.ablparams.distaltemp = 
-% 
-% end
+% % userdata.rf.originaldata.ablparams.impedance =
+% % userdata.rf.originaldata.ablparams.distaltemp =
+%
+end
