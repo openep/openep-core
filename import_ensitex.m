@@ -86,16 +86,7 @@ dataFile = s.dataFile;
 % this is 'along the spline' and consistent with usual practice in EP,
 % whereas 'across' may be influenced by HD grid geometry.
 
-% dataFile{1} Map_CV_omni.csv
-% dataFile{2} Wave_bi_across.csv
-% dataFile{3} Wave_bi_along.csv
-% dataFile{4} Wave_refs.csv
-% dataFile{5} Wave_rov.csv
-% dataFile{6} Wave_uni_across.csv
-% dataFile{7} Wave_uni_along.csv
-% dataFile{8} Wave_uni_corner.csv
-
-% Deal wtih the infoMapping array
+% Deal wtih the infoMapping dictionary
 infoMapping = { ...
     'electric.sampleFrequency'                'Wave_rov.csv'                              'sampleFreq' ...
     ; ...
@@ -119,88 +110,182 @@ for i = 1:size(infoMapping)
     end
 end
 
+% Deal wtih the dataMapping dictionary
+dataMapping = { ...
+       'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
+    ;  'electric.names'                       'Map_CV_omni.csv'                           '(Point #)' ...
+    ;  'electric.electrodeNames_bip'          'Wave_bi_along.csv'                         'Trace' ...
+    ;  'electric.egmX'                        'Map_CV_omni.csv'                           'roving x,roving y,roving z' ...
+    ;  'electric.egm'                         'Wave_bi_along'                             'signals' ...
+    ;  'electric.electrodeNames_uni'          'Wave_uni_along'                            'Trace' ...
+    ;  'electric.egmUniX'                     'Map_CV_omni.csv'                           'Uni_CornerX,Uni_CornerY,Uni_CornerZ,Uni_AlongX,Uni_AlongY,Uni_AlongZ' ...
+    ;  'electric.egmUni'                      'Wave_uni_corner.csv,Wave_uni_along.csv'    'signals' ...
+    ;  'electric.egmRef'                      'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good reference'
+    ;  'electric.ecg'                         'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good ECG'
+    ;  'electric.annotations.woi'             'Map_CV_omni.csv'                           'left curtain (ms),right curtain (ms)' ... % this is in ms relative to samples!
+    ;  'electric.annotations.referenceAnnot'  'Map_CV_omni.csv'                           'Ref Tick' ... % this is in samples!
+    ;  'electric.annotations.mapAnnot'        'Wave_bi_along.csv'                         'rovTime (wave samples)' ... % this is _presumably_ in samples!
+    ;  'electric.voltages.bipolar'            'Map_CV_omni.csv'                           'pp_Valong' ...
+    ;  'electric.voltages.unipolar'           'Map_CV_omni.csv'                           'unipoleMaxPP' ...
+    ;  'electric.egmSurfX'                    'Map_CV_omni.csv'                           'surface x,surface y,surface z' ...
+    ;  'electric.barDirection'                'Map_CV_omni.csv'                           'normal x,normal y,normal z' ...
+    ;  'electric.include'                     'Map_CV_omni.csv'                           'utilized' ...
+    };
+
+   % ;  'electric.impedances.time'             ''                                          '' ... % We do not seem to have impedance data
+   % ;  'electric.impedances.value'            ''                                          '' ... % We do not seem to have impedance data
+
+for i = 1:size(dataMapping)
+    
+    fieldNames = strsplit(dataMapping{i,1}, '.');
+    thisFileName = dataMapping{i,2};
+    fileInd = local_findFile(thisFileName, dataFile);
+
+    thisFieldName = dataMapping{i,3};
+    
+    fieldInd = local_findField(thisFieldName, dataFile(fileInd));
+    % parse the data
+
+    switch dataMapping{i,1}
+        case 'electric.tags' 
+            userdata.electric.tags                          = dataFile{fileInd}.data(:,fieldInd);
+
+        case 'electric.names'  
+            userdata.electric.names                         = dataFile{fileInd}.data(:,fieldInd);
+
+        case 'electric.electrodeNames_bip' 
+            userdata.electric.electrodeNames_bip            = dataFile{fileInd}.data(:,fieldInd);
+
+        case 'electric.egmX' 
+            X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
+            Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
+            Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
+            userdata.electric.egmX                          = [X Y Z];
+
+        case 'userdata.electric.egm'
+            userdata.electric.egm                           = cell2mat(dataFile{fileInd}.data(:,fieldInd));
+
+        case 'electric.electrodeNames_uni'
+            userdata.electric.electrodeNames_uni            = dataFile{fileInd}.data(:,fieldInd);
+
+        case 'electric.egmUniX'
+            X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
+            Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
+            Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
+            userdata.electric.egmUniX(:,:,1)                = [X Y Z];
+
+        case 'electric.egmUni'
+            userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{fileInd(1)}.data(:,fieldInd));
+            userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{fileInd(2)}.data(:,fieldInd));
+
+        case 'electric.egmRef'
+            % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
+            userdata.electric.egmRef                        = userdata.electric.egm; % TODO only for now
+
+        case 'electric.ecg'
+            % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
+            userdata.electric.ecg                           = userdata.electric.egm; % TODO only for now
+
+        case 'electric.annotations.woi'
+            startWindow = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
+            endWindow = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
+            userdata.electric.annotations.woi               = round([startWindow endWindow] ./ 1000 .* userdata.electric.sampleFrequency);
+
+        case 'electric.annotations.referenceAnnot'
+            userdata.electric.annotations.referenceAnnot    = str2double(dataFile{fileInd}.data(:,fieldInd));
+
+        case 'electric.annotations.mapAnnot'  
+            userdata.electric.annotations.mapAnnot          = round(str2double(dataFile{fileInd}.data(:,fieldInd)) ./ userdata.electric.sampleFrequency .* userdata.electric.sampleFrequency);
+
+        case 'electric.voltages.bipolar' 
+            userdata.electric.voltages.bipolar              = str2double(dataFile{fileInd}.data(:,fieldInd));
+
+        case 'electric.voltages.unipolar' 
+            userdata.electric.votlages.unipolar             = str2double(dataFile{fileInd}.data(:,fieldInd));
+
+        case 'electric.impedances.time'
+            % TODO
+
+        case 'electric.impedances.value' 
+            % TODO
+
+        case 'electric.egmSurfX'  
+            X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
+            Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
+            Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
+            userdata.electric.egmSurfX                      = [X Y Z];
+
+        case 'electric.barDirection' 
+            X = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
+            Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
+            Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
+            userdata.electric.barDirection                  = [X Y Z];
+
+        case 'electric.include'
+            userdata.electric.include                       = str2double(dataFile{fileInd}.data(:,fieldInd));
+    end
+
+    % save the fieldnames
+%     switch numel(fieldNames)
+%         case 1
+%             userdata.(fieldNames{1}) = dataToSave;
+%         case 2
+%             userdata.(fieldNames{1}).(fieldNames{2}) = dataToSave;
+%         case 3
+%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = dataToSave;
+%         case 4
+%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = dataToSave;
+%         otherwise
+%             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
+%     end
+end
+
     function iF = local_findFile(f, d)
         % find the index into the cell array, d, of the filename f
         for iD = 1:numel(d)
             [~,n,e] = fileparts(d{iD}.info.filename);
             allFileNames{iD} = [n e]; %#ok<AGROW>
         end
-        iF = find(strcmpi(allFileNames, f));
+        requiredFiles = strsplit(f,',');
+        for iFile = 1:numel(requiredFiles)
+            iF(iFile) = find(strstartcmpi(requiredFiles{iFile},allFileNames)); %#ok<AGROW> 
+        end
+    end
+
+    function iC = local_findField(f, d)
+        % find the column iC in d.data such that d.varname{iC} == f
+        requiredFields = strsplit(f,',');
+        for iDataFile = 1:numel(d)
+            for iField = 1:numel(requiredFields)
+                iC(iDataFile,iField) = find(strcmpi(d{iDataFile}.varnames,requiredFields{iField})); %#ok<AGROW>
+            end
+        end
     end
 
 % userdata.electric.sampleFrequency = dataFile{5}.info.sampleFreq;
 
-userdata.electric.tags                          = dataFile{1}.data(:,26);
-userdata.electric.names                         = dataFile{1}.data(:,5);
-userdata.electric.electrodeNames_bip            = dataFile{3}.data(:,1);
-userdata.electric.egmX                          = [str2double(dataFile{1}.data(:,7)) str2double(dataFile{1}.data(:,8)) str2double(dataFile{1}.data(:,9))];
-userdata.electric.egm                           = cell2mat(dataFile{3}.data(:,6));
-userdata.electric.electrodeNames_uni            = dataFile{7}.data(:,1);
-userdata.electric.egmUniX(:,:,1)                = [str2double(dataFile{1}.data(:,60)) str2double(dataFile{1}.data(:,61)) str2double(dataFile{1}.data(:,62))];
-userdata.electric.egmUniX(:,:,2)                = [str2double(dataFile{1}.data(:,64)) str2double(dataFile{1}.data(:,65)) str2double(dataFile{1}.data(:,66))];
-userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{8}.data(:,6));
-userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{7}.data(:,6));
-% Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
-userdata.electric.egmRef                        = userdata.electric.egm; % only for now
-% Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
-userdata.electric.ecg                           = userdata.electric.egm; % only for now
-userdata.electric.annotations.woi               = round([str2double(dataFile{1}.data(:,23)) str2double(dataFile{1}.data(:,24))] ./ 1000 .* userdata.electric.sampleFrequency);
-userdata.electric.annotations.referenceAnnot    = str2double(dataFile{1}.data(:,74));
-userdata.electric.annotations.mapAnnot          = round(str2double(dataFile{3}.data(:,5)) ./ userdata.electric.sampleFrequency .* userdata.electric.sampleFrequency);
-userdata.electric.voltages.bipolar              = str2double(dataFile{1}.data(:,32));
-userdata.electric.votlages.unipolar             = str2double(dataFile{1}.data(:,58));
-userdata.electric.egmSurfX                      = [str2double(dataFile{1}.data(:,10)) str2double(dataFile{1}.data(:,11)) str2double(dataFile{1}.data(:,12))];
-userdata.electric.barDirection                  = [str2double(dataFile{1}.data(:,13)) str2double(dataFile{1}.data(:,14)) str2double(dataFile{1}.data(:,15))];
-userdata.electric.include                       = str2double(dataFile{1}.data(:,17));
-
-
-
-
-
-dataMapping = { ...
-    'electric.tags'                        'Map_CV_omni.csv'                           'annot' ...
-    ;  'electric.names'                       'Map_CV_omni.csv'                           '(Point #)' ...
-    ;  'electric.electrodeNames_bip'          'Wave_bi_along.csv'                         'Trace' ...
-    ;  'electric.egmX'                        'Map_CV_omni.csv'                           'roving x, roving y, roving z' ...
-    ;  'electric.egm'                         'Wave_bi_along'                             'signals' ...
-    ;  'electric.electrodeNames_uni'          'Wave_uni_along'                            'Trace' ...
-    ;  'electric.egmUniX'                     'Map_CV_omni.csv'                           'Uni_CornerX, Uni_CornerY, Uni_CornerZ; Uni_AlongX, Uni_AlongY, Uni_AlongZ' ...
-    ;  'electric.egmUni'                      'Wave_uni_corner.csv; Wave_uni_along.csv'   'signals' ...
-    ;  'electric.egmRef'                      'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good reference'
-    ;  'electric.ecg'                         'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good ECG'
-    ;  'electric.annotations.woi'             'Map_CV_omni.csv'                           'left curtain (ms), right curtain (ms)' ... % this is in ms relative to samples!
-    ;  'electric.annotations.referenceAnnot'  'Map_CV_omni.csv'                           'RefTick' ... % this is in samples!
-    ;  'electric.annotations.mapAnnot'        'Wave_bi_along.csv'                         'rovTime (wave samples)' ... % this is _presumably_ in samples!
-    ;  'electric.voltages.bipolar'            'Map_CV_omni.csv'                           'pp_Valong' ...
-    ;  'electric.voltages.unipolar'           'Map_CV_omni.csv'                           'unipoleMaxPP' ...
-    ;  'electric.impedances.time'             ''                                          '' ... % We do not seem to have impedance data
-    ;  'electric.impedances.value'            ''                                          '' ... % We do not seem to have impedance data
-    ;  'electric.egmSurfX'                    'Map_CV_omni.csv'                           'surface x, surface y, surface z' ...
-    ;  'electric.barDirection'                'Map_CV_omni.csv'                           'normal x, normal y, normal z' ...
-    ;  'electric.include'                     'Map_CV_omni.csv'                           'utilized' ...
-    };
-%
-% % Deal with the dataMapping array
-% for i = 1:size(dataMapping)
-%
-%     fieldNames = strsplit(dataMapping{i,1}, '.');
-%
-%     % parse the fieldnames
-%     switch numel(fieldNames)
-%         case 1
-%             userdata.(fieldNames{1}) = dataMapping{i,1};
-%         case 2
-%             userdata.(fieldNames{1}).(fieldNames{2}) = dataMapping{i,1};
-%         case 3
-%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}) = dataMapping{i,1};
-%         case 4
-%             userdata.(fieldNames{1}).(fieldNames{2}).(fieldNames{3}).(fieldNames{4}) = dataMapping{i,1};
-%         otherwise
-%             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
-%     end
-%
-% end
-%
+% userdata.electric.tags                          = dataFile{1}.data(:,26);
+% userdata.electric.names                         = dataFile{1}.data(:,5);
+% userdata.electric.electrodeNames_bip            = dataFile{3}.data(:,1);
+% userdata.electric.egmX                          = [str2double(dataFile{1}.data(:,7)) str2double(dataFile{1}.data(:,8)) str2double(dataFile{1}.data(:,9))];
+% userdata.electric.egm                           = cell2mat(dataFile{3}.data(:,6));
+% userdata.electric.electrodeNames_uni            = dataFile{7}.data(:,1);
+% userdata.electric.egmUniX(:,:,1)                = [str2double(dataFile{1}.data(:,60)) str2double(dataFile{1}.data(:,61)) str2double(dataFile{1}.data(:,62))];
+% userdata.electric.egmUniX(:,:,2)                = [str2double(dataFile{1}.data(:,64)) str2double(dataFile{1}.data(:,65)) str2double(dataFile{1}.data(:,66))];
+% userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{8}.data(:,6));
+% userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{7}.data(:,6));
+% % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
+% userdata.electric.egmRef                        = userdata.electric.egm; % only for now
+% % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
+% userdata.electric.ecg                           = userdata.electric.egm; % only for now
+% userdata.electric.annotations.woi               = round([str2double(dataFile{1}.data(:,23)) str2double(dataFile{1}.data(:,24))] ./ 1000 .* userdata.electric.sampleFrequency);
+% userdata.electric.annotations.referenceAnnot    = str2double(dataFile{1}.data(:,74));
+% userdata.electric.annotations.mapAnnot          = round(str2double(dataFile{3}.data(:,5)) ./ userdata.electric.sampleFrequency .* userdata.electric.sampleFrequency);
+% userdata.electric.voltages.bipolar              = str2double(dataFile{1}.data(:,32));
+% userdata.electric.votlages.unipolar             = str2double(dataFile{1}.data(:,58));
+% userdata.electric.egmSurfX                      = [str2double(dataFile{1}.data(:,10)) str2double(dataFile{1}.data(:,11)) str2double(dataFile{1}.data(:,12))];
+% userdata.electric.barDirection                  = [str2double(dataFile{1}.data(:,13)) str2double(dataFile{1}.data(:,14)) str2double(dataFile{1}.data(:,15))];
+% userdata.electric.include                       = str2double(dataFile{1}.data(:,17));
 
 
 
