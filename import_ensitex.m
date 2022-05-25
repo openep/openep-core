@@ -1,4 +1,4 @@
-function userdata = import_ensitex(varargin)
+function [userdata, matFileFullPath] = import_ensitex(varargin)
 % IMPORT_ENSITEX is used to import an EnsiteX case.
 %
 % Usage:
@@ -22,16 +22,98 @@ function userdata = import_ensitex(varargin)
 % code
 % ---------------------------------------------------------------
 
+% Parse input data
+persistent saveDir homeDir
+if isempty(saveDir) || ~ischar(saveDir)
+    saveDir = userpath();
+end
+if ~isfolder(saveDir)
+    saveDir = userpath();
+end
+
+if isempty(homeDir)
+    homeDir = userpath()';
+end
+if ~isfolder(homeDir)
+    homeDir = saveDir;
+end
+
+userdata = [];
+hWait = [];
+
+if nargin >= 1
+    userinput = varargin{1};
+else
+    dialog_title = 'Select the EnsiteX Contact_Mapping_Model file, or a .mat file.';
+    filterSpec = {'*.xml;*.mat', 'Appropriate files (*.xml;*.mat)' ; '*.xml','XML (*.xml)' ; '*.mat','Matlab (*.mat)' ; '*.*','All files (*.*)'};
+    if ~ispc()
+        uiwait(msgbox(dialog_title,'modal'))
+    end
+    [filename,pathname] = uigetfile(filterSpec, dialog_title, homeDir);
+    userinput = fullfile(pathname, filename);
+    if filename == 0
+        return
+    else
+        homeDir = pathname;
+    end
+end
+
+if strcmpi(userinput((end-3):end),'.zip')
+    %then we need to unzip the folder
+    error('IMPORT_ENSITEX: ZIP files are no longer supported - unzip externally to Matlab.');
+    return %#ok<UNRCH>
+elseif strcmpi(userinput((end-3):end),'.mat')
+    s = load(userinput);
+    userdata = s.userdata;
+    return
+else
+    studyDir = fileparts(userinput);
+    homeDir = studyDir;
+end
+
+% parse command line input
+nStandardArgs = 1;
+bipoleType = 'along';
+channelRef_cli = '';
+channelECG_cli = '';
+saveFileName_cli = '';
+verbose = true;
+if nargin > nStandardArgs
+    for i = nStandardArgs+1:2:nargin
+        switch lower(varargin{i})
+            case 'bipoletype'
+                bipoleType_cli = varargin{i+1};
+            case 'refchannel'
+                channelRef_cli = varargin{i+1};
+                if ischar(channelRef_cli)
+                    channelRef_cli = {channelRef_cli};
+                end
+            case 'ecgchannel'
+                channelECG_cli = varargin{i+1};
+                if ischar(channelECG_cli)
+                    channelECG_cli = {channelECG_cli};
+                end
+            case 'savefilename'
+                saveFileName_cli = varargin{i+1};
+            case 'verbose'
+                verbose = varargin{i+1};
+            otherwise
+                error('IMPORTCARTO_MEM: Unrecognized input.')
+        end
+    end
+end
+
+
 % Create an empty OpenEP data structure
 userdata = openep_createuserdata;
 
 % General data
 userdata.systemName = 'ensitex';
 userdata.notes{1} = [date() ': Created'];
-userdata.ensiteXFolder = varargin{1};
+userdata.ensiteXFolder = studyDir;
 
 % Load the model groups
-info = loadprecision_modelgroups([varargin{1} filesep() 'Contact_Mapping_Model.xml']);
+info = loadprecision_modelgroups([studyDir filesep() 'Contact_Mapping_Model.xml']);
 
 % assign the geometry data
 if isfield(info.dxgeo, 'triangles') && isfield(info.dxgeo, 'vertices')
@@ -48,14 +130,12 @@ if isfield(info.dxgeo, 'triangles') && isfield(info.dxgeo, 'vertices')
     userdata.surface.isVertexAtRim = isVertexAtRim;
 end
 
-% deal with labels
-% for the test case this is 0, 1 or 2
+% deal with labels, for the test case this is 0, 1 or 2
 allLabels = info.dxgeo.surface_of_origin;
 labels = unique(allLabels);
 cMap = colormap(parula(numel(labels)));
 faceColors = trFaceToVertData(userdata.surface.triRep, allLabels);
 hSurf = drawMap(userdata, 'type', 'none');
-
 colorShell(hSurf, [X Y Z], faceColors, Inf ...
     , 'showcolorbar', 'show' ...
     , 'coloraxis', [0 numel(labels)] ...
@@ -64,27 +144,20 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
     , 'datatype', 'labels' ...
     );
 
-% % next load the map file and the wave files into memory
-% cMapDir = [varargin{1} filesep() 'Contact_Mapping'];
-% mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
-% for i = 1:numel(mappingFiles)
-%     [info varnames data] = loadensitex_dxldata([varargin{1} filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
-%     dataFile{i}.info = info;
-%     dataFile{i}.varnames = varnames;
-%     dataFile{i}.data = data;
-% end
+% next load the map file and the wave files into memory using loadensitex_dxldata.m
+cMapDir = [studyDir filesep() 'Contact_Mapping'];
+mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
+for i = 1:numel(mappingFiles)
+    [info, varnames, data] = loadensitex_dxldata([varargin{1} filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
+    dataFile{i}.info = info; %#ok<*AGROW> 
+    dataFile{i}.varnames = varnames;
+    dataFile{i}.data = data;
+end
 
-s = load('/Users/steven/Desktop/dataFiles.mat');
-dataFile = s.dataFile;
+% s = load('/Users/steven/Desktop/dataFiles.mat');
+% dataFile = s.dataFile;
 
 % then map the data into the OpenEP data format
-
-% I think we have to decide whether to import an 'along' map or an 'across'
-% map and these might need combining retrospectively for particular use
-% cases, but could be considered as separate OpenEP data structures at
-% import time. The default should possibly be to import to the 'along' as
-% this is 'along the spline' and consistent with usual practice in EP,
-% whereas 'across' may be influenced by HD grid geometry.
 
 % Deal wtih the infoMapping dictionary
 infoMapping = { ...
@@ -109,6 +182,13 @@ for i = 1:size(infoMapping)
             error('OPENEP/IMPORT_ENSITEX: Code not yet implemented for more than 4 sub fields')
     end
 end
+
+% I think we have to decide whether to import an 'along' map or an 'across'
+% map and these might need combining retrospectively for particular use
+% cases, but could be considered as separate OpenEP data structures at
+% import time. The default should possibly be to import to the 'along' as
+% this is 'along the spline' and consistent with usual practice in EP,
+% whereas 'across' may be influenced by HD grid geometry.
 
 % Deal wtih the dataMapping dictionary
 dataMapping = { ...
@@ -299,5 +379,25 @@ end
 % % userdata.rf.originaldata.ablparams.power =
 % % userdata.rf.originaldata.ablparams.impedance =
 % % userdata.rf.originaldata.ablparams.distaltemp =
-%
+
+
+    % Encourage user to save the data
+    if ~isempty(saveFileName_cli)
+        save(saveFileName_cli, 'userdata');
+        matFileFullPath = saveFileName_cli;
+    else
+        defaultName = [map.studyName '_' map.name];
+        defaultName(isspace(defaultName)) = '_';
+        originalDir = cd();
+        matFileFullPath = fullfile(saveDir, defaultName); %default
+        cd(saveDir);
+        [filename,saveDir] = uiputfile('*.mat', 'Save the userdata to disc for future rapid access?',defaultName);
+        cd(originalDir);
+        if filename ~= 0
+            save([saveDir filename], 'userdata','-v7.3'); %needed as sometimes >2GB
+            matFileFullPath = fullfile(saveDir, filename);
+        end
+    end
+
+
 end
