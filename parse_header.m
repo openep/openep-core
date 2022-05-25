@@ -42,6 +42,18 @@ while iL < (numel(indNL)-1)
     iL = iL + 1;
     line = header(indNL(iL):(indNL(iL+1)-2));
 
+    % look for - "Map name:, TEXT"
+    tokens = regexp(line, 'Map name\s*:\s*,\s*([a-zA-Z_.0-9\s]*)', 'tokens');
+    if ~isempty(tokens)
+        mapName = tokens{1}{1};
+    end
+
+    % look for - "Map type:, TEXT"
+    tokens = regexp(line, 'Map type\s*:\s*,\s*(\w*)', 'tokens');
+    if ~isempty(tokens)
+        mapType = tokens{1}{1};
+    end
+
     % look for - "Export File Version : TEXT"
     tokens = regexp(line, 'Export File Version\s*:\s*([a-zA-Z_.0-9]*)R', 'tokens');
     if ~isempty(tokens)
@@ -203,11 +215,12 @@ info.endTimeAbs = endTimeAbs;
 info.header = header;
 if exportFileVersion >= 10.0
     info.dataStartRow = dataStartRow;
+    info.mapName = mapName;
+    info.mapType = mapType;
 end
 info.numPts = numPoints;
 
-% only do this next part if we have wave data, i.e. if sampleFreq is
-% populated
+% only do this next part if we have wave data, i.e. if sampleFreq is populated
 if exist('sampleFreq', 'var')
     if exportFileVersion < 10.0
         info.fileIndices = fileIndices;

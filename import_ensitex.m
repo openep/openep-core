@@ -157,6 +157,12 @@ end
 % s = load('/Users/steven/Desktop/dataFiles.mat');
 % dataFile = s.dataFile;
 
+% find the map name
+iContactMapFile = local_findFile('Map_CV_omni.csv');
+map.name = dataFile{iContactMapFile}.info.mapName;
+map.type = dataFile{iContactMapFile}.info.mapType;
+map.study = dataFile{iContactMapFile}.info.study;
+
 % then map the data into the OpenEP data format
 
 % Deal wtih the infoMapping dictionary
@@ -386,7 +392,7 @@ end
         save(saveFileName_cli, 'userdata');
         matFileFullPath = saveFileName_cli;
     else
-        defaultName = [map.studyName '_' map.name];
+        defaultName = [map.study '_' map.name];
         defaultName(isspace(defaultName)) = '_';
         originalDir = cd();
         matFileFullPath = fullfile(saveDir, defaultName); %default
