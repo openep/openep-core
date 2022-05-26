@@ -141,18 +141,18 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
     );
 
 % next load the map file and the wave files into memory using loadensitex_dxldata.m
-% cMapDir = [studyDir filesep() 'Contact_Mapping'];
-% mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
-% for i = 1:numel(mappingFiles)
-%     [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
-%     dataFile{i}.info = info; %#ok<*AGROW>
-%     dataFile{i}.varnames = varnames;
-%     dataFile{i}.data = data;
-% end
+cMapDir = [studyDir filesep() 'Contact_Mapping'];
+mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
+for i = 1:numel(mappingFiles)
+    [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
+    dataFile{i}.info = info; %#ok<*AGROW>
+    dataFile{i}.varnames = varnames;
+    dataFile{i}.data = data;
+end
 
 % save('/Users/steven/Desktop/dataFiles.mat', 'dataFile');
-s = load('/Users/steven/Desktop/dataFiles.mat');
-dataFile = s.dataFile;
+% s = load('/Users/steven/Desktop/dataFiles.mat');
+% dataFile = s.dataFile;
 
 % find the map name
 iContactMapFile = local_findFile('Map_CV_omni.csv', dataFile);
@@ -415,7 +415,6 @@ for i = 1:size(dataMapping,1)
 
             % and store the additional channel/ECG name(s)
             userdata.electric.ecgNames = channelECG_cli;
-
 
         case 'electric.annotations.woi'
             startWindow = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
