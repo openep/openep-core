@@ -140,17 +140,18 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
     );
 
 % next load the map file and the wave files into memory using loadensitex_dxldata.m
-cMapDir = [studyDir filesep() 'Contact_Mapping'];
-mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
-for i = 1:numel(mappingFiles)
-    [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
-    dataFile{i}.info = info; %#ok<*AGROW>
-    dataFile{i}.varnames = varnames;
-    dataFile{i}.data = data;
-end
+% cMapDir = [studyDir filesep() 'Contact_Mapping'];
+% mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
+% for i = 1:numel(mappingFiles)
+%     [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
+%     dataFile{i}.info = info; %#ok<*AGROW>
+%     dataFile{i}.varnames = varnames;
+%     dataFile{i}.data = data;
+% end
 
-% s = load('/Users/steven/Desktop/dataFiles.mat');
-% dataFile = s.dataFile;
+% save('/Users/steven/Desktop/dataFiles.mat', 'dataFile');
+s = load('/Users/steven/Desktop/dataFiles.mat');
+dataFile = s.dataFile;
 
 % find the map name
 iContactMapFile = local_findFile('Map_CV_omni.csv', dataFile);
@@ -349,15 +350,70 @@ for i = 1:size(dataMapping,1)
             end
             freezeGroupTable = freezeGroupTable';
 
-            % finally store the reference signals
+            % store the reference signal
             temp = dataFile{fileInd}.data(freezeGroupTable,fieldInd);
-            len = numel(temp);
-            temp = sscanf(sprintf(' %s',freezeGroup{:}),'%f',[1,Inf]);
-            userdata.electric.egmRef = reshape(temp, [len numel(temp/len)]);
+            userdata.electric.egmRef = cell2mat(temp);
+
+            % and store the reference egm name
+            userdata.electric.egmRefNames = channelRef_cli;
 
         case 'electric.ecg'
-            % Hard coding a channel just now; but ask 'which signal is a good reference?' of the user
-            userdata.electric.ecg                           = userdata.electric.egm; % TODO only for now
+            % find the trace names in the reference wave file
+            traceInd = local_findField('Trace', dataFile(fileInd));
+            ecgTraceNames = dataFile{fileInd}.data(:,traceInd);
+
+            % remove any leadng white space and redundant nested cells
+            ecgTraceNames = regexp(ecgTraceNames, '\s*(\w*\s*[a-zA-Z_0-9-]*)', 'tokens');
+            temp = [];
+            for iPoint = 1:numel(ecgTraceNames)
+                temp{iPoint} = ecgTraceNames{iPoint}{1}{1}; %#ok<AGROW> 
+            end
+            ecgTraceNames = temp';
+
+            % identify all the reference traces with the required name
+            iValidTrace = strcmpi(channelECG_cli{1}, ecgTraceNames);
+            iValidTrace = iValidTrace(:);
+            if numel(channelECG_cli) > 1
+            for iEcg = 2:numel(channelECG_cli)
+                iValidTrace(:,iEcg) = strcmpi(channelECG_cli{iEcg}, ecgTraceNames);
+            end
+            end
+
+            % find the freeze group # for every reference trace
+            freezeGroupInd = local_findField('Freeze Grp #', dataFile(fileInd));
+            refFreezeGroup = dataFile{fileInd}.data(:,freezeGroupInd);
+
+            % convert freeze group strings to double
+            pointfG = sscanf(sprintf(' %s',freezeGroup{:}),'%f',[1,Inf]); % size is number of points
+            reffG = sscanf(sprintf(' %s',refFreezeGroup{:}),'%f',[1,Inf]); % size is number of reference waves
+            pointfG = pointfG';
+            reffG = reffG';
+
+            % work out the indices into the reference wave file for every
+            % mapping point (based on the mapping point's freeze group and
+            % the chosen reference signal channel)
+            freezeGroupTable = [];
+            for iChannel = 1:numel(channelECG_cli)
+                for iP = 1:numel(freezeGroup) % iP for index point - we iterate through every mapping point
+                    requiredFreezeGroupNumber = pointfG(i);
+                    tffG = (reffG==requiredFreezeGroupNumber) & iValidTrace(:,iChannel);
+                    freezeGroupTable{iChannel}(iP) = find(tffG); %#ok<AGROW>
+                end
+                freezeGroupTable{iChannel} = freezeGroupTable{iChannel}(:);
+            end
+
+            % store the additional/ECG signals
+            temp = dataFile{fileInd}.data(freezeGroupTable{1},fieldInd);
+            userdata.electric.egmRef(:,:) = cell2mat(temp);
+            if numel(channelECG_cli) > 1
+                for iChannel = 2:numel(channelECG_cli)
+                    temp = dataFile{fileInd}.data(freezeGroupTable{iChannel},fieldInd);
+                    userdata.electric.egmRef(:,:,iChannel) = cell2mat(temp);
+                end
+            end
+
+            % and store the additional channel/ECG name(s)
+            userdata.electric.egmRefNames = channelECG_cli;
 
         case 'electric.annotations.woi'
             startWindow = str2double(dataFile{fileInd}.data(:,fieldInd(1)));

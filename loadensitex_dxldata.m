@@ -170,6 +170,7 @@ currentLine = 1;
 remainingBytes = filebytes2end(fileID);
 totalBytes = remainingBytes;
 remainingData = [];
+set(0,'DefaultTextInterpreter','none')
 f = waitbar(0, ['Loading data from file: ' fname]);
 while remainingBytes>0
     % Read chunk of data
