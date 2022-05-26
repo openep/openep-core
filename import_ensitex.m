@@ -116,8 +116,9 @@ if isfield(info.dxgeo, 'triangles') && isfield(info.dxgeo, 'vertices')
     X = info.dxgeo.vertices(:,1);
     Y = info.dxgeo.vertices(:,2);
     Z = info.dxgeo.vertices(:,3);
-    userdata.surface.triRep = TriRep(TRI, X, Y, Z);
-    FF = freeBoundary(userdata.surface.triRep);
+    surfaceTriRep = TriRep(TRI, X, Y, Z);
+    userdata = setMesh(userdata, surfaceTriRep);
+    FF = freeBoundary(surfaceTriRep);
     isVertexAtRim = false(size(userdata.surface.triRep.X,1),1);
     if ~isempty(FF)
         isVertexAtRim(FF(:,1)) = true;
@@ -129,7 +130,7 @@ end
 allLabels = info.dxgeo.surface_of_origin;
 labels = unique(allLabels);
 cMap = colormap(parula(numel(labels)));
-faceColors = trFaceToVertData(userdata.surface.triRep, allLabels);
+faceColors = trFaceToVertData(getMesh(userdata, 'type', 'trirep'), allLabels);
 hSurf = drawMap(userdata, 'type', 'none');
 colorShell(hSurf, [X Y Z], faceColors, Inf ...
     , 'showcolorbar', 'show' ...
@@ -219,7 +220,7 @@ if isempty(channelRef_cli)
         , 'SelectionMode', 'single' ...
         , 'PromptString', 'Which signal is Ref?' ...
         , 'ListSize',[300 300] ...
-        ); 
+        );
     if ~ok; return; end
     channelRef_cli = refNames{kRef};
 else
@@ -233,7 +234,7 @@ if isempty(channelECG_cli)
         , 'SelectionMode', 'multiple' ...
         , 'PromptString', 'Which other signals should be downloaded with each point (typically one or more ECG signals)?' ...
         , 'ListSize', [300 300] ...
-        ); 
+        );
     if ~ok; return; end
     channelECG_cli = refNames(kEcg);
 else
@@ -312,8 +313,8 @@ for i = 1:size(dataMapping,1)
             userdata.electric.egmUniX(:,:,1)                = [X Y Z];
 
         case 'electric.egmUni'
-            userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{fileInd(1)}.data(:,fieldInd));
-            userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{fileInd(2)}.data(:,fieldInd));
+            userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{fileInd(1)}.data(:,fieldInd(1)));
+            userdata.electric.egmUni(:,:,2)                 = cell2mat(dataFile{fileInd(2)}.data(:,fieldInd(2)));
 
         case 'electric.egmRef'
             % find the trace names in the reference wave file
@@ -323,7 +324,7 @@ for i = 1:size(dataMapping,1)
             % remove any leadng white space and redundant nested cells
             refTraceNames = regexp(refTraceNames, '\s*(\w*\s*[a-zA-Z_0-9-]*)', 'tokens');
             for iPoint = 1:numel(refTraceNames)
-                temp{iPoint} = refTraceNames{iPoint}{1}{1}; %#ok<AGROW> 
+                temp{iPoint} = refTraceNames{iPoint}{1}{1}; %#ok<AGROW>
             end
             refTraceNames = temp';
 
@@ -346,7 +347,7 @@ for i = 1:size(dataMapping,1)
             for iP = 1:numel(freezeGroup) % iP for index point - we iterate through every mapping point
                 requiredFreezeGroupNumber = pointfG(i);
                 tffG = (reffG==requiredFreezeGroupNumber) & iValidTrace;
-                freezeGroupTable(iP) = find(tffG); %#ok<AGROW> 
+                freezeGroupTable(iP) = find(tffG); %#ok<AGROW>
             end
             freezeGroupTable = freezeGroupTable';
 
@@ -366,7 +367,7 @@ for i = 1:size(dataMapping,1)
             ecgTraceNames = regexp(ecgTraceNames, '\s*(\w*\s*[a-zA-Z_0-9-]*)', 'tokens');
             temp = [];
             for iPoint = 1:numel(ecgTraceNames)
-                temp{iPoint} = ecgTraceNames{iPoint}{1}{1}; %#ok<AGROW> 
+                temp{iPoint} = ecgTraceNames{iPoint}{1}{1}; %#ok<AGROW>
             end
             ecgTraceNames = temp';
 
@@ -374,9 +375,9 @@ for i = 1:size(dataMapping,1)
             iValidTrace = strcmpi(channelECG_cli{1}, ecgTraceNames);
             iValidTrace = iValidTrace(:);
             if numel(channelECG_cli) > 1
-            for iEcg = 2:numel(channelECG_cli)
-                iValidTrace(:,iEcg) = strcmpi(channelECG_cli{iEcg}, ecgTraceNames);
-            end
+                for iEcg = 2:numel(channelECG_cli)
+                    iValidTrace(:,iEcg) = strcmpi(channelECG_cli{iEcg}, ecgTraceNames);
+                end
             end
 
             % find the freeze group # for every reference trace
@@ -408,12 +409,13 @@ for i = 1:size(dataMapping,1)
             if numel(channelECG_cli) > 1
                 for iChannel = 2:numel(channelECG_cli)
                     temp = dataFile{fileInd}.data(freezeGroupTable{iChannel},fieldInd);
-                    userdata.electric.egmRef(:,:,iChannel) = cell2mat(temp);
+                    userdata.electric.ecg(:,:,iChannel) = cell2mat(temp);
                 end
             end
 
             % and store the additional channel/ECG name(s)
-            userdata.electric.egmRefNames = channelECG_cli;
+            userdata.electric.ecgNames = channelECG_cli;
+
 
         case 'electric.annotations.woi'
             startWindow = str2double(dataFile{fileInd}.data(:,fieldInd(1)));
@@ -430,7 +432,7 @@ for i = 1:size(dataMapping,1)
             userdata.electric.voltages.bipolar              = str2double(dataFile{fileInd}.data(:,fieldInd));
 
         case 'electric.voltages.unipolar'
-            userdata.electric.votlages.unipolar             = str2double(dataFile{fileInd}.data(:,fieldInd));
+            userdata.electric.voltages.unipolar             = str2double(dataFile{fileInd}.data(:,fieldInd));
 
         case 'electric.impedances.time'
             % TODO
@@ -454,6 +456,9 @@ for i = 1:size(dataMapping,1)
             userdata.electric.include                       = str2double(dataFile{fileInd}.data(:,fieldInd));
     end
 end
+
+% convert to single
+userdata = doubleToSingle(userdata);
 
 % Encourage user to save the data
 if ~isempty(saveFileName_cli)
