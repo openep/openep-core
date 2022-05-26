@@ -52,3 +52,6 @@ switch lower(type)
             surfX = findclosestvertex(getMesh(userdata), X);
         end
 end
+
+X = double(X);
+surfX = double(surfX);

@@ -41,9 +41,9 @@ end
 
 switch lower(type)
     case 'bip'
-        voltages = userdata.electric.voltages.bipolar;
+        voltages = double(userdata.electric.voltages.bipolar);
     case 'uni'
-        voltages = userdata.electric.voltages.unipolar;
+        voltages = double(userdata.electric.voltages.unipolar);
 end
 
 end
