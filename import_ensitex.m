@@ -141,18 +141,18 @@ colorShell(hSurf, [X Y Z], faceColors, Inf ...
     );
 
 % next load the map file and the wave files into memory using loadensitex_dxldata.m
-cMapDir = [studyDir filesep() 'Contact_Mapping'];
-mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
-for i = 1:numel(mappingFiles)
-    [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
-    dataFile{i}.info = info; %#ok<*AGROW>
-    dataFile{i}.varnames = varnames;
-    dataFile{i}.data = data;
-end
+% cMapDir = [studyDir filesep() 'Contact_Mapping'];
+% mappingFiles = nameFiles(cMapDir, 'showhiddenfiles', false, 'extension', '.csv');
+% for i = 1:numel(mappingFiles)
+%     [info, varnames, data] = loadensitex_dxldata([studyDir filesep() 'Contact_Mapping' filesep() mappingFiles{i}]);
+%     dataFile{i}.info = info; %#ok<*AGROW>
+%     dataFile{i}.varnames = varnames;
+%     dataFile{i}.data = data;
+% end
 
 % save('/Users/steven/Desktop/dataFiles.mat', 'dataFile');
-% s = load('/Users/steven/Desktop/dataFiles.mat');
-% dataFile = s.dataFile;
+s = load('/Users/steven/Desktop/dataFiles.mat');
+dataFile = s.dataFile;
 
 % find the map name
 iContactMapFile = local_findFile('Map_CV_omni.csv', dataFile);
@@ -198,9 +198,12 @@ switch lower(bipoleType)
     case 'along'
         wave_bi = 'Wave_bi_along.csv';
         wave_uni = 'Wave_uni_along.csv';
+        secondElectrode = 'Uni_AlongX,Uni_AlongY,Uni_AlongZ';
     case 'across'
         wave_bi = 'Wave_bi_across.csv';
         wave_uni = 'Wave_uni_acrpss.csv';
+        secondElectrode = 'Uni_AcrossX,Uni_AcrossY,Uni_AcrossZ';
+
 end
 
 % Ask, 'which signal is a good reference'
@@ -254,7 +257,7 @@ dataMapping = { ...
     ;  'electric.egmX'                        'Map_CV_omni.csv'                           'roving x,roving y,roving z' ...
     ;  'electric.egm'                         wave_bi                                     'signals' ...
     ;  'electric.electrodeNames_uni'          wave_uni                                    'Trace' ...
-    ;  'electric.egmUniX'                     'Map_CV_omni.csv'                           'Uni_CornerX,Uni_CornerY,Uni_CornerZ,Uni_AlongX,Uni_AlongY,Uni_AlongZ' ...
+    ;  'electric.egmUniX'                     'Map_CV_omni.csv'                           ['Uni_CornerX,Uni_CornerY,Uni_CornerZ,' secondElectrode] ...
     ;  'electric.egmUni'                      ['Wave_uni_corner.csv,' wave_uni]           'signals' ...
     ;  'electric.egmRef'                      'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good reference'
     ;  'electric.ecg'                         'Wave_refs.csv'                             'signals' ... % Ask, 'which signal is a good ECG'
@@ -311,6 +314,11 @@ for i = 1:size(dataMapping,1)
             Y = str2double(dataFile{fileInd}.data(:,fieldInd(2)));
             Z = str2double(dataFile{fileInd}.data(:,fieldInd(3)));
             userdata.electric.egmUniX(:,:,1)                = [X Y Z];
+
+            X2 = str2double(dataFile{fileInd}.data(:,fieldInd(4)));
+            Y2 = str2double(dataFile{fileInd}.data(:,fieldInd(5)));
+            Z2 = str2double(dataFile{fileInd}.data(:,fieldInd(6)));
+            userdata.electric.egmUniX(:,:,2)                = [X2 Y2 Z2];
 
         case 'electric.egmUni'
             userdata.electric.egmUni(:,:,1)                 = cell2mat(dataFile{fileInd(1)}.data(:,fieldInd(1)));
