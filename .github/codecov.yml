@@ -8,3 +8,5 @@ ignore:
   - "*ensitex*"
   - "*carto*"
   - "*kodex*"
+  - "*licence*"
+  - "*license*"
