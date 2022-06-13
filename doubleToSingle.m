@@ -60,13 +60,21 @@ for i = 1:numel(fieldToConvert)
     f = strsplit(fieldToConvert{i}, '.');
     switch(numel(f))
         case 1
-            newUserdata.(f{1}) = single(userdata.(f{1}));
+            if isfield(userdata, f{1})
+                newUserdata.(f{1}) = single(userdata.(f{1}));
+            end
         case 2
-            newUserdata.(f{1}).(f{2}) = single(userdata.(f{1}).(f{2}));
+            if isfield(userdata.(f{1}), f{2})
+                newUserdata.(f{1}).(f{2}) = single(userdata.(f{1}).(f{2}));
+            end
         case 3
-            newUserdata.(f{1}).(f{2}).(f{3}) = single(userdata.(f{1}).(f{2}).(f{3}));
+            if isfield(userdata.(f{1}).(f{2}), f{3})
+                newUserdata.(f{1}).(f{2}).(f{3}) = single(userdata.(f{1}).(f{2}).(f{3}));
+            end
         case 4
-            newUserdata.(f{1}).(f{2}).(f{3}).(f{4}) = single(userdata.(f{1}).(f{2}).(f{3}).(f{4}));
+            if isfield(userdata.(f{1}).(f{2}).(f{3}), f{4})
+                newUserdata.(f{1}).(f{2}).(f{3}).(f{4}) = single(userdata.(f{1}).(f{2}).(f{3}).(f{4}));
+            end
         otherwise
             error('OPENEP/DOUBLETOSINGLE: Not configured for more than 4 subfields');
     end
