@@ -4,3 +4,4 @@ codecov:
 ignore:
   - "tests"
   - "tests/*Test.m"
+  - "*precision*"
