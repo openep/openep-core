@@ -5,3 +5,6 @@ ignore:
   - "tests"
   - "tests/*Test.m"
   - "*precision*"
+  - "*ensitex*"
+  - "*carto*"
+  - "*kodex*"
