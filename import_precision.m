@@ -73,7 +73,11 @@ X = data.modelgroups(iDxInd).dxgeo.vertices(:,1);
 Y = data.modelgroups(iDxInd).dxgeo.vertices(:,2);
 Z = data.modelgroups(iDxInd).dxgeo.vertices(:,3);
 tr = TriRep(TRI, X, Y, Z);
-userdata = setMesh(userdata, tr);
+
+t.X = tr.X;
+t.Triangulation = tr.Triangulation;
+userdata.surface.triRep = t;
+
 surfaceData = data.modelgroups(iDxInd).dxgeo.surface_of_origin;
 userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceData, 'definedOn', 'elements');
 
