@@ -250,13 +250,31 @@ adjustSlider();
                 magenta = [1 0 1] * .8;
                 red = cMap(1,:);
                 %red = [1 0 0];
+                
             case 'cv'
                 cMap = colormap(hot);
                 cBarTitle = 'CV (m/s)';
                 magenta = cMap(end,:);
                 red = cMap(1,:);
+                
+            case 'geodesic'
+                cMap = flipud(colormap(winter));
+                cBarTitle = 'Distance (cm)';
+                
+            case 'wallthickness'
+                cMap = flipud(jet);
+                cMap(1:length(cMap)/10,:) = [];
+                magenta = [1 0 1] * .8;
+                red = cMap(1,:);
+                cBarTitle = 'Wall Thickness (mm)';
+
+            case 'weights'
+                cMap = colormap(parula);
+                cBarTitle = 'Normalised distance weights';
+
             case 'labels'
                 cBarTitle = 'labels';
+
         end
         if ~isempty(usrColorMap)
             cMap = usrColorMap;
