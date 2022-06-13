@@ -10,3 +10,4 @@ ignore:
   - "*kodex*"
   - "*licence*"
   - "*license*"
+  - "parse_header"
