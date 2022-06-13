@@ -84,7 +84,7 @@ tr = userdata.surface.triRep;
         triangleInclude = tr.Triangulation;
         triangleInclude(~logical(iTri),:) = [];
         if ~isempty(triangleInclude)
-            tr2 = TriRep(triangleInclude, tr.X);
+            tr2 = TriRep(double(triangleInclude), tr.X);
             
             % Calculate the thresholded area
             areas2 = triarea(tr2);
