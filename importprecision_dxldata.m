@@ -236,9 +236,9 @@ for i_file = 1:length(fullFileList)
     % spare3trace)
     egm_elements = fieldnames(egm);
     for iEgm = 1:length(egm_elements)
-        if ~strcmpi(egm_elements{iEgm}, 'reftrace')
-            data(i_file).(egm_elements{iEgm}) = egm.(egm_elements{iEgm});
-        end
+        %if ~strcmpi(egm_elements{iEgm}, 'reftrace')
+        data(i_file).(egm_elements{iEgm}) = egm.(egm_elements{iEgm});
+        %end
     end
     
     % Save bipole/unipole data, with checks to make sure data all uniform.
@@ -435,10 +435,30 @@ function data = post_process(data)
 
 % Use points.endtime and points.rovLAT to calculate local AT
 for i = 1:length(data)
+
+    % process the roving LAT
     [n_data, ~] = size(data(i).rovtrace);
     assert(n_data ~= length(data(i).rovtrace_pts)); % Make sure we've got the right number!
-    t_end = (n_data-1)/data(i).sampleFreq;
-    data(i).rovLAT = t_end-(data(i).endtime-data(i).rovLAT);
+    traceLength = n_data-1;
+
+    % calculate the time in seconds before the end of the trace
+    ref_s_beforeEndOfTrace = data(i).endtime - data(i).refLAT;
+    rov_s_beforeEndOfTrace = data(i).endtime - data(i).rovLAT;
+
+    % convert to samples
+    ref_samp_beforeEndOfTrace = floor(ref_s_beforeEndOfTrace * data(i).sampleFreq);
+    rov_samp_beforeEndOfTrace = floor(rov_s_beforeEndOfTrace * data(i).sampleFreq);
+    if ref_samp_beforeEndOfTrace == 0
+        ref_samp_beforeEndOfTrace = 1;
+    end
+    if rov_samp_beforeEndOfTrace == 0
+        rov_samp_beforeEndOfTrace = 1;
+    end
+
+    % convert to samples from the start of the trace
+    data(i).refLAT = traceLength - ref_samp_beforeEndOfTrace;
+    data(i).rovLAT = traceLength - rov_samp_beforeEndOfTrace;
+
 end
 
 end

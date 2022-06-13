@@ -38,6 +38,8 @@ end
 
 indNL = [1, 1 + find(header==char(10))];    %#ok<*CHARTEN> %indNL = index of first character after newline
 iL = 0;
+startTime = NaN;
+endTime = NaN;
 while iL < (numel(indNL)-1)
     iL = iL + 1;
     line = header(indNL(iL):(indNL(iL+1)-2));
@@ -60,6 +62,16 @@ while iL < (numel(indNL)-1)
     tokens = regexp(line, 'Export File Version\s*:\s*([a-zA-Z_.0-9]*)R', 'tokens');
     if ~isempty(tokens)
         exportFileVersion = str2double(tokens{1}{1});
+    end
+
+    % look for - "St. Jude Medical. File Revision : TEXT"
+    tokens = regexp(line, 'St. Jude Medical. File Revision\s*:\s*([a-zA-Z_.0-9]*)', 'tokens');
+    if ~isempty(tokens)
+        if exist('exportFileVersion', 'var')
+            error('OPENEP/PARSE_HEADER: exportFileVersion has already been set');
+        else
+            exportFileVersion = str2double(tokens{1}{1});
+        end
     end
 
     % look for - "Export Data Element : NAME"
@@ -91,16 +103,12 @@ while iL < (numel(indNL)-1)
     tokens = regexp(line, '\s*Export Start Time \(h:m:s\.msec\)\s*:\s*(\d*:\d*:\d*\.\d*)', 'tokens');
     if ~isempty(tokens)
         startTime = tokens{1}{1};
-    else
-        startTime = NaN;
     end
 
     % look for - "Export End Time (h:m:s.msec) : HH:MM:SS.MS"
     tokens = regexp(line, '\s*Export End Time \(h:m:s\.msec\)\s*:\s*(\d*:\d*:\d*\.\d*)', 'tokens');
     if ~isempty(tokens)
         endTime = tokens{1}{1};
-    else
-        endTime = NaN;
     end
 
     % look for - "Export Start Time (secs usecs) : sec usec"
@@ -220,7 +228,7 @@ if exportFileVersion >= 10.0
     info.mapName = mapName;
     info.mapType = mapType;
 end
-info.numPts = numPoints;
+info.numPoints = numPoints;
 
 % only do this next part if we have wave data, i.e. if sampleFreq is populated
 if exist('sampleFreq', 'var')

@@ -57,31 +57,6 @@ if exist('dxldata', 'var')
     end
 end
 
-% Geometry data - NOT COMPLETE
-% if isfield(data.modelgroups.dxgeo, 'triangles') && isfield(data.modelgroups.dxgeo, 'vertices')
-%     TRI = data.modelgroups.dxgeo.triangles;
-%     X = data.modelgroups.dxgeo.vertices(:,1);
-%     Y = data.modelgroups.dxgeo.vertices(:,2);
-%     Z = data.modelgroups.dxgeo.vertices(:,3);
-%     userdata.surface.triRep = TriRep(TRI, X, Y, Z);
-%     FF = freeBoundary(userdata.surface.triRep);
-%     isVertexAtRim = false(size(userdata.surface.triRep.X,1),1);
-%     isVertexAtRim(FF(:,1)) = true;
-%     userdata.surface.isVertexAtRim = isVertexAtRim;
-% end
-
-% iMap = 1;
-% for i = 1:numel(data.modelgroups)
-%     for j = 1:numel(data.modelgroups(i).dxgeo)
-%         TRI = data.modelgroups(i).dxgeo(j).triangles;
-%         X = data.modelgroups(i).dxgeo(j).vertices(:,1);
-%         Y = data.modelgroups(i).dxgeo(j).vertices(:,2);
-%         Z = data.modelgroups(i).dxgeo(j).vertices(:,3);
-%         tr{iMap} = TriRep(TRI, X, Y, Z);
-%         iMap = iMap + 1;
-%     end
-% end
-
 % find the Dx Landmark Geo file index
 iDxInd = [];
 for i = 1: numel(data.modelgroups)
@@ -103,10 +78,8 @@ surfaceData = data.modelgroups(iDxInd).dxgeo.surface_of_origin;
 userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceData, 'definedOn', 'elements');
 
 
-% Surface data - TODO
-% THERE DOES NOT APPEAR TO BE VOLTAGE MAPPING DATA AVAILABLE BUT THERE DOES
-% APPEAR TO BE ACTIVATION TIME DATA AVAILABLE IN THE Dx Landmark Geo data file
-% Get the activation time 
+% Surface data - PARTIALLY COMPLETE
+% There appears to be only activation OR voltage data in the mapping file and not both
 if isfield(data.modelgroups(iDxInd).dxgeo, 'act')
     act = data.modelgroups(iDxInd).dxgeo.act;
 else 
@@ -123,9 +96,6 @@ userdata.surface.act_bip = [act bip];
 % if isfield(data.modelgroups(i).dxgeo(j).vertices(:,3);)
 % userdata = setSurfaceProperty(userdata, 'name', 'surfaceregion', info.dxgeo.surface_of_origin);
 
-
-
-
 % TODO: HOW TO DEAL WITH GEOMETRY *** Github Issue #42: https://github.com/openep/openep-core/issues/42 ***
 % (1) Find the dxgeo with the first comment 'St. Jude Medical Dx Landmark Geo data export; file format revision 0'
 %     - best to do this by identifying the comment which contains the string 'Dx Landmark Geo'
@@ -141,17 +111,7 @@ userdata.surface.act_bip = [act bip];
 % how/where to store this information, but it probably needs another data
 % field, and is not likley to be specific to Precision
 
-% this section deals with geometry
-% sometimes there may be model groups; sometimes not
-
-
-
-
-
-
 % Electric data - PARTIALLY COMPLETE
-% userdata.electric.tags = ;
-% userdata.electric.names = ;
 if length(dxldata) > 2
     warning(['Currently unable to process more than one combined set ',...
         'of experiments (one unipolar and one bipolar'])
@@ -165,12 +125,15 @@ for i_dxl = 1:length(dxldata)
             dxldata(i_dxl).surfPty' dxldata(i_dxl).surfPtz'];
         userdata.electric.egmRef = dxldata(i_dxl).rovtrace'; % TODO: import the reference egm
         userdata.electric.egm = dxldata(i_dxl).rovtrace';
-        userdata.electric.annotations.referenceAnnot = dxldata(i_dxl).refLAT';
-        userdata.electric.annotations.mapAnnot = dxldata(i_dxl).rovLAT';
-        userdata.electric.annotations.woi = -userdata.electric.annotations.referenceAnnot;
-        userdata.electric.annotations.woi(:,2) = length(userdata.electric.egm)-userdata.electric.annotations.referenceAnnot;
+        userdata.electric.annotations.referenceAnnot = dxldata(i_dxl).refLAT'; % this is in samples
+        userdata.electric.annotations.mapAnnot = dxldata(i_dxl).rovLAT'; % this is in samples
+
+        userdata.electric.annotations.woi = 1 - userdata.electric.annotations.referenceAnnot;
+        userdata.electric.annotations.woi(:,2) = size(userdata.electric.egm,2) - userdata.electric.annotations.referenceAnnot;
+
         userdata.electric.voltages.bipolar = dxldata(i_dxl).peak2peak';
     else
+        warning('OPENEP/IMPORT_PRECISION: This code is not fully tested and likely to yield errors')
         userdata.electric.electrodeNames_uni = dxldata(i_dxl).rovtrace_pts';
         userdata.electric.egmUniX = [dxldata(i_dxl).rovingx',...
             dxldata(i_dxl).rovingy', dxldata(i_dxl).rovingz'];
@@ -183,24 +146,6 @@ for i_dxl = 1:length(dxldata)
         userdata.electric.voltages.unipolar = dxldata(i_dxl).peak2peak';
     end
 end
-% userdata.electric.egm = rovtrace';
-% TODO: IMPORTING UNIPOLE DATA *** Github Issue #43: https://github.com/openep/openep-core/issues/43***
-% userdata.electric.electrodeNames_uni = ; 
-% userdata.electric.egmUniX = ;
-% userdata.electric.egmUni = ;
-% userdata.electric.ecg =
-% userdata.electric.annotations.woi = 
-% userdata.electric.voltages.unipolar = 
-% userdata.electric.impedances.time = 
-% userdata.electric.impedances.value = 
-
-
-
-
-
-
-
-
 
 % Ablation data - TODO
 % userdata.rf.originaldata.force.time = 
