@@ -100,7 +100,7 @@ cleanupObj = onCleanup(@()fclose(fid));
             tri(groupId<0,:) = [];
             
             warning('off', 'MATLAB:TriRep:PtsNotInTriWarnId')
-                t = TriRep(tri, xyz)
+                t = TriRep(tri, xyz);
             warning('on', 'MATLAB:TriRep:PtsNotInTriWarnId')
             
             % Now find the vertices which make up the edges. We find the
