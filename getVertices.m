@@ -24,7 +24,7 @@ function [vertices, isVertUsed] = getVertices( userdata )
 % code
 % ---------------------------------------------------------------
 
-tr = getMesh(userdata);
+tr = getMesh(userdata, 'type', 'triangulation');
 vertices = tr.X;
 [~, isVertUsed] = repack(tr);
 

@@ -23,6 +23,6 @@ function faces = getFaces( userdata )
 % code
 % ---------------------------------------------------------------
 
-faces = getMesh(userdata).Triangulation;
+faces = getMesh(userdata, 'type', 'triangulation').ConnectivityList;
 
 end
