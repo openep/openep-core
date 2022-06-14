@@ -461,15 +461,12 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
             
             % Now get the Bar directions - the normal to the surface
             if ~isempty(userdata.surface)
-
-                tr = getMesh(userdata);
-
                 warning('off', 'FINDCLOSESTVERTEX:hasToTrim')
-                [closestVertices, ~] = findclosestvertex(tr, userdata.electric.egmX, true);
+                [closestVertices, ~] = findclosestvertex(userdata.surface.triRep, userdata.electric.egmX, true);
                 warning('on', 'FINDCLOSESTVERTEX:hasToTrim')
                 
                 % Now work out the surface projections
-                userdata.electric.egmSurfX = tr.X(closestVertices,:);
+                userdata.electric.egmSurfX = userdata.surface.triRep.X(closestVertices,:);
                 userdata.electric.barDirection = normals(closestVertices, :);
             else
                 userdata.electric.egmSurfX = [];
