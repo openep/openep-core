@@ -38,6 +38,9 @@ for i = 1:numel(allFiles)
    end
 
    % Store comment about what we have done
+   if ~isfield(userdata, 'notes')
+       userdata.notes = [];
+   end
    userdata.notes{end+1} = [date ': data set anonymised using batchAnonymise.m'];
 
    % We save as -v7 because it's faster to load in OpenEP-py than -v7.3,
