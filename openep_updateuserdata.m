@@ -10,7 +10,7 @@ function nU = openep_updateuserdata(f, varargin)
 %
 % OPENEP_UPDATEUSERDATA accepts the following parameter-value pairs
 %   'outputpath'    {[]} | <string>
-%   'version'       {'-v7.3'} | '-v7' | '-v6'
+%   'version'       {'-v7'} | '-v7.3' | '-v6'
 %   'unpacktrirep'  {false} | true
 %
 % OPENEP_UPDATEUSERDATA is used to make non-data related changes to
@@ -38,7 +38,7 @@ function nU = openep_updateuserdata(f, varargin)
 % ---------------------------------------------------------------
 
 nStandardArgs = 1; % UPDATE VALUE
-versionString = '-v7.3';
+versionString = '-v7';
 unPackTriRep = false;
 outputPath = [];
 if nargin > nStandardArgs
@@ -84,7 +84,7 @@ end
 
 if ~isempty(outputPath)
     % Store comment about file format
-    userdata.notes{end+1} = [date ': Converted to ' '-v7.3' ' using openep_updateuserdata.m'];
+    userdata.notes{end+1} = [date ': Converted to ' versionString ' using openep_updateuserdata.m'];
     save(outputPath, 'userdata', versionString);
     disp(['OPENEP/OPENEP_UPDATEUSERDATA: Data saved to ' outputPath]);
 end
