@@ -44,9 +44,11 @@ for i = 1:numel(allFiles)
    % Store comment about what we have done
    userdata.notes{end+1} = [date ': data set converted using batchConvert.m'];
 
+   % We save as -v7 because it's faster to load in OpenEP-py than -v7.3,
+   % and the saved file is significantly smaller compared to -v6 files.
    outputFile = [outputDir filesep() allFiles{i}];
    disp(['saving file: ' outputFile])
-   save(outputFile, 'userdata', '-v7');  % v6 is faster to load in OpenEP-Py
+   save(outputFile, 'userdata', '-v7');
 
 end
 
