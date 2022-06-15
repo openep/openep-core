@@ -59,21 +59,6 @@ classdef batchAnonymiseTest < matlab.unittest.TestCase
         
         end
 
-        function checkFileVersion(testCase)
-
-            expectedVersion =  'MATLAB 7.2 MAT-file';
-            for i = 1:numel(testCase.allNewFiles)
-                % This snippet determines the version of a .mat file
-                % Based on:
-                % https://uk.mathworks.com/matlabcentral/answers/47013-retrieve-mat-file-version#answer_57451
-                fileName = fullfile(testCase.outputDir.Folder, testCase.allNewFiles{i});
-                fileData = evalc(['type(''', fileName, ''')']);
-                fileVersion = fileData(2:20);
-                testCase.verifyEqual(fileVersion, expectedVersion)
-            end
-
-        end
-
         function checkCartoFolder(testCase)
             
             for i = 1:numel(testCase.allNewFiles)
