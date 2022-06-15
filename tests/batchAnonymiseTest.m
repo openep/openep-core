@@ -29,7 +29,7 @@ classdef batchAnonymiseTest < matlab.unittest.TestCase
             % folder
             cwd = pwd;
 
-            filePath = matlab.desktop.editor.getActiveFilename;
+            filePath = which(mfilename);
             testFolder = fileparts(filePath);
             privateFolder = fullfile(testFolder, '../private');
             cd(privateFolder);
