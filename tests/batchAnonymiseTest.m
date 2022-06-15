@@ -62,7 +62,8 @@ classdef batchAnonymiseTest < matlab.unittest.TestCase
         function checkCartoFolder(testCase)
             
             for i = 1:numel(testCase.allNewFiles)
-                userdata = load(fullfile(testCase.outputDir.Folder, testCase.allNewFiles{i}), 'userdata');
+                filename = fullfile(testCase.outputDir.Folder, testCase.allNewFiles{i});
+                load(filename, 'userdata');
                 if isfield(userdata, 'cartoFolder')
                     testCase.verifyEqual(userdata.cartoFolder, []);
                 end
