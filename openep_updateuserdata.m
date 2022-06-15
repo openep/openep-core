@@ -82,9 +82,14 @@ if unPackTriRep
     userdata.notes{end+1} = [date ': TriRep unpacked using openep_updateuserdata.m'];
 end
 
+% Store comment about file format
+if ~isfield(userdata, 'notes')
+   userdata.notes = [];
+end
+userdata.notes{end+1} = [date ': Converted to ' versionString ' using openep_updateuserdata.m'];
+
+% Save the file if necessary
 if ~isempty(outputPath)
-    % Store comment about file format
-    userdata.notes{end+1} = [date ': Converted to ' versionString ' using openep_updateuserdata.m'];
     save(outputPath, 'userdata', versionString);
     disp(['OPENEP/OPENEP_UPDATEUSERDATA: Data saved to ' outputPath]);
 end
