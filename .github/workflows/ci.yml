@@ -35,12 +35,16 @@ jobs:
           repository: openep/openep-examples
           path: "${{ env.OPENEP_EXAMPLES }}"
       
+      # Add test data sets from the openep-testingdata Zenodo record
+      - run: wget -r https://zenodo.org/record/6651600/files/carto.zip -P "${{ env.OPENEP_TESTING_DATA }}"
+      - run: unzip "${{ env.OPENEP_TESTING_DATA }}"/zenodo.org/record/6651600/files/carto.zip -d "${{ env.OPENEP_TESTING_DATA }}"
+      
       # Add test data sets from the openep-testingdata repository
-      - uses: actions/checkout@master
-        with:
-          lfs: true
-          repository: openep/openep-testingdata
-          path: "${{ env.OPENEP_TESTING_DATA }}"
+      #- uses: actions/checkout@master
+      #  with:
+      #    lfs: true
+      #    repository: openep/openep-testingdata
+      #    path: "${{ env.OPENEP_TESTING_DATA }}"
 
       # Sets up MATLAB on the GitHub Actions runner
       - name: Setup MATLAB
