@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This section documents changes which have been merged into develop and will form the next release
  
 ### Added
+- Function to anonymise a directory of OpenEP datasets
+- Function to convert surface models from TriRep to structure
+- Function to convert surface models from TriRep to structure for a directory of OpenEP datasets
 - Parsing data from the Precision electroanatomic mapping system
 - Parsing data from the EnSiteX electroanatomic mapping system
 
