@@ -39,7 +39,7 @@ pause;
 % Get the co-ordinate of the point and the vertex index
 dataTip = get(hT, 'children');
 XYZ(1,1:3) = [dataTip(1).X dataTip(1).Y dataTip(1).Z];
-trSurface = getMesh(userdata, 'type', 'triangulation', 'repack', true)
+trSurface = getMesh(userdata, 'type', 'triangulation', 'limitToTriangulation', true)
 iV(1) = findclosestvertex(trSurface, XYZ(1,:));
 
 % Get all the attached surface
