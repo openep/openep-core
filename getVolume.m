@@ -26,8 +26,8 @@ function [ volume ] = getVolume( userdata )
 % code
 % ---------------------------------------------------------------
 
-Tri = userdata.surface.triRep.Triangulation;
-X = userdata.surface.triRep.X;
+Tri = getMesh(userdata).Triangulation;
+X = getMesh(userdata).X;
 
 volume = 0;
 

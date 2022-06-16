@@ -102,6 +102,7 @@ iP = getMappingPointsWithinWoI(userdata);
 mapAnnot = userdata.electric.annotations.mapAnnot;
 mapAnnot(~iP) = NaN;
 referenceAnnot = userdata.electric.annotations.referenceAnnot;
+tr = getMesh(userdata);
 
 switch method
     case 'ptbased'
@@ -117,37 +118,37 @@ switch method
         iPoint = I(1:floor(numel(mapAnnot)*prct/100));
         X = mean(userdata.electric.egmX(iPoint,:));
         surfXtemp = mean(userdata.electric.egmSurfX(iPoint,:));
-        [surfXtr, distances] = findclosestvertex(userdata.surface.triRep, surfXtemp);
-        surfX = userdata.surface.triRep.X(surfXtr,:);
+        [surfXtr, distances] = findclosestvertex(tr, surfXtemp);
+        surfX = tr.X(surfXtr,:);
         t = mean(mapAnnot(iPoint) - referenceAnnot(iPoint));
         disp(['Nearest surface point to [' num2str(surfXtemp) '] is [' num2str(surfX) '], distance: ' num2str(distances) '.'])
     case 'clinmap'
         % 1. Get clinical activation data
         [t,iPoint] = nanmax(userdata.surface.act_bip(:,1));
-        X = userdata.surface.triRep.X(iPoint,:);
+        X = tr.X(iPoint,:);
         surfX = X;
     case 'clinmapprct'
         act = userdata.surface.act_bip(:,1);
         [~, I] = sort(act, 'descend', 'missingplacement', 'last');
         iPoint = I(1:floor(numel(act)*prct/100));
-        X = mean(userdata.surface.triRep.X(iPoint,:));
-        surfXtr = findclosestvertex(userdata.surface.triRep,X);
-        surfX = userdata.surface.triRep.X(surfXtr,:);
+        X = mean(tr.X(iPoint,:));
+        surfXtr = findclosestvertex(tr,X);
+        surfX = tr.X(surfXtr,:);
         t = mean(act(iPoint));
     case 'openepmap'
         % 1. Get OpenEP interpolated activation data
         act = generateInterpData(userdata, 'lat-map');
         [t,iPoint] = nanmax(act);
-        X = userdata.surface.triRep.X(iPoint,:);
+        X = tr.X(iPoint,:);
         surfX = X;
     case 'openepmapprct'
         % 1. Get OpenEP interpolated activation data
         act = generateInterpData(userdata, 'lat-map');
         [~, I] = sort(act, 'descend', 'missingplacement', 'last');
         iPoint = I(1:floor(numel(act)*prct/100));
-        X = mean(userdata.surface.triRep.X(iPoint,:));
-        surfXtr = findclosestvertex(userdata.surface.triRep,X);
-        surfX = userdata.surface.triRep.X(surfXtr,:);
+        X = mean(tr.X(iPoint,:));
+        surfXtr = findclosestvertex(tr,X);
+        surfX = tr.X(surfXtr,:);
         t = mean(act(iPoint));
 end
 
