@@ -45,7 +45,6 @@ classdef CVTriangulation
     % ---------------------------------------------------------------
 
     properties
-        userdata;
         latDif = [2, 30];
         elecDis = [1.5, 10];
         minCVallowed = 0.2;
@@ -66,11 +65,11 @@ classdef CVTriangulation
 
     methods
 
-        function [cv, cv_triangle] = run(obj)
+        function [cv, cv_triangle] = run(obj, userdata)
 
-            activationTime = getActivationTime(obj.userdata);
+            activationTime = getActivationTime(userdata);
             activation_time_ms = activationTime * 1000;
-            [X, surfX] = getElectrogramX(obj.userdata);
+            [X, surfX] = getElectrogramX(userdata);
             
             DT = delaunay(X(:,1:3));
             TR = triangulation(DT,X);
@@ -158,8 +157,8 @@ classdef CVTriangulation
 
             end
 
-            Faces = obj.userdata.surface.triRep.Triangulation;
-            Vertices = obj.userdata.surface.triRep.X;
+            Faces = userdata.surface.triRep.Triangulation;
+            Vertices = userdata.surface.triRep.X;
             dist_list =[];
             CV_list = [];
 
@@ -211,7 +210,7 @@ classdef CVTriangulation
 
                 ax3 = subplot(2,2,3);
                 hold on
-                patch('Faces',Faces,'Vertices',Vertices,'FaceVertexCData',obj.userdata.surface.act_bip(:,1),...
+                patch('Faces',Faces,'Vertices',Vertices,'FaceVertexCData',userdata.surface.act_bip(:,1),...
                     'FaceColor','interp','EdgeColor','none','FaceAlpha',1);
                 axis off;
                 light;
