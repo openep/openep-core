@@ -2,7 +2,7 @@ classdef CVPlanarFit
     properties
         CV
         maxCVAllowed = 2;
-        biPolaeVoltageThreshold = 0.5;
+        bipolarVoltageThreshold = 0.5;
 
     end
 
@@ -36,7 +36,7 @@ classdef CVPlanarFit
             % its next level, until we get a reasonable approximation of CV
             CVmax = obj.maxCVAllowed;
             itermax = 1;
-            vthres = obj.biPolaeVoltageThreshold;
+            vthres = obj.bipolarVoltageThreshold;
             warning('off','all');
             for vidx = 1:size(X,1)
                 % skip non-valid points
