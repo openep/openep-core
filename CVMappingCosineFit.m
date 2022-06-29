@@ -47,6 +47,7 @@ classdef CVMappingCosineFit
 
     properties
         plot = true;
+        
     end
 
     methods
@@ -186,13 +187,13 @@ classdef CVMappingCosineFit
         colorbar
 
 
-        cd( '/home/ali/Documents/MATLAB/numerical-tours-master/matlab')
-        getd = @(p)path(p,path);
-
-        getd('toolbox_signal/');
-        getd('toolbox_general/');
-        getd('toolbox_graph/');
-        getd('toolbox_wavelet_meshes/');
+%         path = '/home/ali/Documents/MATLAB/numerical-tours-master/matlab';
+%         getd = @(p)path(p,path);
+% 
+%         getd('toolbox_signal/');
+%         getd('toolbox_general/');
+%         getd('toolbox_graph/');
+%         getd('toolbox_wavelet_meshes/');
 
 
         heartTriangles=connects;
@@ -733,7 +734,7 @@ classdef CVMappingCosineFit
         end
 
 
-        save(strcat('CV_data', num2str(LoopOver), '.mat'), '-v7.3')
+        %save(strcat('CV_data_', num2str(obj.caseName), '.mat'), '-v7.3')
         end
     end
 end
