@@ -1,9 +1,7 @@
 classdef CVPlanarFit
     properties
-        CV
-        maxCVAllowed = 2;
+        maxCVallowed = 2;
         bipolarVoltageThreshold = 0.5;
-
     end
 
     methods
@@ -34,7 +32,7 @@ classdef CVPlanarFit
             % is flat over the patch, so that CV is infinite. This is probably
             % noise in the data, that we smooth out by enlarging the patch to
             % its next level, until we get a reasonable approximation of CV
-            CVmax = obj.maxCVAllowed;
+            CVmax = obj.maxCVallowed;
             itermax = 1;
             vthres = obj.bipolarVoltageThreshold;
             warning('off','all');
