@@ -13,6 +13,7 @@ classdef ConductionVelocity < matlab.mixin.SetGet & matlab.System
     %             calculating conduction velocity. Classes available
     %             in OpenEP:
     %               - CVTriangulation
+    %               - CVMappingCosineFit
     %   cv_values - calculated conduction velocity values
     %   cv_X      - location (3D coordinates) of each conduction velocity value.
     %
@@ -50,7 +51,7 @@ classdef ConductionVelocity < matlab.mixin.SetGet & matlab.System
         elecDis;        % CVTriangulation
         minCVallowed;   % CVTriangulation
         minTheta;       % CVTriangulation
-        plot;           % CVTriangulation
+        plot;           % CVTriangulation, CVMappingCosineFit
     end
 
     methods
