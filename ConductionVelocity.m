@@ -14,6 +14,7 @@ classdef ConductionVelocity < matlab.mixin.SetGet & matlab.System
     %             in OpenEP:
     %               - CVTriangulation
     %               - CVMappingCosineFit
+    %               - CVPlanarFit
     %   cv_values - calculated conduction velocity values
     %   cv_X      - location (3D coordinates) of each conduction velocity value.
     %
@@ -47,11 +48,13 @@ classdef ConductionVelocity < matlab.mixin.SetGet & matlab.System
     end
 
     properties(Dependent = true)
-        latDif;         % CVTriangulation
-        elecDis;        % CVTriangulation
-        minCVallowed;   % CVTriangulation
-        minTheta;       % CVTriangulation
-        plot;           % CVTriangulation, CVMappingCosineFit
+        latDif;                     % CVTriangulation
+        elecDis;                    % CVTriangulation
+        maxCVallowed;               % CVPlanarFit
+        minCVallowed;               % CVTriangulation
+        minTheta;                   % CVTriangulation
+        bipolarVoltageThreshold;    % CVPlanarFit
+        plot;                       % CVTriangulation, CVMappingCosineFit
     end
 
     methods
@@ -119,6 +122,13 @@ classdef ConductionVelocity < matlab.mixin.SetGet & matlab.System
             value = obj.method.elecDis;
         end
 
+        function set.maxCVallowed(obj, value)
+            obj.method.maxCVallowed = value;
+        end
+        function value = get.maxCVallowed(obj)
+            value = obj.method.maxCVallowed;
+        end
+
         function set.minCVallowed(obj, value)
             obj.method.minCVallowed = value;
         end
@@ -131,6 +141,13 @@ classdef ConductionVelocity < matlab.mixin.SetGet & matlab.System
         end
         function value = get.minTheta(obj)
             value = obj.method.minTheta;
+        end
+
+        function set.bipolarVoltageThreshold(obj, value)
+            obj.method.bipolarVoltageThreshold = value;
+        end
+        function value = get.bipolarVoltageThreshold(obj)
+            value = obj.method.bipolarVoltageThreshold;
         end
 
         function set.plot(obj, value)
