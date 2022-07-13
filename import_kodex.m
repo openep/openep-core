@@ -182,7 +182,7 @@ T = readtable(csv_file);
 W = width(T);
 Values=T(:,W);
 if size(Values,1) == 0
-    error('No data contained in Map');
+    warning('No data contained in Map');
 end
 datas=split(table2array(Values),',');
 LATs=str2double(datas(:,5));
@@ -192,12 +192,17 @@ csv_pos=str2double(datas(:,2:4));
 obj = readObj(object_file);
 
 
+% maybe osbsolte in 'full' files as data save in json files
 T1=readtable(csv_landmark_file);
 W1 = width(T1);
 Landmarks=T1(:,W1);
+if size(Landmarks,1) == 0
+    warning('No landmark data contained in Map');
+    Lpoints=[];
+else
 datas2=split(table2array(Landmarks),',');
 Lpoints=str2double(datas2(:,2:4));
-
+end
 %% Get 'raw' electirc data
 egm_count=0;
 abl_count=0;
