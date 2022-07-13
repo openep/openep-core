@@ -92,6 +92,7 @@ for j=3:numel(tempfolder)
 end
 
 %check format and if study directory needs to be changed to 'full' format
+%could be removed if only expecting 'full' data exports
 if any(strcmp(studies,'dump_state')) && any(strcmp(studies,'Report'))
     study_dir_new=[study_dir_overall,filesep(),'dump_state',filesep(),'MainEntry',filesep()]; %update study_dir
     tempfolder=dir(study_dir_new);
@@ -134,8 +135,30 @@ elseif exist('study_dir_new') == 1
 end
 
 
-Fs=500; %work out way to read frequency
-sampling_rate=1000/Fs; %in ms
+% Fs=500; %work out way to read frequency
+% sampling_rate=1000/Fs; %in ms
+userdata = openep_createuserdata();
+%% Get software version and other details %%TODO: Make getter function?
+userdata.kodexFolder=study_dir_overall;
+task_folder=[study_dir_overall,filesep(),'task_manager_logs'];
+task_dir=dir(task_folder);
+task_folder=[task_folder,filesep(),task_dir(3).name];
+task_file=[task_folder,filesep(),'MainNoPatientLoader.txt'];
+fid = fopen(task_file);
+tline = fgetl(fid);
+lineCounter = 1;
+while ischar(tline)
+    if contains(tline,'system_label')
+        break;
+    end
+    % Read next line
+    tline = fgetl(fid);
+    lineCounter = lineCounter + 1;
+end
+fclose(fid);
+k = strfind(tline,'system_label');
+kodex_version=tline(71:84);
+userdata.kodexData.softwareVersion=kodex_version;
 
 %% find object and report data files (as measured by kodex)
 for n=3:numel(files)
@@ -179,11 +202,11 @@ Lpoints=str2double(datas2(:,2:4));
 egm_count=0;
 abl_count=0;
 lm_count=0;
-userdata = openep_createuserdata();
+
 %% this is to fill in from 'raw' electrogram and ablation data if avalable (think of better way)
 
 
-userdata.electric.sampleFrequency=Fs; %TO DO - Find where this is stored
+%userdata.electric.sampleFrequency=0; %TO DO - Find where this is stored
 
 if exist('study_dir_new') == 0
 
@@ -204,8 +227,8 @@ for i=1:numel(tempfolder);
                 userdata.electric.tags{egm_count,1}=value.tag;
                 userdata.electric.names{egm_count,1}=value.current_point;
                 userdata.electric.egmX(egm_count,:)=value.position; %%is raw position
-                userdata.electric.voltages.bipolar(egm_count,1)=Volts(value.current_point);
-                userdata.electric.LATs(egm_count,1)=LATs(value.current_point);
+                userdata.electric.voltages.bipolar(egm_count,1)=Volts(value.current_point); %NB-Unipolar data not currently collected by Kodex
+                userdata.electric.LATs(egm_count,1)=LATs(value.current_point); %keep for the moment but check correlation with getting LAT from annotations, if they match can remove
                 userdata.electric.egm(egm_count,:)=value.map_signal;
                 userdata.electric.elctrodeNames_uni(egm_count,:)=[value.electrode_number1, value.electrode_number2];
                 userdata.electric.egmRef(egm_count,:)=value.ref_signal;
@@ -216,9 +239,9 @@ for i=1:numel(tempfolder);
                 
                 
                 %added to get index infomation for translating egm to shell
-                userdata.electric.include(egm_count,1)=value.valid_for_map;
-                userdata.electric.clipped(egm_count,1)=value.clipped;
-                userdata.electric.discarded(egm_count,1)=value.discarded; %discarded will be opposite of include, can proabably remove
+                userdata.electric.include(egm_count,1)=value.valid_for_map; %not discarded and has ref/map annotations so not necessairly just the opposite of valid_for_map/inlcude
+                %userdata.electric.clipped(egm_count,1)=value.clipped;
+                userdata.electric.discarded(egm_count,1)=value.discarded; %discarded means manual deletion of the point
                 
             end
 end
@@ -270,7 +293,6 @@ for i=1:numel(tempfolder_lm)
                 lm_count=lm_count+1;
                 x=kodex_egm_import([lm_folder,filesep(),fname]);
                 value = jsondecode(x);
-                assignin('base','LMvalue',value)
                 %% POPULATE LANDMARK DATA HERE (added to electrogram data)
                 
                 userdata.electric.tags{egm_count+lm_count,1}=value.landmark_type;
@@ -290,7 +312,7 @@ for i=1:numel(tempfolder_lm)
                 
                 %added to get index infomation for translating egm to shell
                 userdata.electric.include(egm_count+lm_count,1)=1;
-                userdata.electric.clipped(egm_count+lm_count,1)=NaN;
+                %userdata.electric.clipped(egm_count+lm_count,1)=NaN;
                 userdata.electric.discarded(egm_count+lm_count,1)=NaN; %discarded will be opposite of include, can proabably remove
     end
 end
@@ -327,7 +349,7 @@ for i=1:numel(tempfolder);
                 userdata.electric.egmSurfX(egm_count,:)=value.projected; %%This is the one on the surface
                 
                 
-                %added to get index infomation for translating egm to shell (PROBABLY WRONG)
+                %added to get index infomation for translating egm to shell 
                 userdata.electric.include(egm_count,1)=value.valid_for_map;
                 userdata.electric.clipped(egm_count,1)=value.clipped;
                 userdata.electric.discarded(egm_count,1)=value.discarded;
@@ -382,7 +404,7 @@ for i=1:numel(tempfolder_lm)
                 lm_count=lm_count+1;
                 x=kodex_egm_import([lm_folder,filesep(),fname]);
                 value = jsondecode(x);
-                assignin('base','LMvalue',value)
+                %assignin('base','LMvalue',value)
                 %% POPULATE LANDMARK DATA HERE (added to electrogram data)
                 
                 userdata.electric.tags{egm_count+lm_count,1}=value.landmark_type;
@@ -402,7 +424,7 @@ for i=1:numel(tempfolder_lm)
                 
                 %added to get index infomation for translating egm to shell
                 userdata.electric.include(egm_count+lm_count,1)=1;
-                userdata.electric.clipped(egm_count+lm_count,1)=0;
+                %userdata.electric.clipped(egm_count+lm_count,1)=0;
                 userdata.electric.discarded(egm_count+lm_count,1)=0; %discarded will be opposite of include, can proabably remove
     end
 end
