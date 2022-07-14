@@ -83,12 +83,17 @@ end
 
 tempfolder=dir(study_dir_overall);
 
+studies=[];
 map_count=0;
 for j=3:numel(tempfolder)
     if tempfolder(j).isdir == 1
         map_count=map_count+1;
         studies{map_count}=tempfolder(j).name;
     end
+end
+
+if map_count==0
+    warning('No studies found')
 end
 
 %check format and if study directory needs to be changed to 'full' format
