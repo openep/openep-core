@@ -205,8 +205,8 @@ if size(Landmarks,1) == 0
     warning('No landmark data contained in Map');
     Lpoints=[];
 else
-datas2=split(table2array(Landmarks),',');
-Lpoints=str2double(datas2(:,2:4));
+% datas2=split(table2array(Landmarks),',');
+% Lpoints=str2double(datas2(:,2:4));
 end
 %% Get 'raw' electirc data
 egm_count=0;
