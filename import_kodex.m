@@ -311,13 +311,13 @@ for i=1:numel(tempfolder_lm)
                 userdata.electric.egmX(egm_count+lm_count,:)=value.position; %%is raw position
                 userdata.electric.indexmesh(egm_count,1)=NaN;
                 userdata.electric.voltages.bipolar(egm_count+lm_count,1)=NaN;
-                userdata.electric.LATs(egm_count+lm_count,1)=NaN;
+                userdata.electric.LATs(egm_count+lm_count,1)=-8000;
                 userdata.electric.egm(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egm,2));
                 userdata.electric.elctrodeNames_uni(egm_count+lm_count,:)=NaN(1,size(userdata.electric.electrodeNames_uni,2));
                 userdata.electric.egmRef(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egmRef,2));
                 userdata.electric.annotations.woi(egm_count+lm_count,:)=NaN(1,2);
-                userdata.electric.annotations.referenceAnnot(egm_count+lm_count,1)=NaN;
-                userdata.electric.annotations.mapAnnot(egm_count+lm_count,1)=NaN;
+                userdata.electric.annotations.referenceAnnot(egm_count+lm_count,1)=0;
+                userdata.electric.annotations.mapAnnot(egm_count+lm_count,1)=0;
                 userdata.electric.egmSurfX(egm_count+lm_count,:)=NaN(1,3); %%This is the one on the surface
                 
                 
@@ -423,13 +423,13 @@ for i=1:numel(tempfolder_lm)
                 userdata.electric.egmX(egm_count+lm_count,:)=value.position; %%is raw position
                 userdata.electric.indexmesh(egm_count,1)=NaN;
                 userdata.electric.voltages.bipolar(egm_count+lm_count,1)=NaN;
-                userdata.electric.LATs(egm_count+lm_count,1)=NaN;
+                userdata.electric.LATs(egm_count+lm_count,1)=-8000;
                 userdata.electric.egm(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egm,2));
                 userdata.electric.elctrodeNames_uni(egm_count+lm_count,:)=NaN(1,size(userdata.electric.elctrodeNames_uni(1,:),2));
                 userdata.electric.egmRef(egm_count+lm_count,:)=NaN(1,size(userdata.electric.egmRef,2));
                 userdata.electric.annotations.woi(egm_count+lm_count,:)=NaN(1,2);
-                userdata.electric.annotations.referenceAnnot(egm_count+lm_count,1)=NaN;
-                userdata.electric.annotations.mapAnnot(egm_count+lm_count,1)=NaN;
+                userdata.electric.annotations.referenceAnnot(egm_count+lm_count,1)=0;
+                userdata.electric.annotations.mapAnnot(egm_count+lm_count,1)=0;
                 userdata.electric.egmSurfX(egm_count+lm_count,:)=NaN(1,3); %%This is the one on the surface
                 
                 
