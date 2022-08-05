@@ -200,13 +200,14 @@ obj = readObj(object_file);
 % maybe osbsolte in 'full' files as data save in json files
 T1=readtable(csv_landmark_file);
 W1 = width(T1);
+H1 = height(T1);
 Landmarks=T1(:,W1);
 if size(Landmarks,1) == 0
     warning('No landmark data contained in Map');
     Lpoints=[];
 else
-% datas2=split(table2array(Landmarks),',');
-% Lpoints=str2double(datas2(:,2:4));
+%datas2=split(table2array(Landmarks),',')
+%Lpoints=str2double(datas2(:,2:4));
 end
 %% Get 'raw' electirc data
 egm_count=0;
@@ -242,7 +243,7 @@ for i=1:numel(tempfolder);
                 userdata.electric.egm(egm_count,:)=value.map_signal;
                 userdata.electric.elctrodeNames_uni(egm_count,:)=[value.electrode_number1, value.electrode_number2];
                 userdata.electric.egmRef(egm_count,:)=value.ref_signal;
-                userdata.electric.annotations.woi(egm_count,:)=[value.woi_start_index, value.woi_end_index];
+                userdata.electric.annotations.woi(egm_count,:)=[value.woi_start_index, value.woi_end_index]-value.ref_annotation_index;
                 userdata.electric.annotations.referenceAnnot(egm_count,1)=value.ref_annotation_index;
                 userdata.electric.annotations.mapAnnot(egm_count,1)=value.map_annotation_index;
                 userdata.electric.egmSurfX(egm_count,:)=value.projected; %%This is the one on the surface
@@ -321,9 +322,9 @@ for i=1:numel(tempfolder_lm)
                 
                 
                 %added to get index infomation for translating egm to shell
-                userdata.electric.include(egm_count+lm_count,1)=1;
+                userdata.electric.include(egm_count+lm_count,1)=0;
                 %userdata.electric.clipped(egm_count+lm_count,1)=NaN;
-                userdata.electric.discarded(egm_count+lm_count,1)=NaN; %discarded will be opposite of include, can proabably remove
+                userdata.electric.discarded(egm_count+lm_count,1)=1; %discarded will be opposite of include, can proabably remove
     end
 end
 
@@ -353,7 +354,7 @@ for i=1:numel(tempfolder);
                 userdata.electric.egm(egm_count,:)=value.map_signal;
                 userdata.electric.elctrodeNames_uni(egm_count,:)=[value.electrode_number1, value.electrode_number2];
                 userdata.electric.egmRef(egm_count,:)=value.ref_signal;
-                userdata.electric.annotations.woi(egm_count,:)=[value.woi_start_index, value.woi_end_index];
+                userdata.electric.annotations.woi(egm_count,:)=[value.woi_start_index, value.woi_end_index]-value.ref_annotation_index;
                 userdata.electric.annotations.referenceAnnot(egm_count,1)=value.ref_annotation_index;
                 userdata.electric.annotations.mapAnnot(egm_count,1)=value.map_annotation_index;
                 userdata.electric.egmSurfX(egm_count,:)=value.projected; %%This is the one on the surface
@@ -433,9 +434,9 @@ for i=1:numel(tempfolder_lm)
                 
                 
                 %added to get index infomation for translating egm to shell
-                userdata.electric.include(egm_count+lm_count,1)=1;
+                userdata.electric.include(egm_count+lm_count,1)=0;
                 %userdata.electric.clipped(egm_count+lm_count,1)=0;
-                userdata.electric.discarded(egm_count+lm_count,1)=0; %discarded will be opposite of include, can proabably remove
+                userdata.electric.discarded(egm_count+lm_count,1)=1; %discarded will be opposite of include, can proabably remove
     end
 end
 
