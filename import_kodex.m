@@ -55,7 +55,7 @@ function [userdata] = import_kodex(varargin)
 %           .time_force - time course of force [(:,:,1)=time, (:,:,2)=force]
 %           .time_axial - time course of axial angle [(:,:,1)=time, (:,:,2)=axial angle]
 %           .time_lateral - time course of lateral angle [(:,:,1)=time, (:,:,2)=lateral angle]
-
+% NB: Frequency not yet read in
 %% Upload
 
 if nargin == 0
