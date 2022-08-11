@@ -561,12 +561,13 @@ for iMap = selection
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
-                            kEcg(i) = find(strstartcmpi(channelECG_cli{i}, names));
-                            if isempty(kEcg(i))
-                                error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                            new_index = find(strstartcmpi(channelECG_cli{i}, names));
+                            if isempty(new_index)
+                                error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli{i}]);
                             end
+                            kEcg(i) = new_index;
                         end
-                        if numel(kMap_bip)~=1 || numel(kRef)~=1 || numel(kEcg)~=1
+                        if numel(kMap_bip)~=1 || numel(kRef)~=1 || numel(kEcg)~=numel(nameEcg)
                             error(['IMPORTCARTO_MEM: The name change could not be resolved. Problem with filename: ' filename])
                         end
                     end
