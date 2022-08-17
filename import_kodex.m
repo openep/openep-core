@@ -301,10 +301,12 @@ for i=1:numel(tempfolder_lm)
     fname=tempfolder_lm(i).name;
     [a,b,c]=fileparts(fname);
     if strcmp(c,'.json') == 1 && contains(b,'LM')
-                lm_count=lm_count+1;
-                x=kodex_egm_import([lm_folder,filesep(),fname]);
+                       x=kodex_egm_import([lm_folder,filesep(),fname]);
                 value = jsondecode(x);
+                if ~isempty(value.landmark_type) && ~isempty(value.landmark_sub_type)
+                lm_count=lm_count+1;
                 %% POPULATE LANDMARK DATA HERE (added to electrogram data)
+                
                 
                 userdata.electric.tags{egm_count+lm_count,1}=value.landmark_type;
                 userdata.electric.names{egm_count+lm_count,1}=value.landmark_sub_type;
@@ -330,7 +332,7 @@ end
 
                 
 end
-
+end
 
 if exist('study_dir_new') == 1
 for i=1:numel(tempfolder);
@@ -412,9 +414,10 @@ for i=1:numel(tempfolder_lm)
     fname=tempfolder_lm(i).name;
     [a,b,c]=fileparts(fname);
     if strcmp(c,'.json') == 1 && contains(b,'LM')
-                lm_count=lm_count+1;
-                x=kodex_egm_import([lm_folder,filesep(),fname]);
+                       x=kodex_egm_import([lm_folder,filesep(),fname]);
                 value = jsondecode(x);
+                if ~isempty(value.landmark_type) && ~isempty(value.landmark_sub_type)
+                lm_count=lm_count+1;
                 %assignin('base','LMvalue',value)
                 %% POPULATE LANDMARK DATA HERE (added to electrogram data)
                 
@@ -442,7 +445,7 @@ end
 
 
 end
-
+end
 
 userdata.electric.numberofegms=egm_count;
 
