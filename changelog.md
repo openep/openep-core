@@ -20,4 +20,6 @@ This section documents changes which have been merged into develop and will form
 - Surface model getter and setter methods now provided
 
 ### Fixed
+- Fixed issue with multiple colour bars
+- Fixed issue #70 for setting tolerance when identifying in/out points in the mesh
 - Geodesic distance calculator now configured for both Ubuntu and MacOSX platforms
