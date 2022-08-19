@@ -11,3 +11,4 @@ ignore:
   - "*licence*"
   - "*license*"
   - "parse_header"
+  - "localtests"
