@@ -163,7 +163,6 @@ end
 fclose(fid);
 k = strfind(tline,'system_label');
 kodex_version=tline(71:84);
-userdata.kodexData.softwareVersion=kodex_version;
 
 %% find object and report data files (as measured by kodex)
 for n=3:numel(files)
@@ -209,6 +208,11 @@ else
 %datas2=split(table2array(Landmarks),',')
 %Lpoints=str2double(datas2(:,2:4));
 end
+
+%% Populate notes and information
+userdata.systemName='kodex';
+userdata = addNote(userdata, chamber, 'type', 'label', 'label', 'map name'); 
+userdata = addNote(userdata, kodex_version, 'type', 'label', 'label', 'software version');
 %% Get 'raw' electirc data
 egm_count=0;
 abl_count=0;
