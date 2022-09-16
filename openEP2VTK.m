@@ -52,7 +52,7 @@ if nargin > nStandardArgs
             case 'method'
                 method = varargin{i+1};
             case 'outputfile'
-                method = varargin{i+1};
+                outputfile = varargin{i+1};
         end
     end
 end
