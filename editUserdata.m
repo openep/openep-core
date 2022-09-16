@@ -29,10 +29,10 @@ function userdata2 = editUserdata(userdata)
 % ---------------------------------------------------------------
 
 tr = getMesh(userdata);
-[tr2, isVertUsed] = editTriangulation(tr2);
+[tr2, isVertUsed] = editTriangulation(tr);
 
 userdata2 = userdata;
-userdata2.surface.triRep = tr;
+userdata2.surface.triRep = tr2;
 
 userdata2.surface.isVertexAtRim(~isVertUsed) = [];
 userdata2.surface.act_bip(~isVertUsed,:) = [];
