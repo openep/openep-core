@@ -1,5 +1,8 @@
 classdef importCartoMemMissingChannelTest < matlab.unittest.TestCase
 
+    % ensure to set environment variable first before running this test: 
+    % setenv('OPENEP_LOCAL_TESTING_DATA', '/path/to/openep-local-testingdata')
+
     properties
         userdata;
     end
