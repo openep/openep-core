@@ -1,0 +1,14 @@
+codecov:
+  require_ci_to_pass: true
+  branch: develop
+ignore:
+  - "tests"
+  - "tests/*Test.m"
+  - "*precision*"
+  - "*ensitex*"
+  - "*carto*"
+  - "*kodex*"
+  - "*licence*"
+  - "*license*"
+  - "parse_header"
+  - "localtests"

@@ -59,25 +59,26 @@ end
 switch method
     case 'tags'
         X = userdata.rfindex.tag.X;
+        tr = getMesh(userdata);
         
         % find the closest point on the surface to each tag
-        iV = findclosestvertex(userdata.surface.triRep, X);
-        vertices = userdata.surface.triRep.X(iV,:);
+        iV = findclosestvertex(tr, X);
+        vertices = tr.X(iV,:);
         
         % find the centroids of all the triangles in the triangulation
-        [~,allCentroids] = tricentroid(userdata.surface.triRep);
+        [~,allCentroids] = tricentroid(tr);
         
         % find all the triangles whose centres are within r radius of
-        isAblated = false(size(userdata.surface.triRep.Triangulation,1),1);
+        isAblated = false(size(tr.Triangulation,1),1);
         for i = 1:length(vertices)
             distances = distBetweenPoints(vertices(i,:), allCentroids);
             isAblatedByThisLesion = distances<r;
             isAblated(isAblatedByThisLesion) = true;
         end
-        trAbl = triangulation(userdata.surface.triRep.Triangulation(isAblated,:) ...
-            , userdata.surface.triRep.X(:,1) ...
-            , userdata.surface.triRep.X(:,2) ...
-            , userdata.surface.triRep.X(:,3) ...
+        trAbl = triangulation(tr.Triangulation(isAblated,:) ...
+            , tr.X(:,1) ...
+            , tr.X(:,2) ...
+            , tr.X(:,3) ...
             );
         ablArea = sum(triarea(trAbl))/100;
         

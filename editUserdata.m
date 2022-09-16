@@ -28,7 +28,7 @@ function userdata2 = editUserdata(userdata)
 % code
 % ---------------------------------------------------------------
 
-tr = userdata.surface.triRep;
+tr = getMesh(userdata);
 [tr2, isVertUsed] = editTriangulation(tr);
 
 userdata2 = userdata;
