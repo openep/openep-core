@@ -469,12 +469,10 @@ end
                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelECG_cli = names(kEcg);
             else
-                kEcg = zeros(1,numel(channelECG_cli));
-                for i = 1:numel(channelECG_cli)
-                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
-                    if isempty(kEcg(i))
-                        error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
-                    end
+                kEcg = [1:1:length(names)];
+                channelECG_cli = names;
+                if isempty(kEcg(i))
+                   error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
                 end
             end
             
