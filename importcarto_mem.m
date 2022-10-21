@@ -468,14 +468,20 @@ end
             if isempty(channelECG_cli)
                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelECG_cli = names(kEcg);
+
             else
                 kEcg = [1:1:length(names)];
                 channelECG_cli = names;
-                if isempty(kEcg(i))
-                   error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
-                end
+                %kEcg = zeros(1,numel(channelECG_cli));
+                %for i = 1:numel(channelECG_cli)
+                %    disp(find(strstartcmpi(channelECG_cli{i}, namesTemp)));
+                %    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                %    if isempty(kEcg(i))
+                %        error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                %    end
+                %end
             end
-            
+
             egm = zeros(nPoints, max(size(voltages)));
             egmUni1 = zeros(nPoints, max(size(voltages)));
             egmUni2 = zeros(nPoints, max(size(voltages)));
@@ -695,7 +701,7 @@ end
         
         % Encourage user to save the data
         if ~isempty(saveFileName_cli)
-            save(saveFileName_cli, 'userdata');
+            save(saveFileName_cli, 'userdata','-v7.3');
             matFileFullPath = saveFileName_cli;
         else
             defaultName = [map.studyName '_' map.name];
@@ -706,7 +712,7 @@ end
             [filename,saveDir] = uiputfile('*.mat', 'Save the userdata to disc for future rapid access?',defaultName);
             cd(originalDir);
             if filename ~= 0
-                save([saveDir filename], 'userdata');
+                save([saveDir filename], 'userdata','-v7.3');
                 matFileFullPath = fullfile(saveDir, filename);
             end
         end
