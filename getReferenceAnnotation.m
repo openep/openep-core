@@ -42,10 +42,10 @@ end
 
 ref = [];
 if isstr(iEgm) && strcmpi(iEgm, ':')
-    ref = userdata.electric.annotations.referenceAnnot;
+    ref = double(userdata.electric.annotations.referenceAnnot);
 else
     for i = 1:numel(iEgm)
-        ref(i,1) = userdata.electric.annotations.referenceAnnot(iEgm(i),1);
+        ref(i,1) = double(userdata.electric.annotations.referenceAnnot(iEgm(i),1));
     end
 end
 

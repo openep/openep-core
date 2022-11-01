@@ -76,7 +76,7 @@ switch lower(type)
         if isa(userdata.surface.triRep, 'TriRep')
             tr = userdata.surface.triRep;
         else
-            tr = TriRep(double(FV.faces), FV.vert(:,1), FV.vert(:,2), FV.vert(:,3));
+            tr = TriRep(double(FV.faces), double(FV.vert(:,1)), double(FV.vert(:,2)), double(FV.vert(:,3)));
         end
     case 'triangulation'
         if isa(userdata.surface.triRep, 'triangulation')

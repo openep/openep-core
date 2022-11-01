@@ -42,10 +42,10 @@ end
 
 ref = [];
 if isstr(iEgm) && strcmpi(iEgm, ':')
-    map = userdata.electric.annotations.mapAnnot;
+    map = double(userdata.electric.annotations.mapAnnot);
 else
     for i = 1:numel(iEgm)
-        map(i,1) = userdata.electric.annotations.mapAnnot(iEgm(i),1);
+        map(i,1) = double(userdata.electric.annotations.mapAnnot(iEgm(i),1));
     end
 end
 
