@@ -147,7 +147,14 @@ userdata = openep_createuserdata();
 userdata.kodexFolder=study_dir_overall;
 task_folder=[study_dir_overall,filesep(),'task_manager_logs'];
 task_dir=dir(task_folder);
-task_folder=[task_folder,filesep(),task_dir(3).name];
+
+% deal with the presence of .ds_store files which might exist on MacOS
+iTaskDir = 3;
+if strcmpi(task_dir(iTaskDir).name, '.ds_store')
+    iTaskDir = iTaskDir + 1;
+end
+
+task_folder=[task_folder,filesep(),task_dir(iTaskDir).name];
 task_file=[task_folder,filesep(),'MainNoPatientLoader.txt'];
 fid = fopen(task_file);
 tline = fgetl(fid);
