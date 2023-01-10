@@ -20,6 +20,9 @@ function [tNew, isVertUsed] = repack(t)
     elseif isa(t,'triangulation')
         tri = t.ConnectivityList;
         x = t.Points;
+    elseif isa(t, 'struct')
+        tri = t.Triangulation;
+        x = t.X;
     else
         error('REPACK: wrong type of input.')
     end
@@ -39,6 +42,9 @@ function [tNew, isVertUsed] = repack(t)
         tNew = TriRep(newTri, newX); %#ok<DTRIREP>
     elseif isa(t,'triangulation')
         tNew = triangulation(newTri, newX);
+    elseif isa(t, 'struct')
+        tNew.X = newX;
+        tNew.Triangulation = newTri;
     end
 
 
