@@ -68,8 +68,8 @@ elseif isa(userdata.surface.triRep, 'struct')
     if ~isfield(userdata.surface.triRep, 'Triangulation')
         error('OPENEP:invalidData', 'OPENEP/GETMESH: invalid data. userdata.surface.triRep must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
-    FV.vert = userdata.surface.triRep.X;
-    FV.faces = userdata.surface.triRep.Triangulation;
+    FV.vert = double(userdata.surface.triRep.X);
+    FV.faces = double(userdata.surface.triRep.Triangulation);
 else
     error('OPENEP:invalidData', 'OPENEP/GETMESH: userdata.surface.triRep must be one of: TriRep, triangulation or struct');
 end
