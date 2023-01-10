@@ -32,10 +32,6 @@ function distance = distanceBetweenPoints(userdata, P1, P2, varargin)
 % code
 % ---------------------------------------------------------------
 
-% set up global variables
-global geodesic_library;
-geodesic_library = 'geodesic_matlab_api';
-
 % parse input arguments
 nStandardArgs = 3;
 method = 'linear';
@@ -76,11 +72,11 @@ switch method
         A = userdata.electric.egmSurfX(P1,:);
         B = userdata.electric.egmSurfX(P2,:);
         
-        % calculate the geodesic distance (repacking and reducepatch
-        % necessary to prevent ?memory problem in exact geodesic)
-        V = userdata.surface.triRep.X;
-        F = userdata.surface.triRep.Triangulation;
-        [faces,vertices] = reducepatch(F,V,size(F,1));
+        % calculate the geodesic distance (repacking to remove points
+        % not referenced in the triangulation)
+        tr = getMesh(userdata, 'limitToTriangulation', true);
+        vertices = tr.X;
+        faces = tr.Triangulation;
         
         % now find the closest vertex index to A and B
         P1new = findclosestvertex(vertices, A);

@@ -40,7 +40,7 @@ disp('Select points on the mesh and press any key when done')
 pause;
 
 % perform mesh cutting
-hc = HoleCutter(getMesh(userdata, 'type', 'triangulation', 'repack', true), hT);
+hc = HoleCutter(getMesh(userdata, 'type', 'triangulation', 'limitToTriangulation', true), hT);
 
 disp('hc.computeCutOut')
 hc.computeCutOut

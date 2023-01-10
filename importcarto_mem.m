@@ -264,7 +264,7 @@ for iMap = selection
         filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
         filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
         if ~isempty(filename)
-            [names, voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
+            [names, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
 
             % remove the trailing parentheses from names and store in namesTemp
             namesTemp = names;
@@ -383,9 +383,9 @@ for iMap = selection
     if ~isempty(iRfFiles)
         for i = 1:numel(iRfFiles)
             if i == 1
-                rfData = dlmread([studyDir filesep() allfilenames{iRfFiles(i)}],'\t',R,C); %first RF_ file
+                rfData = dlmread(fullfile(studyDir, allfilenames{iRfFiles(i)}),'\t',R,C); %first RF_ file
             else
-                tempdata = dlmread([studyDir filesep() allfilenames{iRfFiles(i)}],'\t',R,C);
+                tempdata = dlmread(fullfile(studyDir, allfilenames{iRfFiles(i)}),'\t',R,C);
                 rfData(end+1:end+size(tempdata,1),:) = tempdata; %subsequent RF_ files
             end
         end
@@ -395,9 +395,9 @@ for iMap = selection
     if ~isempty(iContactForceInRfFiles)
         for i = 1:numel(iContactForceInRfFiles)
             if i == 1
-                contactForceInRfData = dlmread([studyDir filesep() allfilenames{iContactForceInRfFiles(i)}],'\t',R,C); %first ContactForceInRf_ file
+                contactForceInRfData = dlmread(fullfile(studyDir, allfilenames{iContactForceInRfFiles(i)}),'\t',R,C); %first ContactForceInRf_ file
             else
-                tempdata = dlmread([studyDir filesep() allfilenames{iContactForceInRfFiles(i)}],'\t',R,C);
+                tempdata = dlmread(fullfile(studyDir, allfilenames{iContactForceInRfFiles(i)}),'\t',R,C);
                 contactForceInRfData(end+1:end+size(tempdata,1),:) = tempdata; %subsequent ContactForceInRf_ files
             end
         end
@@ -423,10 +423,10 @@ for iMap = selection
         for iPoint = 1:nPoints
             waitbar(iPoint/nPoints, hWait);
             filename_pointExport = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
-            if ~isfile([studyDir, filesep(), filename_pointExport])
+            if ~isfile(fullfile(studyDir, filename_pointExport))
                 disp(['File not found: ' , filename_pointExport])
             else
-                [pointExportTree, ~, ~] = xml_read([studyDir, filesep(), filename_pointExport], Pref);
+                [pointExportTree, ~, ~] = xml_read(fullfile(studyDir, filename_pointExport), Pref);
                 pointExport_WOI(iPoint,:) = [str2double(pointExportTree.WOI.ATTRIBUTE.From) str2double(pointExportTree.WOI.ATTRIBUTE.To)];
                 pointExport_ReferenceAnnotation(iPoint) = str2double(pointExportTree.Annotations.ATTRIBUTE.Reference_Annotation);
                 pointExport_MapAnnotation(iPoint) = str2double(pointExportTree.Annotations.ATTRIBUTE.Map_Annotation);
@@ -506,7 +506,7 @@ for iMap = selection
         %         filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
         %         filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
         %         if ~isempty(filename)
-        %             [names voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
+        %             [names voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
         %
         %             % remove the trailing parentheses from names and store in namesTemp
         %             namesTemp = names;
@@ -551,7 +551,7 @@ for iMap = selection
                 filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
 
                 if ~isempty(filename)
-                    [names, voltages] = read_ecgfile_v4([ studyDir, filesep(), filename]);
+                    [names, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
                     if any(kRef>numel(names)) || any(kEcg>numel(names)) || any(~strcmpi(names(kRef),nameRef)) || any(~strcmpi(names(kEcg),nameEcg))
                         beep()
                         warning(['IMPORTCARTO_MEM: The columns containing data in the .txt files change names. In ' filename])
@@ -561,12 +561,13 @@ for iMap = selection
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
-                            kEcg(i) = find(strstartcmpi(channelECG_cli{i}, names));
-                            if isempty(kEcg(i))
-                                error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                            new_index = find(strstartcmpi(channelECG_cli{i}, names));
+                            if isempty(new_index)
+                                error('OPENEP:missingChannel', ['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli{i} 'in file: ' filename]);
                             end
+                            kEcg(i) = new_index;
                         end
-                        if numel(kMap_bip)~=1 || numel(kRef)~=1 || numel(kEcg)~=1
+                        if numel(kMap_bip)~=1 || numel(kRef)~=1 || numel(kEcg)~=numel(nameEcg)
                             error(['IMPORTCARTO_MEM: The name change could not be resolved. Problem with filename: ' filename])
                         end
                     end
@@ -608,7 +609,7 @@ for iMap = selection
         filename_force = [filenameroot '_' map.pointNames{1} '_ContactForce.txt'];
         filename_force = mycheckfilename(filename_force, allfilenames, [map.pointNames{1} '_ContactForce.txt']);
         if ~isempty(filename_force)
-            [~, ~, ~, t_T, ~, ~, ~, ~] = read_forcefile_v2([ studyDir, filesep(), filename_force]);
+            [~, ~, ~, t_T, ~, ~, ~, ~] = read_forcefile_v2(fullfile(studyDir, filename_force));
 
             force = nan(nPoints,1);
             axialAngle = nan(nPoints,1);
@@ -625,7 +626,7 @@ for iMap = selection
                 filename_force = [filenameroot '_' map.pointNames{iPoint} '_ContactForce.txt'];
                 filename_force = mycheckfilename(filename_force, allfilenames, [map.pointNames{iPoint} '_ContactForce.txt']);
                 if ~isempty(filename_force)
-                    [f, aA, lA, t_T, t_F, t_aA, t_lA, systemTime] = read_forcefile_v2([ studyDir, filesep(), filename_force]);
+                    [f, aA, lA, t_T, t_F, t_aA, t_lA, systemTime] = read_forcefile_v2(fullfile(studyDir, filename_force));
                     force(iPoint,1) = str2double(f);
                     axialAngle(iPoint,1) = str2double(aA);
                     lateralAngle(iPoint,1) = str2double(lA);

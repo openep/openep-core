@@ -74,7 +74,7 @@ switch lower(method)
         end
 end
 
-tr = userdata.surface.triRep;
+tr = getMesh(userdata);
 [lowVArea, iTri, tr2] = local_calculateArea(tr, voltages, threshold);
 
     function [a, iTri, tr2] = local_calculateArea(tr, sI, threshold)
@@ -84,7 +84,7 @@ tr = userdata.surface.triRep;
         triangleInclude = tr.Triangulation;
         triangleInclude(~logical(iTri),:) = [];
         if ~isempty(triangleInclude)
-            tr2 = TriRep(triangleInclude, tr.X);
+            tr2 = TriRep(double(triangleInclude), tr.X);
             
             % Calculate the thresholded area
             areas2 = triarea(tr2);
