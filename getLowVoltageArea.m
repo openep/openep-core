@@ -74,7 +74,7 @@ switch lower(method)
         end
 end
 
-tr = userdata.surface.triRep;
+tr = getMesh(userdata);
 [lowVArea, iTri, tr2] = local_calculateArea(tr, voltages, threshold);
 
     function [a, iTri, tr2] = local_calculateArea(tr, sI, threshold)
