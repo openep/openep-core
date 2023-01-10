@@ -36,6 +36,6 @@ function iPoint = getMappingPointsWithinMesh( userdata, varargin )
 % code
 % ---------------------------------------------------------------
 
-[iPoint, ~] = pointStatus( userdata, varargin );
+[iPoint, ~] = pointStatus( userdata, varargin{:} );
 
 end

@@ -255,11 +255,13 @@ adjustSlider();
                 cBarTitle = 'CV (m/s)';
                 magenta = cMap(end,:);
                 red = cMap(1,:);
+            case 'labels'
+                cBarTitle = 'labels';
         end
         if ~isempty(usrColorMap)
             cMap = usrColorMap;
         end
-        
+
         % Limit the size of the colormap
         if length(cMap) > 256
             cMap = downsample(cMap, round(length(cMap)/256));
@@ -324,7 +326,7 @@ adjustSlider();
                 cMapRed = repmat(red, [nBrown, 1]);
                 figureCMap = vertcat(cMapRed, cMapMagenta);
             end
-            colormap(figureCMap);
+            colormap(hAx, figureCMap);
         end
         
         % Show the colorbar

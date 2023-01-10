@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with MATLAB Actions
+
+name: MATLAB Build
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  OPENEP_EXAMPLES: /home/runner/work/openep-core/openep-core/openep-examples
+  OPENEP_TESTING_DATA: /home/runner/work/openep-core/openep-core/openep-testingdata
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Add example data sets from the openep-examples repository
+      - uses: actions/checkout@master
+        with:
+          repository: openep/openep-examples
+          path: "${{ env.OPENEP_EXAMPLES }}"
+      
+      # Add test data sets from the openep-testingdata Zenodo record
+      - run: wget -r https://zenodo.org/record/6651600/files/carto.zip -P "${{ env.OPENEP_TESTING_DATA }}"
+      - run: unzip "${{ env.OPENEP_TESTING_DATA }}"/zenodo.org/record/6651600/files/carto.zip -d "${{ env.OPENEP_TESTING_DATA }}"
+      
+      # Add test data sets from the openep-testingdata repository
+      #- uses: actions/checkout@master
+      #  with:
+      #    lfs: true
+      #    repository: openep/openep-testingdata
+      #    path: "${{ env.OPENEP_TESTING_DATA }}"
+
+      # Sets up MATLAB on the GitHub Actions runner
+      - name: Setup MATLAB
+        uses: matlab-actions/setup-matlab@v0
+
+      # Runs the tests
+      - name: Run all tests
+        uses: matlab-actions/run-tests@v1
+        with:
+          source-folder: ./; ${{ env.OPENEP_EXAMPLES }}; ${{ env.OPENEP_TESTING_DATA }}
+          code-coverage-cobertura: coverage.xml
+          select-by-folder: tests
+
+      # As an alternative to run-tests, you can use run-command to execute a MATLAB script, function, or statement.
+      #- name: Run all tests
+      #  uses: matlab-actions/run-command@v0
+      #  with:
+      #    command: addpath('$HOME/openep-examples'); results = runtests(pwd,'IncludeSubfolders',true); assertSuccess(results);
+      #    code-coverage-cobertura: coverage.xml
+
+      # Using Codecov's action, upload the coverage report for the triggering commit/PR
+      - name: Upload coverage
+        uses: codecov/codecov-action@v2
+        with:
+          file: coverage.xml
+          verbose: true

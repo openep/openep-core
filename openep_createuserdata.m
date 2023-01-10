@@ -28,7 +28,7 @@ function userdata = openep_createuserdata()
 
     fNames = {   'tags','names','electrodeNames_bip','egmX','egm','electrodeNames_uni'...
                 ,'egmUniX','egmUni','egmRef','ecg','sampleFrequency','annotations','voltages'...
-                ,'impedances','egmSurfX','barDirection'};
+                ,'impedances','egmSurfX','barDirection', 'egmRefNames', 'ecgNames'};
 
     for i = 1:numel(fNames)
         tempstruct.(fNames{i}) = [];
@@ -51,8 +51,8 @@ function userdata = openep_createuserdata()
 
     userdata.electric = tempstruct;
 
-
-    fNames = {   'triRep','isVertexAtRim','act_bip','uni_imp_frc','signalMaps'};
+    clear tempstruct;
+    fNames = {   'triRep','isVertexAtRim','act_bip','uni_imp_frc','signalMaps','normals','surfaceProperties'};
     for i = 1:numel(fNames)
         tempstruct.(fNames{i}) = [];
     end
