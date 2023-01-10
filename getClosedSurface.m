@@ -43,7 +43,7 @@ if nargin > nStandardArgs
 end
 
 % get the trirep
-tr = userdata.surface.triRep;
+tr = getMesh(userdata);
 
 % get all the free boundaries
 [ FF, ~ ] = freeBoundaries( tr );

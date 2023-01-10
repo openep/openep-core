@@ -326,7 +326,7 @@ adjustSlider();
                 cMapRed = repmat(red, [nBrown, 1]);
                 figureCMap = vertcat(cMapRed, cMapMagenta);
             end
-            colormap(figureCMap);
+            colormap(hAx, figureCMap);
         end
         
         % Show the colorbar

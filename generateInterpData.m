@@ -77,7 +77,7 @@ if ~any(strcmpi(datatype, {'bip-map' 'uni-map' 'lat-map' 'bip-egm' 'uni_egm' 'la
 end
 
 % Get the vertices of the trirep
-pts = userdata.surface.triRep.X;
+pts = getMesh(userdata).X;
 
 % Get the data
 switch lower(datatype)
@@ -159,7 +159,7 @@ for i = 1:size(data,2)
     
     % Remove any data which is associated with vertices that are not 
     % referenced by the triangulation
-    [~,isVertUsed] = repack(getMesh(userdata));
+    [~,isVertUsed] = repack(getMesh(userdata, 'type', 'triangulation'));
     interpData(~isVertUsed,i) = NaN;
 end
 

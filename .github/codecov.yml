@@ -12,3 +12,4 @@ ignore:
   - "*license*"
   - "parse_header"
   - "changelog.md"
+  - "localtests"
