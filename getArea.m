@@ -41,7 +41,7 @@ end
 
 switch method
     case "nofill"
-        area = sum(real(triarea(userdata.surface.triRep))/100);
+        area = sum(real(triarea(getMesh(userdata)))/100);
     case "fill"
         tr = getClosedSurface(userdata);
         area = sum(real(triarea(tr))/100); 
