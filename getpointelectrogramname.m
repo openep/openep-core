@@ -119,42 +119,50 @@ identifier = {        'CS_CONNECTOR' ...
                     , 'MAGNETIC_20_POLE_B_CONNECTOR' ...
                     , 'NAVISTAR_CONNECTOR' ...
                     , 'MEC' ...
+                    , 'MCC_DX_CONNECTOR' ...
                     };
-translation = {       'CS' ...
-                    , '20A_' ...
-                    , '20B_' ...
-                    , 'M' ...
-                    , 'MC Bipolar 1' ...
-                    };
+translationBipolar = {    'CS' ...
+                        , '20A_' ...
+                        , '20B_' ...
+                        , 'M' ...
+                        , 'MC Bipolar ' ...
+                        , 'MCC_Dx_BiPolar_'
+                        };
+translationUnipolar = {   'CS' ...
+                        , '20A_' ...
+                        , '20B_' ...
+                        , 'M' ...
+                        , 'M' ...
+                        , 'MCC_Dx_UniPolar_'
+                        };
+
 for i = 1:numel(identifier)
     if ~isempty(strfind(fileName, identifier{i}))
-        if strcmpi(translation{i}, 'MC Bipolar 1')
-            electrogramname_bip = translation{i};
-            electrogramname_uni{1} = 'M1(';
-            electrogramname_uni{2} = 'M2(';
-            continue;
-        else
-        electrogramname_bip = [ translation{i} num2str(iElec) '-' translation{i} num2str(iElec+1) ];
-        electrogramname_uni{1} = [ translation{i} num2str(iElec) '(']; %'(' added to make sure that only one electrode is found e.g. 20B_1 could be 20B_1(61), 20B_10(70) etc
-        electrogramname_uni{2} = [ translation{i} num2str(iElec+1) '('];
+                        electrogramname_uni{1} = [ translationUnipolar{i} num2str(iElec) '(']; %'(' added to make sure that only one electrode is found e.g. 20B_1 could be 20B_1(61), 20B_10(70) etc
+                electrogramname_uni{2} = [ translationUnipolar{i} num2str(iElec+1) '('];
+        switch identifier{i}
+            case {'MAGNETIC_20_POLE_A_CONNECTOR','MAGNETIC_20_POLE_B_CONNECTOR'}
+                electrogramname_bip = [ translationBipolar{i} num2str(iElec) '-' num2str(iElec+1) ];
+                if strcmpi(electrogramname_bip, '20B_7-8')
+                    electrogramname_bip = '20B_9-8';
+                end
+            case {'MCC_DX_CONNECTOR'}
+                % On the OctaRay there are 8 splines with 6 electrodes. On
+                % the first spline, the bipoles are numbered 1 to 5 and the
+                % last bipole correspones to the voltage between electrodes
+                % 5-6.
+                % On the second spline, the bipoles are numbered 6 to 10
+                % and the first bipole correspones to the voltage between
+                % electrodes 7 to 8.
+                % SO ... Unipole 7 corresponds to Bipole 6. The following
+                % is a translator for convert the number.
+                unipoleElectrode2BipoleNumber = [1;2;3;4;5;NaN;6;7;8;9;10;NaN;11;12;13;14;15;NaN;16;17;18;19;20;NaN;21;22;23;24;25;NaN;26;27;28;29;30;NaN;31;32;33;34;35;NaN;36;37;38;39;40;NaN;NaN];
+                % End of OctaRay numbering comment
+                
+                electrogramname_bip = [ translationBipolar{i} num2str(unipoleElectrode2BipoleNumber(iElec)) '-' translationBipolar{i} num2str(iElec+1) ];
+            otherwise
+                electrogramname_bip = [ translationBipolar{i} num2str(iElec) '-' translationBipolar{i} num2str(iElec+1) ];
         end
-        
-        if strcmpi(electrogramname_bip, '20B_7-20B_8')
-            electrogramname_bip = '20B_9-20B_8';
-        end
-        
-        % // Comment out this section to use the 20B_1-20B_2(139) rather
-        % than 20B_1-2(139) format
-        if i==2 || i==3 % i.e. 20A_ or 20B_
-            electrogramname_bip = [ translation{i} num2str(iElec) '-' num2str(iElec+1) ];
-            electrogramname_uni{1} = [ translation{i} num2str(iElec) '('];
-            electrogramname_uni{2} = [ translation{i} num2str(iElec+1) '('];
-            if strcmpi(electrogramname_bip, '20B_7-8')
-                electrogramname_bip = '20B_9-8';
-            end
-        end
-        % // End comment here
-        return
     end
 end
 
