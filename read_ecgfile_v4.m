@@ -8,7 +8,8 @@ function varargout = read_ecgfile_v4(varargin)
 %       .uniMapChannel2     - Unipolar Mapping Channel 2
 %       .bipMapChannel      - Bipolar Mapping Channel
 %       .refChannel         - Reference Channel
-%       .channelNames       - names of each voltage channel
+%       .channelNames       - names of each voltage channel e.g. 'CS1-CS2'
+%       .channelNamesFull   - include the pin number e.g. 'CS1-CS2(101)'                 
 %       .gain               - voltage_data * gain = voltage
 %       .nSamples           - 2500 in current versions
 %  channelVoltages - 2500*n integer array, where n is number of channels.
@@ -71,7 +72,7 @@ end
 pattern = [ 'Unipolar Mapping Channel=(?<uni>\S*)\s*', ...
             'Bipolar Mapping Channel=(?<bip>\S*)\s*', ...
             'Reference Channel=(?<ref>\S*)\s*'];
-result = regexpi(line3,pattern,'tokens');
+result = regexpi(line3,pattern,'names');
 headerInfo.uniMapChannel = result.uni;
 headerInfo.bipMapChannel = result.bip;
 headerInfo.refChannel = result.ref;
@@ -83,11 +84,19 @@ result = regexpi(headerInfo.uniMapChannel,pattern,'names');
 headerInfo.uniMapChannel2 = [result.name, num2str(str2double(result.number)+1)];
 
 % line 4
-[headerInfo.channelNames, nomatch] = regexpi(line4,'([\w-]*\(\d*\))','match','split');
+[headerInfo.channelNamesFull, nomatch] = regexpi(line4,'([\w-]*\(\d*\))','match','split');
 % check that nomatch strings are only white space characters
 test = regexp(nomatch,'\S*');
 for i = 1:numel(test)
     if ~isempty(test{i}); error('Some text in channel names was missed.'); end
+end
+headerInfo.channelNamesFull = headerInfo.channelNamesFull';
+% remove the connection number (if that's what it is),
+%                                          e.g. 'CS1-CS2(101)' -> 'CS1-CS2'
+headerInfo.channelNames = cell(size(headerInfo.channelNamesFull));
+for i = 1:numel(headerInfo.channelNamesFull)
+    result = regexp(headerInfo.channelNamesFull{i}, '(?<shortName>.*)\(\d*\)','names');
+    headerInfo.channelNames{i} = result.shortName;
 end
 
 varargout{1} = headerInfo;

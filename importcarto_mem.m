@@ -259,18 +259,11 @@ for iMap = selection
             ecgFileHeader = read_ecgfile_v4(fullfile(studyDir, filename));
             names = ecgFileHeader.channelNames;
 
-            % remove the trailing parentheses from names and store in namesTemp
-            namesTemp = names;
-            warning('Some code may rely on parentheses in names - consider remove following for ...end')
-            for i = 1:numel(namesTemp)
-                namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
-            end
-
             if isempty(channelRef_cli)
-                [kRef,ok] = listdlg( 'ListString', namesTemp , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
+                [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelRef_cli = names{kRef};
             else
-                kRef = find(strstartcmpi(channelRef_cli, namesTemp));
+                kRef = find(strstartcmpi(channelRef_cli, names));
                 if isempty(kRef) || numel(kRef)>1
                     error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
                 end
@@ -281,7 +274,7 @@ for iMap = selection
             else
                 kEcg = zeros(1,numel(channelECG_cli));
                 for i = 1:numel(channelECG_cli)
-                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, names));
                     if isempty(kEcg(i))
                         error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
                     end
@@ -480,8 +473,8 @@ for iMap = selection
                         end
                     end
                     if ~isempty(electrodeNames_bip{iPoint})
-                        kMap_bip = find( strstartcmpi(electrodeNames_bip{iPoint}, names) );
-                        kMap_uni = [find( strstartcmpi(electrodeNames_uni{iPoint,1}, names) ) find( strstartcmpi(electrodeNames_uni{iPoint,2}, names) )];
+                        kMap_bip = find( strcmpi(electrodeNames_bip{iPoint}, names) );
+                        kMap_uni = [find( strcmpi(electrodeNames_uni{iPoint,1}, names) ) find( strcmpi(electrodeNames_uni{iPoint,2}, names) )];
                         egm(iPoint,:) = voltages(:,kMap_bip);
                         egmUni1(iPoint,:) = voltages(:,kMap_uni(1));
                         egmUni2(iPoint,:) = voltages(:,kMap_uni(2));
@@ -491,7 +484,9 @@ for iMap = selection
                             ref(iPoint,:) = voltages(:,kRef);
                         end
                         ecg(iPoint,:,:) = voltages(:,kEcg);
-
+                        % read in the required positions (for this version
+                        % of code, only egm2
+                        map.xyz2(iPoint,:) = read_electrodePositionsOnAnnotation(electrodeNames_uni{iPoint,2}, pointFileName);
                     else
                         warning('IMPORTCARTO_MEM: No electrode found ... check "OnAnnotation" file ...')
                         disp(filename)
@@ -505,11 +500,11 @@ for iMap = selection
 
         %%% Based on the above data concatenate matrices for the
         %%% unipolar electrograms and their co-ordinates
-        unipolarEgms = NaN(size(egmUni1,1), size(egmUni1,2), 2); % moved outside if statement; up to line ~417; see Github issue #48
+        unipolarEgms = NaN(size(egmUni1,1), size(egmUni1,2), 2); 
         unipolarEgms(:,:,1) = egmUni1;
         unipolarEgms(:,:,2) = egmUni2;
 
-        unipolarEgmsX = NaN(size(map.xyz,1), size(map.xyz,2), 2); % moved outside if statement; up to line ~417; see Github issue #48
+        unipolarEgmsX = NaN(size(map.xyz,1), size(map.xyz,2), 2); 
         unipolarEgmsX(:,:,1) = map.xyz;
         unipolarEgmsX(:,:,2) = map.xyz2;
 

@@ -33,3 +33,5 @@ This section documents changes which have been merged into develop and will form
 - Fixed issue #70 for setting tolerance when identifying in/out points in the mesh
 - Geodesic distance calculator now configured for both Ubuntu and MacOSX platforms
 - Tidied importcarto_mem default directories
+- Sped up xml reading
+- Sped up read_meshfile

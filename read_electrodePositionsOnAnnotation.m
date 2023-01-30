@@ -106,21 +106,22 @@ electrodePositions = zeros(numel(names),3);
 for iCon = 1:numel(conData)
     isThisConnector = (conIndex==iCon);
     if any(isThisConnector)
-        connectorName = con(conIndex).connector;
+        connectorName = conData(conIndex).connector;
         idx = local_getIndexFirstMatch(connectorFilenames(:,1),connectorName);
         fileName = connectorFilenames{idx,2};
         [electrodeNumbering, xyz] = read_positions_on_annotation_v2(fileName);
-        if ~isequal(electrodeNumbering(:), con(conIndex).electrodeNumbers(:))
-            error(['The electrode numbering iis unexpected in: ' fileName])
+        if ~isequal(electrodeNumbering(:), conData(conIndex).electrodeNumbers(:))
+            error(['The electrode numbering is unexpected in: ' fileName])
         end
         % fill the unipolar electrode positions
         electrodePositions((isThisConnector & validElecIndex),:) = xyz(elecIndex(isThisConnector & validElecIndex) ,:);
         % take the mid-position for the bipolar electrode positions
         electrodePositions((isThisConnector & validBipIndex),:) = 0.5* ( ...
-               xyz(bipIndex((isThisConnector & validElecIndex),1) ,:) + ...
-               xyz(bipIndex((isThisConnector & validElecIndex),2) ,:)   );
+               xyz(bipIndex((isThisConnector & validBipIndex),1) ,:) + ...
+               xyz(bipIndex((isThisConnector & validBipIndex),2) ,:)   );
     end
 end
+namesRead = names;
 end
 
 function connectorFilenames = local_getConnectorFilenames(pointFileName)

@@ -71,13 +71,15 @@ cleanupObj = onCleanup(@()fclose(fid));
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
             xyz = zeros(nVertices, 3);
             normals = zeros(nVertices, 3);
-            for i = 1:nVertices
-                tLine = fgetl(fid);
-                endText = find(tLine=='=',1);
-                temp = str2num(tLine((endText+1):end)); %#ok<ST2NM>
-                xyz(i,:) = temp(1:3);
-                normals(i,:) = temp(4:6);
-            end
+            
+            formatSpec = '%d = %f %f %f %f %f %f %d';
+            data = fscanf(fid,formatSpec,[nVertices*8 , 1]);
+            data = reshape(data, 8,nVertices)';
+            
+            xyz = data(:,2:4);
+            normals = data(:,5:7);
+            groupId = data(8);
+            
             %check that the next line is blank
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
@@ -87,16 +89,13 @@ cleanupObj = onCleanup(@()fclose(fid));
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
             
-            tri = zeros(nTriangles, 3);
-            groupId = zeros(nTriangles,1);
-            for i = 1:nTriangles
-                tLine = fgetl(fid);
-                endText = find(tLine=='=',1);
-                temp = str2num(tLine((endText+1):end)); %#ok<ST2NM>
-                tri(i,:) = temp(1:3);
-                groupId(i) = temp(7);
-            end
-            tri = 1+tri; %convert to 1-based indexing
+            formatSpec = '%d = %d %d %d %f %f %f %d';
+            data = fscanf(fid,formatSpec,[nTriangles*8 , 1]);
+            data = reshape(data, 8,nTriangles)';
+            
+            tri = data(:,2:4)+1; %1-based indexing
+            groupId = data(8);
+            %normalVector = data(:,5:8);
             tri(groupId<0,:) = [];
             
             warning('off', 'MATLAB:TriRep:PtsNotInTriWarnId')
@@ -125,19 +124,14 @@ cleanupObj = onCleanup(@()fclose(fid));
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
             
-            act_bip = zeros(nVertices, 2);
-            uni_imp_frc = zeros(nVertices, 3);
-            for i = 1:nVertices
-                tLine = fgetl(fid);
-                endText = find(tLine=='=',1);
-                temp = str2num(tLine((endText+1):end)); %#ok<ST2NM>
-                temp(temp == -10000) = NaN;
-                act_bip(i,:) = temp([3,2]);
-                if nargout>=5
-                    uni_imp_frc(i,:) = temp([1,4,11]);
-                end
-            end
-
+            formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
+            data = fscanf(fid,formatSpec,[nVertices*14 , 1]);
+            data = reshape(data, 14,nVertices)';
+            
+            data(data==-10000) = NaN;
+            act_bip = data(:,[4,3]);
+            uni_imp_frc = data(:,[2,5,12]);
+            
             %check that the next line is blank
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
