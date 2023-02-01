@@ -258,6 +258,7 @@ for iMap = selection
         if ~isempty(filename)
             ecgFileHeader = read_ecgfile_v4(fullfile(studyDir, filename));
             names = ecgFileHeader.channelNames;
+            namesFull = ecgFileHeader.channelNamesFull;
 
             if isempty(channelRef_cli)
                 [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
@@ -432,6 +433,8 @@ for iMap = selection
 
             nameRef = names{kRef};
             nameEcg = names(kEcg);
+            nameRefFull = namesFull{kRef};
+            nameEcgFull = namesFull(kEcg);
 
             %%% Now get the electrograms
             hWait = waitbar(0, ['Getting electrical data for ' num2str(nPoints) ' points']);
@@ -443,6 +446,7 @@ for iMap = selection
 
                 if ~isempty(filename)
                     [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
+                    voltages = voltages * headerInfo.gain;
                     names = headerInfo.channelNames;
                     electrodeNames_bip{iPoint} = headerInfo.bipMapChannel;
                     electrodeNames_uni{iPoint,1} = headerInfo.uniMapChannel;
@@ -661,6 +665,16 @@ for iMap = selection
         userdata.rf.originaldata.ablparams.impedance = rfData(:,4);
         userdata.rf.originaldata.ablparams.distaltemp = rfData(:,5);
     end
+    
+    % restore old format - to be removed in future release
+    for i = 1:numel(userdata.electric.electrodeNames_uni)
+        userdata.electric.electrodeNames_uni{i} = [userdata.electric.electrodeNames_uni{i} , '('];
+    end
+    userdata.electric.egmRefNames = nameRefFull;
+    userdata.electric.ecgNames = nameEcgFull;
+    
+    
+
 
 
     % Encourage user to save the data
