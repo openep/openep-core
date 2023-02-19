@@ -23,7 +23,13 @@ function connector_electrode_naming = getCartoConnectorElectrodeNaming()
 %         c(1).bipoleNames = {'CS1-CS2','CS2-CS3','CS3-CS4','CS4-CS5','CS5-CS6','CS6-CS7','CS7-CS8','CS8-CS9','CS9-CS10'}';
 %         c(1).bipoleElectrodeOneName = {'CS1','CS2','CS3','CS4','CS5','CS6','CS7','CS8','CS9'}';
 %         c(1).bipoleElectrodeTwoName = {'CS2','CS3','CS4','CS5','CS6','CS7','CS8','CS9','CS10'}';
-%
+%   NOTE CAREFULLY!!!
+%   The MCC_DX_CONNECTOR position download file is erratic. Sometimes,
+%   there are electrode positions
+%           1,2,3 , 1,2,3,4,5,6 , 1,2,3,4,5,6 ...
+%   and sometimes there are electrode positions
+%           1,2 , 1,2,3,4,5,6 , 1,2,3,4,5,6 ...
+%   For this reason, for MCC_DX_CONNECTOR, there is also a fieldname called .optionalElectrode = [3]
 %
 % Author: Nick Linton (2023) (Copyright)
 % SPDX-License-Identifier: Apache-2.0
@@ -58,7 +64,7 @@ function connector_electrode_naming = getCartoConnectorElectrodeNaming()
 %                     , 'MCC_Dx_UniPolar_'
 %                     };
 % surfaceEcgNaming = {'V1','V2','V3','V4','V5','V6','I','II','III','aVL','aVR','avF'};
-
+    
     connector_electrode_naming(1) = local_cs_names();
     connector_electrode_naming(2) = local_twentypoleA_names();
     connector_electrode_naming(3) = local_twentypoleB_names();
@@ -74,6 +80,7 @@ function temp = local_cs_names()
     temp.unipolarNaming = 'CS';
     temp.electrodeNumbers = (1:10)';
     temp.electrodeNames = {'CS1','CS2','CS3','CS4','CS5','CS6','CS7','CS8','CS9','CS10'}';
+    temp.optionalElectrodes = [];
     temp.bipoleNames = {'CS1-CS2','CS2-CS3','CS3-CS4','CS4-CS5','CS5-CS6','CS6-CS7','CS7-CS8','CS8-CS9','CS9-CS10'}';
     temp.bipoleElectrodeOneName = {'CS1','CS2','CS3','CS4','CS5','CS6','CS7','CS8','CS9'}';
     temp.bipoleElectrodeTwoName = {'CS2','CS3','CS4','CS5','CS6','CS7','CS8','CS9','CS10'}';
@@ -85,6 +92,7 @@ function temp = local_mec_names()
     temp.unipolarNaming = 'M'; %this is not unique to the MEC catheter, which is a problem
     temp.electrodeNumbers = (1:4)';
     temp.electrodeNames = {'M1','M2','M3','M4'}';
+    temp.optionalElectrodes = [];
     temp.bipoleNames = {'M1-M2','M2-M3','M3-M4'}';
     temp.bipoleElectrodeOneName = {'M1','M2','M3'}';
     temp.bipoleElectrodeTwoName = {'M2','M3','M4'}';
@@ -96,6 +104,7 @@ function temp = local_ecg_names()
     temp.unipolarNaming = '';
     temp.electrodeNumbers = [];
     temp.electrodeNames = {'V1','V2','V3','V4','V5','V6','I','II','III','aVL','aVR','avF'}';
+    temp.optionalElectrodes = [];
     temp.bipoleNames = {}';
     temp.bipoleElectrodeOneName = {}';
     temp.bipoleElectrodeTwoName = {}';
@@ -107,6 +116,7 @@ function temp = local_navistar_names()
     temp.unipolarNaming = 'M';
     temp.electrodeNumbers = (1:4)';
     temp.electrodeNames = {'M1','M2','M3','M4'}';
+    temp.optionalElectrodes = [];
     temp.bipoleNames = {'M1-M2','M2-M3','M3-M4'}'; % NOTE: M2-M3 is not usually returned but is inluded just in case
     temp.bipoleElectrodeOneName = {'M1','M2','M3'}';
     temp.bipoleElectrodeTwoName = {'M2','M3','M4'}';
@@ -140,6 +150,7 @@ function temp = local_twentypoleA_names()
         '20A_18'; ...
         '20A_19'; ...
         '20A_20'};
+    temp.optionalElectrodes = [];
     bipoleComposition = {...
         '20A_1-2',   '20A_1',  '20A_2'; ...
         '20A_2-3',   '20A_2',  '20A_3'; ...
@@ -194,6 +205,7 @@ function temp = local_twentypoleB_names()
         '20B_18'; ...
         '20B_19'; ...
         '20B_20'};
+    temp.optionalElectrodes = [];
     bipoleComposition = {...
         '20B_1-2',   '20B_1',  '20B_2'; ...
         '20B_2-3',   '20B_2',  '20B_3'; ...
@@ -277,6 +289,7 @@ function temp = local_mcc_dx_names()
         'MCC_Dx_UniPolar_46'; ...
         'MCC_Dx_UniPolar_47'; ...
         'MCC_Dx_UniPolar_48'};
+    temp.optionalElectrodes = 3;
     bipoleComposition = {...
     'MCC_Dx_BiPolar_1',   'MCC_Dx_UniPolar_1',  'MCC_Dx_UniPolar_2'; ...
     'MCC_Dx_BiPolar_2',   'MCC_Dx_UniPolar_2',  'MCC_Dx_UniPolar_3'; ...

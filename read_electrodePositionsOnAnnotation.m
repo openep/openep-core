@@ -61,43 +61,31 @@ if numel(names)==1 % maybe the user gave a Connector name
     end
 end
 
-% so now we assume that everything in names is either a bipole or a unipole
+% Assume that everything in names is either a bipole or a unipole.
+% Find which connector each name is associated with and if it is bi- or
+% uni-
 conIndex = zeros(numel(names),1);
-elecIndex = zeros(numel(names),1);
-bipIndex = zeros(numel(names),2);
+isBipolar = false(numel(names),1);
 for iName = 1:numel(names)
     for i = 1:numel(conData)
         testUNI = regexpi(names{iName},[conData(i).unipolarNaming '\d']);
         if ~isempty(testUNI) && testUNI(1)==1
             %it's a unipolar channel
+            %isBipolar(iName) = false;
             conIndex(iName) = i;
-            elecIndex(iName) = local_getIndexFirstMatch(conData(i).electrodeNames, names{iName});
-            if elecIndex(iName)==0
-                error('Unable to match electrode name, note that multiple connector names are not allowed.')
-            else
-                break
-            end
+            break
         end
         testBI = regexpi(names{iName},[conData(i).bipolarNaming '\d']);
         if ~isempty(testBI) && testBI(1)==1
             % it's a bipolar channel
+            isBipolar(iName) = true;
             conIndex(iName) = i;
-            tempIndex = local_getIndexFirstMatch(conData(i).bipoleNames, names{iName});
-            if tempIndex==0
-                error('Unable to match electrode name, note that multiple connector names are not allowed.')
-            else
-                bipIndex(iName,1) = local_getIndexFirstMatch(conData(i).electrodeNames, conData(i).bipoleElectrodeOneName(tempIndex));
-                bipIndex(iName,2) = local_getIndexFirstMatch(conData(i).electrodeNames, conData(i).bipoleElectrodeTwoName(tempIndex));
-                break
-            end
+            break
         end
     end
 end
-validElecIndex = (elecIndex~=0);
-validBipIndex = (bipIndex(:,1)~=0);
-if any(~xor(validElecIndex,validBipIndex))
-    error('No match or multiple matches for electrode name')
-end
+
+
 
 % get the Filenames that we will need
 connectorFilenames = local_getConnectorFilenames(pointFileName);
@@ -110,15 +98,40 @@ for iCon = 1:numel(conData)
         idx = local_getIndexFirstMatch(connectorFilenames(:,1),connectorName);
         fileName = connectorFilenames{idx,2};
         [electrodeNumbering, xyz] = read_positions_on_annotation_v2(fileName);
-        if ~isequal(electrodeNumbering(:), conData(conIndex).electrodeNumbers(:))
-            error(['The electrode numbering is unexpected in: ' fileName])
+        
+        expectedElectrodeNumbering = conData(conIndex).electrodeNumbers(:);
+        expectedElectrodeNames = conData(conIndex).electrodeNames;
+        
+        if ~isequal(electrodeNumbering(:), expectedElectrodeNumbering)
+            % try removing the optionalElectrodes
+            expectedElectrodeNumbering(conData(conIndex).optionalElectrodes) = [];
+            expectedElectrodeNames(conData(conIndex).optionalElectrodes) = [];
+            if ~isequal(electrodeNumbering(:), expectedElectrodeNumbering)
+                warning(['NAN returned: The electrode numbering cannot be resolved in: ' fileName])
+                xyz = nan(numel(expectedElectrodeNumbering),3);
+            end
         end
-        % fill the unipolar electrode positions
-        electrodePositions((isThisConnector & validElecIndex),:) = xyz(elecIndex(isThisConnector & validElecIndex) ,:);
-        % take the mid-position for the bipolar electrode positions
-        electrodePositions((isThisConnector & validBipIndex),:) = 0.5* ( ...
-               xyz(bipIndex((isThisConnector & validBipIndex),1) ,:) + ...
-               xyz(bipIndex((isThisConnector & validBipIndex),2) ,:)   );
+        
+        namesThisConnector = names(isThisConnector);
+        isBipolarThisConnector = isBipolar(isThisConnector);
+        electrodePositionsThisConnector = zeros(numel(namesThisConnector),3);
+        for iName = 1:numel(namesThisConnector)
+            if isBipolarThisConnector(iName)
+                idx = local_getIndexFirstMatch(conData(i).bipoleNames, namesThisConnector{iName});
+                if idx==0; error('Unable to match electrode name'); end
+                idx1 = local_getIndexFirstMatch(expectedElectrodeNames, conData(i).bipoleElectrodeOneName(idx));
+                idx2 = local_getIndexFirstMatch(expectedElectrodeNames, conData(i).bipoleElectrodeTwoName(idx));
+                % take the mid-position for the bipolar electrode positions
+                electrodePositionsThisConnector(iName,:) = 0.5* ( ...
+                    xyz(idx1 ,:) + ...
+                    xyz(idx2 ,:)   );
+            else %it's unipolar
+                idx = local_getIndexFirstMatch(expectedElectrodeNames, namesThisConnector{iName});
+                if idx==0; error('Unable to match electrode name'); end
+                electrodePositionsThisConnector(iName,:) = xyz(idx ,:);
+            end
+        end
+        electrodePositions(isThisConnector,:) = electrodePositionsThisConnector;
     end
 end
 namesRead = names;
