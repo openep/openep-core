@@ -74,8 +74,6 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 % Modifications - Steven Williams (2020) - command line input
 % Modifications - Nick Linton (2023)
 %   - cleaned, removed need to check the position of electrodes
-%   - changed unipolar data to be just the one pole referenced in the
-%     ECG_Export file
 %
 % ---------------------------------------------------------------
 %

@@ -14,7 +14,7 @@ This section documents changes which have been merged into develop and will form
 - Function to convert surface models from TriRep to structure for a directory of OpenEP datasets
 - Parsing data from the Precision electroanatomic mapping system
 - Parsing data from the EnSiteX electroanatomic mapping system
-- read_positions_on_annotation_v2.m - new code to read chosen electrodes
+- read_electrodePositionsOnAnnotation.m - means that we don't need getpointelectrogramname.m
 - getCartoConnectorElectrodeNaming - a helper function that stores the bizarre
                                      naming conventions of catheters in Carto3!
 - comparestructure.m allows two structures to be compared, 
@@ -23,9 +23,10 @@ This section documents changes which have been merged into develop and will form
 ### Changed
 - Surface models stored as structures rather than TriRep objects for compatibility with OpenEP
 - Surface model getter and setter methods now provided
-- read_ecgfile_v4
+- read_ecgfile_v4.m
     - changed to read all the file data in raw form - see file
-- importcarto_mem
+
+- importcarto_mem.m
     - no longer has to check the electrode name for each point as this is
       taken from read_ecgfile_v4
                 
