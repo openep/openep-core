@@ -273,7 +273,7 @@ for iMap = selection
             else
                 kEcg = zeros(1,numel(channelECG_cli));
                 for i = 1:numel(channelECG_cli)
-                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, names));
+                    kEcg(i) = find(strcmpi(channelECG_cli{i}, names));
                     if isempty(kEcg(i))
                         error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
                     end
