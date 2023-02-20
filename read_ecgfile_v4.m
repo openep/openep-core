@@ -79,7 +79,7 @@ headerInfo.refChannel = result.ref;
 
 %increment the unipole name by 1 to get the second unipole (this assumes
 %that the second unipole is always the 'first + 1'
-pattern = '(?<name>\S*_)(?<number>\d\d*)';
+pattern = '(?<name>\S*\D)(?<number>\d*)';
 result = regexpi(headerInfo.uniMapChannel,pattern,'names');
 headerInfo.uniMapChannel2 = [result.name, num2str(str2double(result.number)+1)];
 

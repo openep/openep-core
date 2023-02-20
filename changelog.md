@@ -25,7 +25,7 @@ This section documents changes which have been merged into develop and will form
 - Surface model getter and setter methods now provided
 - read_ecgfile_v4.m
     - changed to read all the file data in raw form - see file
-
+- read_meshfile.m sped up. Checks column headers explicitly as well.
 - importcarto_mem.m
     - no longer has to check the electrode name for each point as this is
       taken from read_ecgfile_v4

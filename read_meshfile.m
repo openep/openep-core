@@ -120,13 +120,24 @@ cleanupObj = onCleanup(@()fclose(fid));
         elseif strstartcmpi('[VerticesColorsSection]', tLine)
             % there are 2 lines of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
-            tLine = fgetl(fid); %#ok<NASGU>
+            headers = fgetl(fid); %#ok<NASGU>
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
             
-            formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
-            data = fscanf(fid,formatSpec,[nVertices*14 , 1]);
-            data = reshape(data, 14,nVertices)';
+            pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
+            pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
+            if ~isempty(regexp(headers, pattern1,'once'))
+                formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f %f';
+                nCols = 15;
+            elseif ~isempty(regexp(headers, pattern2,'once'))
+                formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
+                nCols = 14;
+            else
+                error('READ_MESHFILE: unexpected format.')
+            end
+
+            data = fscanf(fid,formatSpec,[nVertices*nCols , 1]);
+            data = reshape(data, nCols,nVertices)';
             
             data(data==-10000) = NaN;
             act_bip = data(:,[4,3]);
