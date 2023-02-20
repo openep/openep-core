@@ -36,7 +36,7 @@ function varargout = read_ecgfile_v4(varargin)
 headerInfo.nSamples = 2500;
 
 filename = varargin{1};
-fid = fopen(filename, 'r');
+fid = fopen(filename, 'r', 'ieee-le', 'UTF-8'); % MUCH faster than fid = fopen(filename, 'r')
 if fid == (-1)
     error(['READ_ECGFILE: Could not read the file: "' filename '"']);
 end

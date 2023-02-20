@@ -25,7 +25,7 @@ if ~contains(filename, 'OnAnnotation', 'IgnoreCase',true)
    error('READ_POSITIONS_ON_ANNOTATION_V2: filename must be an "OnAnnotation" file.')
 end
 
-fid = fopen(filename, 'r');
+fid = fopen(filename, 'r', 'ieee-le', 'UTF-8'); % MUCH faster than fid = fopen(filename, 'r')
 if fid == (-1)
     error(['READ_POSITIONS_ON_ANNOTATION_V2: Could not read the file: "' filename '"']);
 end
