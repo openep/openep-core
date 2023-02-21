@@ -68,7 +68,7 @@ cleanupObj = onCleanup(@()fclose(fid));
             % there is one line of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_01'); end
             xyz = zeros(nVertices, 3);
             normals = zeros(nVertices, 3);
             
@@ -82,12 +82,12 @@ cleanupObj = onCleanup(@()fclose(fid));
             
             %check that the next line is blank
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_02'); end
         elseif strstartcmpi('[TrianglesSection]', tLine)
             % there is one line of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_03'); end
             
             formatSpec = '%d = %d %d %d %f %f %f %d';
             data = fscanf(fid,formatSpec,[nTriangles*8 , 1]);
@@ -115,14 +115,14 @@ cleanupObj = onCleanup(@()fclose(fid));
 
             %check that the next line is blank
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.  Err_04'); end
             
         elseif strstartcmpi('[VerticesColorsSection]', tLine)
             % there are 2 lines of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
             headers = fgetl(fid); %#ok<NASGU>
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_05'); end
             
             pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
             pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
@@ -133,7 +133,7 @@ cleanupObj = onCleanup(@()fclose(fid));
                 formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
                 nCols = 14;
             else
-                error('READ_MESHFILE: unexpected format.')
+                error('READ_MESHFILE: unexpected format.  Err_06')
             end
 
             data = fscanf(fid,formatSpec,[nVertices*nCols , 1]);
@@ -145,7 +145,7 @@ cleanupObj = onCleanup(@()fclose(fid));
             
             %check that the next line is blank
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_07'); end
             break
         end
     end
