@@ -133,7 +133,7 @@ cleanupObj = onCleanup(@()fclose(fid));
                 formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
                 nCols = 14;
             else
-                error('READ_MESHFILE: unexpected format.  Err_06')
+                error(['READ_MESHFILE: unexpected format.  Err_06' headers])
             end
 
             data = fscanf(fid,formatSpec,[nVertices*nCols , 1]);
