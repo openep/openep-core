@@ -48,8 +48,7 @@ cleanupObj = onCleanup(@()fclose(fid));
     spaces = isspace(tLine);
     tLine(spaces) = [];
     tLine = lower(tLine);
-    match = strfind(tLine, 'triangulatedmeshversion2.0');
-    if isempty(match)
+    if ~contains(tLine, 'triangulatedmeshversion2.0')
         warning('READ_MESHFILE: The version number in the txt file is unexpected.') %#ok<WNTAG>
     end
     eof = false;
@@ -120,12 +119,15 @@ cleanupObj = onCleanup(@()fclose(fid));
         elseif strstartcmpi('[VerticesColorsSection]', tLine)
             % there are 2 lines of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
-            headers = fgetl(fid); %#ok<NASGU>
+            headers = fgetl(fid); 
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_05'); end
             
-%             pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
-%             pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
+            % pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
+            % pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
+            
+            % The "µ" character is not reliable on different platforms, so
+            % replace with a single wildcard ...
             pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*\SBi\s*\[ColorsScaleSection\]';
             pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*\SBi';
             if ~isempty(regexp(headers, pattern1,'once'))
@@ -135,7 +137,6 @@ cleanupObj = onCleanup(@()fclose(fid));
                 formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
                 nCols = 14;
             else
-                error(headers)
                 error('READ_MESHFILE: unexpected format.  Err_06')
             end
 
