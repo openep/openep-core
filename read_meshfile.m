@@ -124,8 +124,10 @@ cleanupObj = onCleanup(@()fclose(fid));
             tLine = fgetl(fid);
             if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_05'); end
             
-            pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
-            pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
+%             pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
+%             pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
+            pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*\SBi\s*\[ColorsScaleSection\]';
+            pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*\SBi';
             if ~isempty(regexp(headers, pattern1,'once'))
                 formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f %f';
                 nCols = 15;
@@ -133,7 +135,8 @@ cleanupObj = onCleanup(@()fclose(fid));
                 formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
                 nCols = 14;
             else
-                error(['READ_MESHFILE: unexpected format.  Err_06' headers])
+                error(headers)
+                error('READ_MESHFILE: unexpected format.  Err_06')
             end
 
             data = fscanf(fid,formatSpec,[nVertices*nCols , 1]);
