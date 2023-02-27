@@ -464,7 +464,7 @@ for iMap = selection
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
-                            new_index = find(strstartcmpi(channelECG_cli{i}, names));
+                            new_index = find(strcmpi(channelECG_cli{i}, names));
                             if isempty(new_index)
                                 error('OPENEP:missingChannel', ['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli{i} 'in file: ' filename]);
                             end
