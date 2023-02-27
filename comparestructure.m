@@ -60,7 +60,7 @@ function local_compare(a,b,level)
     for i = 1:numel(sharedFieldNames)
         f = sharedFieldNames{i};
         if ~strcmp(class(a.(f)),class(b.(f)))
-            local_msg([ level, '.' f ' does not have the same class']);
+            local_addmsg(level, ['.' f ' does not have the same class']);
         else
             switch class(a.(f))
                 case 'struct'
