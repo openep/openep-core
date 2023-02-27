@@ -93,7 +93,7 @@ cleanupObj = onCleanup(@()fclose(fid));
             data = reshape(data, 8,nTriangles)';
             
             tri = data(:,2:4)+1; %1-based indexing
-            groupId = data(8);
+            groupId = data(:,8);
             %normalVector = data(:,5:8);
             tri(groupId<0,:) = [];
             
