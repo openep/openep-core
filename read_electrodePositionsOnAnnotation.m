@@ -1,7 +1,8 @@
-function [electrodePositions, namesRead ] = read_electrodePositionsOnAnnotation(names, pointFileName)
+function [electrodePositions, namesRead, electrodePositionsAll ] = read_electrodePositionsOnAnnotation(names, pointFileName)
 % READ_ELECTRODEPOSITIONSONANNOTATION gets positions of named electrodes.
 % Usage:
-%   [ electrogramname_bip, electrogramname_uni ] = getpointelectrogramname( point_xyz, pointFileName )
+%   [electrodePositions, namesRead, electrodePositionsAll ] = ...
+%                 read_electrodePositionsOnAnnotation(names, pointFileName)
 % Where:
 %   names   - name of a...
 %                 single unipole channel eg. '20A_1'
@@ -19,10 +20,12 @@ function [electrodePositions, namesRead ] = read_electrodePositionsOnAnnotation(
 %   pointFileName - must be the full path and it is assumed that the other
 %                   relevant files are in the same directory. e.g.
 %                   E:\Export_PAF-01_20_2023-14-13-23\1-1-LA_P1_Point_Export.xml
-%
 %   electrodePositions - a double array of positions, size [numel(namesRead),3]
-%   namesRead - usually the same as names (NaN is returned in the case that
-%   no match is found for allowed
+%   namesRead - usually the same as names but [] is returned in the case that
+%               no match is found for a particular name.
+%   electrodePositionsAll - double array of the positions of all electrodes
+%                           on connectors shared by any electrode referred
+%                           to in 'names', size [nElectrodes,3].
 %
 % READ_ELECTRODEPOSITIONSONANNOTATION looks in the same directory as the
 % directory in which POINTFILENAME is placed. The electrogram NAMES are
@@ -91,13 +94,18 @@ end
 connectorFilenames = local_getConnectorFilenames(pointFileName);
 
 electrodePositions = zeros(numel(names),3);
+electrodePositionsAll = [];
 for iCon = 1:numel(conData)
     isThisConnector = (conIndex==iCon);
     if any(isThisConnector)
+        namesThisConnector = names(isThisConnector);
         connectorName = conData(conIndex).connector;
+        
         idx = local_getIndexFirstMatch(connectorFilenames(:,1),connectorName);
         fileName = connectorFilenames{idx,2};
         [electrodeNumbering, xyz] = read_positions_on_annotation_v2(fileName);
+        
+        electrodePositionsAll = [electrodePositionsAll ; xyz]; %#ok<AGROW>
         
         expectedElectrodeNumbering = conData(conIndex).electrodeNumbers(:);
         expectedElectrodeNames = conData(conIndex).electrodeNames;
@@ -108,11 +116,12 @@ for iCon = 1:numel(conData)
             expectedElectrodeNames(conData(conIndex).optionalElectrodes) = [];
             if ~isequal(electrodeNumbering(:), expectedElectrodeNumbering)
                 warning(['NAN returned: The electrode numbering cannot be resolved in: ' fileName])
-                xyz = nan(numel(expectedElectrodeNumbering),3);
+                electrodePositions(isThisConnector,:) = nan(numel(namesThisConnector),3);
+                names(isThisConnector) = cell(size(isThisConnector));
+                continue %to the next iCon value in the loop
             end
         end
         
-        namesThisConnector = names(isThisConnector);
         isBipolarThisConnector = isBipolar(isThisConnector);
         electrodePositionsThisConnector = zeros(numel(namesThisConnector),3);
         for iName = 1:numel(namesThisConnector)

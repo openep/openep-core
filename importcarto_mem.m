@@ -488,7 +488,19 @@ for iMap = selection
                         ecg(iPoint,:,:) = voltages(:,kEcg);
                         % read in the required positions (for this version
                         % of code, only egm2
-                        map.xyz2(iPoint,:) = read_electrodePositionsOnAnnotation(electrodeNames_uni{iPoint,2}, pointFileName);
+                        [map.xyz2(iPoint,:),~,xyzAll] = read_electrodePositionsOnAnnotation(electrodeNames_uni{iPoint,2}, pointFileName);
+                        if isnan(map.xyz2(iPoint,1))
+                            % then we hit an error - we know that sometimes
+                            % not all splines of the multipolar catheters
+                            % are returned in the position files and this
+                            % is a workaround
+                            [iClosest, dist] = findclosestvertex(xyzAll, map.xyz(iPoint,:));
+                            try
+                                map.xyz2(iPoint,:) = xyzAll(iClosest+1,:);
+                            catch
+                                warning('xyz out of range');
+                            end
+                        end
                     else
                         warning('IMPORTCARTO_MEM: No electrode found ... check "OnAnnotation" file ...')
                         disp(filename)
