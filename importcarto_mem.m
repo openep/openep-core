@@ -9,14 +9,10 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %   userdata is a single data structure
 %   matFileFullPath is the path to the .mat file, if opened or saved
 %
-% IMPORTCARTO can load data in 3 ways:
-%   1) USERINPUT is a .zip file - the zip file will be unzipped into a
-%   temporary file (deleted at the end). The data is packed into userdata
-%   and the user is incouraged to save this for the future (long time take
-%   to unzip).
-%   2) USERINPUT is a .mat file containing userdata
-%   3) USERINPUT is a .xml file - this must be the xml file in a folder
-%   containing all the other Carto3 files.
+% IMPORTCARTO can load data in the following ways:
+%   *) USERINPUT is a .mat file containing userdata
+%   *) USERINPUT is a .xml file - this must be the xml file in a folder
+%                                   containing all the other Carto3 files.
 %
 % IMPORTCARTO_MEM accepts the following parameter-value pairs
 %   'maptoread'     {''}|string|double
@@ -36,6 +32,11 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %       The full path to the location in which to save the output.
 %   'verbose'       {true}|false
 %       Not yet implemented
+% Example of command line entry ...
+%       userdata = importcarto_mem(<path to XML file>, ...
+%                                        'maptoread', 1693,  ...
+%                                        'refchannel', 'CS9-CS10', ...
+%                                        'ecgchannel', 'V1')
 %
 % userdata structure ...
 %   .surface
@@ -71,12 +72,12 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 % Modifications - Steven Williams (2013) - force data
 % Modifications - Steven Williams (2018) - unipole data
 % Modifications - Steven Williams (2020) - command line input
-
+% Modifications - Nick Linton (2023)
+%   - cleaned, removed need to check the position of electrodes
+%
 % ---------------------------------------------------------------
 %
-% 1) Example of command line entry
-%   userdata = importcarto_mem(<path to XML file>, 'maptoread', 1693, 'refchannel', 'CS9-CS10', 'ecgchannel', 'V1')
-%
+
 % testing
 % hSurf = drawMap(userdata, 'type', 'bip', 'coloraxis', [0 2])
 % set(hSurf, 'facealpha', 0.5)
@@ -99,10 +100,7 @@ persistent saveDir homeDir
 
 matFileFullPath = [];
 
-if isempty(saveDir) || ~ischar(saveDir)
-    saveDir = 'C:\Users\Nick (07989 436 479)\NickData\Research\CartoExport\CartoExportProcessed';
-end
-if ~isdir(saveDir)
+if isempty(saveDir) || ~ischar(saveDir) || ~isfolder(saveDir)
     if exist('stevematlabroot.m','file')==2
         saveDir = stevematlabroot();
     elseif exist('nickmatlabroot.m','file')==2
@@ -112,15 +110,7 @@ if ~isdir(saveDir)
     end
 end
 
-if ~isdir(saveDir)
-    saveDir = cd;
-end
-
-if isempty(homeDir)
-    homeDir = 'C:\Users\Nick (07989 436 479)\NickData\Research\CartoExport';
-end
-if ~isdir(homeDir); homeDir = saveDir; end
-
+if isempty(homeDir) || ~isfolder(homeDir);     homeDir = saveDir; end
 
 userdata = [];
 hWait = [];
@@ -264,20 +254,15 @@ for iMap = selection
         filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
         filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
         if ~isempty(filename)
-            [names, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
-
-            % remove the trailing parentheses from names and store in namesTemp
-            namesTemp = names;
-            warning('Some code may rely on parentheses in names - consider remove following for ...end')
-            for i = 1:numel(namesTemp)
-                namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
-            end
+            ecgFileHeader = read_ecgfile_v4(fullfile(studyDir, filename));
+            names = ecgFileHeader.channelNames;
+            namesFull = ecgFileHeader.channelNamesFull;
 
             if isempty(channelRef_cli)
                 [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelRef_cli = names{kRef};
             else
-                kRef = find(strstartcmpi(channelRef_cli, namesTemp));
+                kRef = find(strstartcmpi(channelRef_cli, names));
                 if isempty(kRef) || numel(kRef)>1
                     error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
                 end
@@ -288,7 +273,7 @@ for iMap = selection
             else
                 kEcg = zeros(1,numel(channelECG_cli));
                 for i = 1:numel(channelECG_cli)
-                    kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
+                    kEcg(i) = find(strcmpi(channelECG_cli{i}, names));
                     if isempty(kEcg(i))
                         error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
                     end
@@ -318,23 +303,6 @@ for iMap = selection
         end
     end
 
-    % Now get the id for all the points that exist in the parent of
-    % this map (if a parent exists). eg 1-1-reLA
-    % this doesn't appear to be necessary in the MEM version
-    %             parentPointNumbers = [];
-    %             lastDash = find( (map.name=='-'), 1, 'last');
-    %             if lastDash >= 4
-    %                 startParentName = map.name(1:(lastDash-2));
-    %                 isMatch = strstartcmpi(startParentName, names(1:(iMap-1)));
-    %                 iParent = find(isMatch, 1, 'last');
-    %
-    %                 parentMap = tree.Maps.Map(iParent);
-    %                 parentNPoints = parentMap.CartoPoints.ATTRIBUTE.Count;
-    %                 parentPointNumbers = zeros(parentNPoints, 1);
-    %                 for iPoint = 1:parentNPoints
-    %                     parentPointNumbers(iPoint) = parentMap.CartoPoints.Point(iPoint).ATTRIBUTE.Id;
-    %                 end
-    %             end
 
     % Now get the new points in this map
     nPoints = str2double(cartoMap.CartoPoints.ATTRIBUTE.Count);
@@ -453,105 +421,40 @@ for iMap = selection
             error('IMPORTCARTO_MEM: There is a discrepancy in the number of points between files.')
         end
 
-        %%% Now find which electrode has collected the point
-        
-        hWait = waitbar(0, ['Getting electrode name for ' num2str(nPoints) ' points']);
-        hasWarned = false;
-        for iPoint = 1:nPoints
-            waitbar(iPoint/nPoints , hWait )
-            if allPointExport.Point(iPoint).ATTRIBUTE.ID ~= map.pointID(iPoint)
-                error('IMPORTCARTO_MEM: There is a discrepancy in the point ID.')
-            end
-            pointFileName = allPointExport.Point(iPoint).ATTRIBUTE.File_Name;
-            pointFileName = fullfile(homeDir, pointFileName);
-
-            %Now get the identity of the electrode at the point
-            [ electrodeNames_bip{iPoint}, electrodeNames_uni(iPoint, 1:2), point_xyz_2] = getpointelectrogramname(map.xyz(iPoint,:), pointFileName);
-
-            %And save the co-ordinates of the corresponding bipole
-            map.xyz2(iPoint,:) = point_xyz_2;
-
-            %Now check the name of the electrode identified above by comparing with the ECG_Export file
-            % (see issue https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from)
-            ecgexportfilename = [filenameroot '_' map.pointNames{iPoint} '_ECG_Export.txt'];
-            ecgexportfilename = mycheckfilename(ecgexportfilename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
-            [electrodeNamesCheck_bip, electrodeNamesCheck_uni] = read_ecgfile_v4_header(fullfile(homeDir, ecgexportfilename));
-            if ~strcmpi(electrodeNamesCheck_bip, electrodeNames_bip{iPoint})
-                if ~hasWarned
-                    warning(['IMPORTCARTO_MEM: Conflict between electrode names' newline() ...
-                        'identified by read_positions_on_annotation_v2.m and read_ecgfile_v4_header.m' newline() ...
-                        'using electrode names from read_ecgfile_v4_header.m' newline() ...
-                        'See https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from']);
-                    hasWarned = true;
-                end
-                electrodeNames_bip{iPoint} = electrodeNamesCheck_bip;
-            end
-            if ~strcmpi(electrodeNamesCheck_uni{1}, electrodeNames_uni{iPoint,1}) || ~strcmpi(electrodeNamesCheck_uni{2}, electrodeNames_uni{iPoint,2})
-                if ~hasWarned
-                    warning(['IMPORTCARTO_MEM: Conflict between electrode names' newline() ...
-                        'identified by read_positions_on_annotation_v2.m and read_ecgfile_v4_header.m' newline() ...
-                        'using electrode names from read_ecgfile_v4_header.m' newline() ...
-                        'See https://bitbucket.org/Cardiac_Software_Partners/cartodatareader/issues/3/incorrect-electrode-assignment-from']);
-                    hasWarned = true;
-                end
-                electrodeNames_uni(iPoint, 1:2) = electrodeNamesCheck_uni;
-            end
-        end
-        delete(hWait)
-
-
-        %%% Now get the electrograms for the first point and get user preferences.
-        % Code in this chunk put higher up so that long read times are not
-        % interrupted by requiring user again
-        %         filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
-        %         filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
-        %         if ~isempty(filename)
-        %             [names voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
-        %
-        %             % remove the trailing parentheses from names and store in namesTemp
-        %             namesTemp = names;
-        %             for i = 1:numel(namesTemp)
-        %                 namesTemp{i} = namesTemp{i}(1:regexp(namesTemp{i}, '\([^()]*\)')-1);
-        %             end
-        %
-        %             if isempty(channelRef_cli)
-        %                 [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
-        %             else
-        %                 kRef = find(strstartcmpi(channelRef_cli, namesTemp));
-        %                 if isempty(kRef) || numel(kRef)>1
-        %                     error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
-        %                 end
-        %             end
-        %             if isempty(channelECG_cli)
-        %                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
-        %             else
-        %                 kEcg = zeros(1,numel(channelECG_cli));
-        %                 for i = 1:numel(channelECG_cli)
-        %                     kEcg(i) = find(strstartcmpi(channelECG_cli{i}, namesTemp));
-        %                     if isempty(kEcg(i))
-        %                         error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
-        %                     end
-        %                 end
-        %             end
         if isFirstPointRead
-            egm = zeros(nPoints, max(size(voltages)));
-            egmUni1 = zeros(nPoints, max(size(voltages)));
-            egmUni2 = zeros(nPoints, max(size(voltages)));
-            ref = zeros(nPoints, max(size(voltages)));
-            ecg = zeros(nPoints, max(size(voltages)), numel(kEcg));
+            nEgmSamples = ecgFileHeader.nSamples;
+            egm = zeros(nPoints, nEgmSamples);
+            egmUni1 = zeros(nPoints, nEgmSamples);
+            egmUni2 = zeros(nPoints, nEgmSamples);
+            ref = zeros(nPoints, nEgmSamples);
+            ecg = zeros(nPoints, nEgmSamples, numel(kEcg));
 
             nameRef = names{kRef};
             nameEcg = names(kEcg);
+            nameRefFull = namesFull{kRef};
+            nameEcgFull = namesFull(kEcg);
 
             %%% Now get the electrograms
             hWait = waitbar(0, ['Getting electrical data for ' num2str(nPoints) ' points']);
+
             for iPoint = 1:nPoints
                 waitbar(iPoint/nPoints , hWait )
                 filename = [filenameroot '_' map.pointNames{iPoint} '_ECG_Export.txt'];
                 filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
 
                 if ~isempty(filename)
-                    [names, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
+                    [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
+                    voltages = voltages * headerInfo.gain;
+                    names = headerInfo.channelNames;
+                    electrodeNames_bip{iPoint} = headerInfo.bipMapChannel;
+                    electrodeNames_uni{iPoint,1} = headerInfo.uniMapChannel;
+                    electrodeNames_uni{iPoint,2} = headerInfo.uniMapChannel2;
+                    
+                    pointFileName = allPointExport.Point(iPoint).ATTRIBUTE.File_Name;
+                    pointFileName = fullfile(homeDir, pointFileName);
+                    
+
+                    
                     if any(kRef>numel(names)) || any(kEcg>numel(names)) || any(~strcmpi(names(kRef),nameRef)) || any(~strcmpi(names(kEcg),nameEcg))
                         beep()
                         warning(['IMPORTCARTO_MEM: The columns containing data in the .txt files change names. In ' filename])
@@ -561,7 +464,7 @@ for iMap = selection
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
-                            new_index = find(strstartcmpi(channelECG_cli{i}, names));
+                            new_index = find(strcmpi(channelECG_cli{i}, names));
                             if isempty(new_index)
                                 error('OPENEP:missingChannel', ['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli{i} 'in file: ' filename]);
                             end
@@ -572,8 +475,8 @@ for iMap = selection
                         end
                     end
                     if ~isempty(electrodeNames_bip{iPoint})
-                        kMap_bip = find( strstartcmpi(electrodeNames_bip{iPoint}, names) );
-                        kMap_uni = [find( strstartcmpi(electrodeNames_uni{iPoint,1}, names) ) find( strstartcmpi(electrodeNames_uni{iPoint,2}, names) )];
+                        kMap_bip = find( strcmpi(electrodeNames_bip{iPoint}, names) );
+                        kMap_uni = [find( strcmpi(electrodeNames_uni{iPoint,1}, names) ) find( strcmpi(electrodeNames_uni{iPoint,2}, names) )];
                         egm(iPoint,:) = voltages(:,kMap_bip);
                         egmUni1(iPoint,:) = voltages(:,kMap_uni(1));
                         egmUni2(iPoint,:) = voltages(:,kMap_uni(2));
@@ -583,7 +486,21 @@ for iMap = selection
                             ref(iPoint,:) = voltages(:,kRef);
                         end
                         ecg(iPoint,:,:) = voltages(:,kEcg);
-
+                        % read in the required positions (for this version
+                        % of code, only egm2
+                        [map.xyz2(iPoint,:),~,xyzAll] = read_electrodePositionsOnAnnotation(electrodeNames_uni{iPoint,2}, pointFileName);
+                        if isnan(map.xyz2(iPoint,1))
+                            % then we hit an error - we know that sometimes
+                            % not all splines of the multipolar catheters
+                            % are returned in the position files and this
+                            % is a workaround
+                            [iClosest, dist] = findclosestvertex(xyzAll, map.xyz(iPoint,:));
+                            try
+                                map.xyz2(iPoint,:) = xyzAll(iClosest+1,:);
+                            catch
+                                warning('xyz out of range');
+                            end
+                        end
                     else
                         warning('IMPORTCARTO_MEM: No electrode found ... check "OnAnnotation" file ...')
                         disp(filename)
@@ -597,11 +514,11 @@ for iMap = selection
 
         %%% Based on the above data concatenate matrices for the
         %%% unipolar electrograms and their co-ordinates
-        unipolarEgms = NaN(size(egmUni1,1), size(egmUni1,2), 2); % moved outside if statement; up to line ~417; see Github issue #48
+        unipolarEgms = NaN(size(egmUni1,1), size(egmUni1,2), 2); 
         unipolarEgms(:,:,1) = egmUni1;
         unipolarEgms(:,:,2) = egmUni2;
 
-        unipolarEgmsX = NaN(size(map.xyz,1), size(map.xyz,2), 2); % moved outside if statement; up to line ~417; see Github issue #48
+        unipolarEgmsX = NaN(size(map.xyz,1), size(map.xyz,2), 2); 
         unipolarEgmsX(:,:,1) = map.xyz;
         unipolarEgmsX(:,:,2) = map.xyz2;
 
@@ -758,6 +675,16 @@ for iMap = selection
         userdata.rf.originaldata.ablparams.impedance = rfData(:,4);
         userdata.rf.originaldata.ablparams.distaltemp = rfData(:,5);
     end
+    
+    % restore old format - to be removed in future release
+    for i = 1:numel(userdata.electric.electrodeNames_uni)
+        userdata.electric.electrodeNames_uni{i} = [userdata.electric.electrodeNames_uni{i} , '('];
+    end
+    userdata.electric.egmRefNames = nameRefFull;
+    userdata.electric.ecgNames = nameEcgFull;
+    
+    
+
 
 
     % Encourage user to save the data
