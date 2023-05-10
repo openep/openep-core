@@ -46,7 +46,11 @@ function [ points, weights ] = uncertaintyZones(userdata, loc, regionDefinition,
 %
 % Info on Code Testing:
 % ---------------------------------------------------------------
-% test code
+% [~, surfX] = getElectrogramX(userdata);
+% regionDefinition.shape = 'sphere';
+% regionDefinition.params = 6;
+% [points, weights] = uncertaintyZones(userdata, surfX(1,:), regionDefinition);
+% drawMap(userdata, 'data', points)
 % ---------------------------------------------------------------
 %
 % ---------------------------------------------------------------
