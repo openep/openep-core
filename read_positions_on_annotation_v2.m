@@ -1,4 +1,4 @@
-function [iElectrode xyz] = read_positions_on_annotation_v2(varargin)
+function [iElectrode, xyz] = read_positions_on_annotation_v2(filename)
 % READ_POSITIONS_ON_ANNOTATION_V2 loads this Carto3 position file.
 % Usage:
 %   [iElectrode xyz] = read_positions_on_annotation_v2(filename)
@@ -21,13 +21,11 @@ function [iElectrode xyz] = read_positions_on_annotation_v2(varargin)
 % code
 % ---------------------------------------------------------------
 
-filename = varargin{1};
-
-if isempty(strfind(filename, 'OnAnnotation'))
+if ~contains(filename, 'OnAnnotation', 'IgnoreCase',true)
    error('READ_POSITIONS_ON_ANNOTATION_V2: filename must be an "OnAnnotation" file.')
 end
 
-fid = fopen(filename, 'r');
+fid = fopen(filename, 'r', 'ieee-le', 'UTF-8'); % MUCH faster than fid = fopen(filename, 'r')
 if fid == (-1)
     error(['READ_POSITIONS_ON_ANNOTATION_V2: Could not read the file: "' filename '"']);
 end
@@ -42,22 +40,13 @@ catch err
 end
     
 %line 1
-spaces = isspace(line1);
-line1(spaces) = [];
-line1 = lower(line1);
-matchA = strfind(line1, 'eleclectrode_positions_2.0');
-matchB = strfind(line1, 'sensor_positions_2.0');
-if isempty(matchA) && isempty(matchB)
+if ~all(contains(line1, ["eleclectrode_positions_2.0" , "sensor_positions_2.0"],'IgnoreCase',true))
     warning('READ_POSITIONS_ON_ANNOTATION_V2: The version number in the txt file is unexpected.') %#ok<*WNTAG>
 end
 
 %line 2
-spaces = isspace(line2);
-line2(spaces) = [];
-line2 = lower(line2);
-matchA = strfind(line2, 'electrode#timexyz');
-matchB = strfind(line2, 'sensor#timexyz');
-if isempty(matchA) && isempty(matchB)
+line2(isspace(line2)) = [];
+if ~all(contains(line2, ["electrode#timexyz" , "sensor#timexyz"],'IgnoreCase',true))
     warning('READ_POSITIONS_ON_ANNOTATION_V2: Unexpected column titles.') %#ok<*WNTAG>
 end
 

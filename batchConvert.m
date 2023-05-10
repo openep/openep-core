@@ -25,7 +25,7 @@ function batchConvert(inputDir, outputDir)
 if ~exist(outputDir, 'dir')
    mkdir(outputDir)
 end
-
+ 
 % Get a list of files
 disp('Getting list of filenames')
 allFiles = nameFiles(inputDir, 'showhiddenfiles', false, 'extension', 'mat');

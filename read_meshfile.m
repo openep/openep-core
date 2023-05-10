@@ -48,8 +48,7 @@ cleanupObj = onCleanup(@()fclose(fid));
     spaces = isspace(tLine);
     tLine(spaces) = [];
     tLine = lower(tLine);
-    match = strfind(tLine, 'triangulatedmeshversion2.0');
-    if isempty(match)
+    if ~contains(tLine, 'triangulatedmeshversion2.0')
         warning('READ_MESHFILE: The version number in the txt file is unexpected.') %#ok<WNTAG>
     end
     eof = false;
@@ -68,35 +67,34 @@ cleanupObj = onCleanup(@()fclose(fid));
             % there is one line of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_01'); end
             xyz = zeros(nVertices, 3);
             normals = zeros(nVertices, 3);
-            for i = 1:nVertices
-                tLine = fgetl(fid);
-                endText = find(tLine=='=',1);
-                temp = str2num(tLine((endText+1):end)); %#ok<ST2NM>
-                xyz(i,:) = temp(1:3);
-                normals(i,:) = temp(4:6);
-            end
+            
+            formatSpec = '%d = %f %f %f %f %f %f %d';
+            data = fscanf(fid,formatSpec,[nVertices*8 , 1]);
+            data = reshape(data, 8,nVertices)';
+            
+            xyz = data(:,2:4);
+            normals = data(:,5:7);
+            groupId = data(8);
+            
             %check that the next line is blank
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_02'); end
         elseif strstartcmpi('[TrianglesSection]', tLine)
             % there is one line of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_03'); end
             
-            tri = zeros(nTriangles, 3);
-            groupId = zeros(nTriangles,1);
-            for i = 1:nTriangles
-                tLine = fgetl(fid);
-                endText = find(tLine=='=',1);
-                temp = str2num(tLine((endText+1):end)); %#ok<ST2NM>
-                tri(i,:) = temp(1:3);
-                groupId(i) = temp(7);
-            end
-            tri = 1+tri; %convert to 1-based indexing
+            formatSpec = '%d = %d %d %d %f %f %f %d';
+            data = fscanf(fid,formatSpec,[nTriangles*8 , 1]);
+            data = reshape(data, 8,nTriangles)';
+            
+            tri = data(:,2:4)+1; %1-based indexing
+            groupId = data(:,8);
+            %normalVector = data(:,5:8);
             tri(groupId<0,:) = [];
             
             warning('off', 'MATLAB:TriRep:PtsNotInTriWarnId')
@@ -116,31 +114,42 @@ cleanupObj = onCleanup(@()fclose(fid));
 
             %check that the next line is blank
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.  Err_04'); end
             
         elseif strstartcmpi('[VerticesColorsSection]', tLine)
             % there are 2 lines of headers then a blank line
             tLine = fgetl(fid); %#ok<NASGU>
-            tLine = fgetl(fid); %#ok<NASGU>
+            headers = fgetl(fid); 
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_05'); end
             
-            act_bip = zeros(nVertices, 2);
-            uni_imp_frc = zeros(nVertices, 3);
-            for i = 1:nVertices
-                tLine = fgetl(fid);
-                endText = find(tLine=='=',1);
-                temp = str2num(tLine((endText+1):end)); %#ok<ST2NM>
-                temp(temp == -10000) = NaN;
-                act_bip(i,:) = temp([3,2]);
-                if nargout>=5
-                    uni_imp_frc(i,:) = temp([1,4,11]);
-                end
+            % pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi\s*\[ColorsScaleSection\]';
+            % pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*µBi';
+            
+            % The "µ" character is not reliable on different platforms, so
+            % replace with a single wildcard ...
+            pattern1 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*\SBi\s*\[ColorsScaleSection\]';
+            pattern2 = ';\s*Unipolar\s*Bipolar\s*LAT\s*Impedance\s*A1\s*A2\s*A2-A1\s*SCI\s*ICL\s*ACL\s*Force\s*Paso\s*\SBi';
+            if ~isempty(regexp(headers, pattern1,'once'))
+                formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f %f';
+                nCols = 15;
+            elseif ~isempty(regexp(headers, pattern2,'once'))
+                formatSpec = '%d = %f %f %f %f %f %f %f %f %f %f %f %f %f';
+                nCols = 14;
+            else
+                error('READ_MESHFILE: unexpected format.  Err_06')
             end
 
+            data = fscanf(fid,formatSpec,[nVertices*nCols , 1]);
+            data = reshape(data, nCols,nVertices)';
+            
+            data(data==-10000) = NaN;
+            act_bip = data(:,[4,3]);
+            uni_imp_frc = data(:,[2,5,12]);
+            
             %check that the next line is blank
             tLine = fgetl(fid);
-            if ~isempty(tLine); error('READ_MESHFILE: unexpected format.'); end
+            if ~isempty(tLine); error('READ_MESHFILE: unexpected format. Err_07'); end
             break
         end
     end
