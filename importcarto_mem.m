@@ -676,13 +676,14 @@ for iMap = selection
         userdata.rf.originaldata.ablparams.distaltemp = rfData(:,5);
     end
     
-    % restore old format - to be removed in future release
-    for i = 1:numel(userdata.electric.electrodeNames_uni)
-        userdata.electric.electrodeNames_uni{i} = [userdata.electric.electrodeNames_uni{i} , '('];
+    if isFirstPointRead
+        for i = 1:numel(userdata.electric.electrodeNames_uni)
+            % restore old format - to be removed in future release
+            userdata.electric.electrodeNames_uni{i} = [userdata.electric.electrodeNames_uni{i} , '('];
+        end
+        userdata.electric.egmRefNames = nameRefFull;
+        userdata.electric.ecgNames = nameEcgFull;
     end
-    userdata.electric.egmRefNames = nameRefFull;
-    userdata.electric.ecgNames = nameEcgFull;
-    
     
 
 
