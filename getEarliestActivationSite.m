@@ -80,6 +80,7 @@ function [X, surfX, iPoint, t] = getEarliestActivationSite( userdata, varargin )
 nStandardArgs = 1; % UPDATE VALUE
 method = 'ptbased';
 prct = 2.5;
+excludelocationonly = false;
 if nargin > nStandardArgs
     for i = 1:2:nargin-1
         switch varargin{i}
@@ -87,6 +88,8 @@ if nargin > nStandardArgs
                 method = varargin{i+1};
             case 'prct'
                 prct = varargin{i+1};
+            case 'excludelocationonly'
+                excludelocationonly = varargin{i+1};
         end
     end
 end
