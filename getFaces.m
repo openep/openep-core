@@ -27,8 +27,10 @@ if isa(userdata.surface.triRep, 'TriRep')
     faces = userdata.surface.triRep.Triangulation;
 elseif isa(userdata.surface.triRep, 'triangulation')
     faces = userdata.surface.triRep.ConnectivityList;
+elseif isa(userdata.surface.triRep, 'struct')
+    faces = userdata.surface.triRep.Triangulation;
 else
-    error('OPENEP/getFaces: userdata.surface.TriRep should be a TriRep or a triangulation object')
+    error('OPENEP/getFaces: userdata.surface.TriRep should be a TriRep, a triangulation object or a structure')
 end
 
 end

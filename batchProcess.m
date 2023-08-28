@@ -19,6 +19,8 @@ lat.openep = [];
 
 % Iterate through each file and perform some OpenEP functions
 for i = 1:numel(allFiles)
+
+    
    disp(['working on file ... ' allFiles{i}])
    load([working_dir filesep() allFiles{i}]);
    
