@@ -250,18 +250,33 @@ adjustSlider();
                 magenta = [1 0 1] * .8;
                 red = cMap(1,:);
                 %red = [1 0 0];
+                
             case 'cv'
                 cMap = colormap(hot);
                 cBarTitle = 'CV (m/s)';
                 magenta = cMap(end,:);
                 red = cMap(1,:);
-            case 'labels'
-                cBarTitle = 'labels';
+                
+            case 'geodesic'
+                cMap = flipud(colormap(winter));
+                cBarTitle = 'Distance (cm)';
+                
+            case 'wallthickness'
+                cMap = flipud(jet);
+                cMap(1:length(cMap)/10,:) = [];
+                magenta = [1 0 1] * .8;
+                red = cMap(1,:);
+                cBarTitle = 'Wall Thickness (mm)';
+
+            case 'weights'
+                cMap = colormap(parula);
+                cBarTitle = 'Normalised distance weights';
+                
         end
         if ~isempty(usrColorMap)
             cMap = usrColorMap;
         end
-
+        
         % Limit the size of the colormap
         if length(cMap) > 256
             cMap = downsample(cMap, round(length(cMap)/256));
@@ -326,7 +341,7 @@ adjustSlider();
                 cMapRed = repmat(red, [nBrown, 1]);
                 figureCMap = vertcat(cMapRed, cMapMagenta);
             end
-            colormap(hAx, figureCMap);
+            colormap(figureCMap);
         end
         
         % Show the colorbar

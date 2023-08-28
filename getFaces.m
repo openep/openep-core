@@ -23,6 +23,14 @@ function faces = getFaces( userdata )
 % code
 % ---------------------------------------------------------------
 
-faces = getMesh(userdata, 'type', 'triangulation').ConnectivityList;
+if isa(userdata.surface.triRep, 'TriRep')
+    faces = userdata.surface.triRep.Triangulation;
+elseif isa(userdata.surface.triRep, 'triangulation')
+    faces = userdata.surface.triRep.ConnectivityList;
+elseif isa(userdata.surface.triRep, 'struct')
+    faces = userdata.surface.triRep.Triangulation;
+else
+    error('OPENEP/getFaces: userdata.surface.TriRep should be a TriRep, a triangulation object or a structure')
+end
 
 end

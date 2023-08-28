@@ -19,6 +19,7 @@ This section documents changes which have been merged into develop and will form
                                      naming conventions of catheters in Carto3!
 - comparestructure.m allows two structures to be compared, 
                           eg userdata from two different versions of OpenEP
+- uncertaintyzones.m calculates regional analysis around mapping points
 
 ### Changed
 - Surface models stored as structures rather than TriRep objects for compatibility with OpenEP

@@ -2,7 +2,7 @@ function [X, surfX] = getElectrogramX( userdata, varargin )
 % GETELECTROGRAMX Returns the the electrode recording positions
 %
 % Usage:
-%   C = getCentreOfMass( userdata, varargin )
+%   [X, surfX] = getElectrogramX( userdata, varargin )
 % Where:
 %   userdata   - see importcarto_mem
 %   X - the 3D Cartesian co-ordinates
