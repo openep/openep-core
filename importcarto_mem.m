@@ -251,8 +251,11 @@ for iMap = selection
     isFirstPointRead = false;
     nPoints = str2double(cartoMap.CartoPoints.ATTRIBUTE.Count);
     if nPoints>0
-        filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
-        filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
+        filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_Point_Export.xml'];
+        filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_Point_Export']);
+        pointTree = xml_read(fullfile(studyDir, filename), Pref);
+        filename = pointTree.ECG.ATTRIBUTE.FileName;
+
         if ~isempty(filename)
             ecgFileHeader = read_ecgfile_v4(fullfile(studyDir, filename));
             names = ecgFileHeader.channelNames;
@@ -439,8 +442,10 @@ for iMap = selection
 
             for iPoint = 1:nPoints
                 waitbar(iPoint/nPoints , hWait )
-                filename = [filenameroot '_' map.pointNames{iPoint} '_ECG_Export.txt'];
-                filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
+                filename = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
+                filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_Point_Export']);
+                pointTree = xml_read(fullfile(studyDir, filename), Pref);
+                filename = pointTree.ECG.ATTRIBUTE.FileName;
 
                 if ~isempty(filename)
                     [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
