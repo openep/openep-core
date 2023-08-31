@@ -451,14 +451,22 @@ for iMap = selection
                     [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
                     voltages = voltages * headerInfo.gain;
                     names = headerInfo.channelNames;
-                    electrodeNames_bip{iPoint} = headerInfo.bipMapChannel;
-                    electrodeNames_uni{iPoint,1} = headerInfo.uniMapChannel;
-                    electrodeNames_uni{iPoint,2} = headerInfo.uniMapChannel2;
+
+                    if isfield(headerInfo, 'bipMapChannel')
+                        % mapping channels are identified in the ECG file
+                        electrodeNames_bip{iPoint} = headerInfo.bipMapChannel;
+                        electrodeNames_uni{iPoint,1} = headerInfo.uniMapChannel;
+                        electrodeNames_uni{iPoint,2} = headerInfo.uniMapChannel2;
+                    else
+                        % we neeed to access mapping channels from the point XML file
+                        disp('getting mapping channels');
+                        electrodeNames_bip{iPoint} = pointTree.ECG.ATTRIBUTE.BipolarMappingChannel;
+                        electrodeNames_uni{iPoint,1} = pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel;
+                        electrodeNames_uni{iPoint,2} = incrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+                    end
                     
                     pointFileName = allPointExport.Point(iPoint).ATTRIBUTE.File_Name;
                     pointFileName = fullfile(homeDir, pointFileName);
-                    
-
                     
                     if any(kRef>numel(names)) || any(kEcg>numel(names)) || any(~strcmpi(names(kRef),nameRef)) || any(~strcmpi(names(kEcg),nameEcg))
                         beep()
