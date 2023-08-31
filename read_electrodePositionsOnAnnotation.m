@@ -56,7 +56,7 @@ conData = getCartoConnectorElectrodeNaming();
 
 if numel(names)==1 % maybe the user gave a Connector name
     for i = 1:numel(conData)
-        if matches(conData(i).connector,names{1},IgnoreCase=true)
+        if matches(conData(i).connector,names{1})%,IgnoreCase=true)
             namesRead = conData(i).electrodeNames;
             electrodePositions = local_readallpositions(pointFileName, conData(i));
             return %% return to user
@@ -157,7 +157,7 @@ function connectorFilenames = local_getConnectorFilenames(pointFileName)
     for iC = 1:nConnectors
         names = fieldnames(positions.Connector(iC).ATTRIBUTE);
         positionFile =  positions.Connector(iC).ATTRIBUTE.(names{1});
-        if contains(positionFile,'Eleclectrode_positions_OnAnnotation.txt', 'IgnoreCase',true) %then it is an Eleclectrode_Positions_OnAnnotation.txt file
+        if contains(positionFile,'Eleclectrode_positions_OnAnnotation', 'IgnoreCase',true) %then it is an Eleclectrode_Positions_OnAnnotation.txt file
             connectorFilenames{count,1} = names{1};
             connectorFilenames{count,2} = fullfile(homeDir, positionFile);
             count = count+1;
