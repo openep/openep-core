@@ -56,7 +56,12 @@ conData = getCartoConnectorElectrodeNaming();
 
 if numel(names)==1 % maybe the user gave a Connector name
     for i = 1:numel(conData)
-        if matches(conData(i).connector,names{1})%,IgnoreCase=true)
+        if isMATLABReleaseOlderThan('R2022a')
+            hasMatches = matches(conData(i).connector,names{1},'IgnoreCase',true);
+        else
+            hasMatches = matches(conData(i).connector,names{1},IgnoreCase=true);
+        end
+        if hasMatches
             namesRead = conData(i).electrodeNames;
             electrodePositions = local_readallpositions(pointFileName, conData(i));
             return %% return to user
