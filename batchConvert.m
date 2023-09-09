@@ -44,6 +44,17 @@ for i = 1:numel(allFiles)
    % Store comment about what we have done
    userdata.notes{end+1} = [date ': data set converted using batchConvert.m'];
 
+   % If force data does not exist, add it please
+   if isfield(userdata, 'rf')
+       if ~isfield(userdata.rf.originaldata.ablparams, 'force')
+           userdata = addForceData(userdata);
+           disp(' ... fake force data added')
+           userdata.notes{end+1} = [date ': fake forcedata added during batchConvert.m'];
+       end
+   else
+       userdata.rf = [];
+   end
+
    % We save as -v7 because it's faster to load in OpenEP-py than -v7.3,
    % and the saved file is significantly smaller compared to -v6 files.
    outputFile = [outputDir filesep() allFiles{i}];

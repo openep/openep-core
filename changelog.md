@@ -29,8 +29,8 @@ This section documents changes which have been merged into develop and will form
 - importcarto_mem.m
     - no longer has to check the electrode name for each point as this is
       taken from read_ecgfile_v4
+- ability to read latest Carto data (new format without redundancy)
                 
-
 ### Fixed
 - Fixed issue with multiple colour bars
 - Fixed issue #70 for setting tolerance when identifying in/out points in the mesh
@@ -38,3 +38,4 @@ This section documents changes which have been merged into develop and will form
 - Tidied importcarto_mem default directories
 - Sped up xml reading
 - Sped up read_meshfile
+- Fixed bug in getEarliestActivationSite/getLatestActivationSite when handling datasets written by EP Workbench

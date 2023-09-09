@@ -99,7 +99,7 @@ end
 
 %new version
 iP = getMappingPointsWithinWoI(userdata);
-mapAnnot = userdata.electric.annotations.mapAnnot;
+mapAnnot = double(userdata.electric.annotations.mapAnnot);
 mapAnnot(~iP) = NaN;
 referenceAnnot = userdata.electric.annotations.referenceAnnot;
 tr = getMesh(userdata);
