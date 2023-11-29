@@ -140,7 +140,8 @@ function [catheters, columnsToRead, nSamples, info] = local_parseheader(header, 
         if ~isempty(tokens); userComments = tokens{1}{1}; end
 
         % look for - "Export from Software Version: NAME"
-        tokens = regexp(line, 'Export from Software Version\s*:\s*(\w*)', 'tokens');
+        % look for - "Exported from Software Version: NAME"
+        tokens = regexp(line, 'Export(?:ed) from Software Version\s*:\s*(\S*)', 'tokens');
         if ~isempty(tokens); softwareVersion = tokens{1}{1}; end
 
         % look for - "Catheter[NUMBER](name, num electrodes): NAME,NUMBER"
@@ -206,13 +207,14 @@ function [catheters, columnsToRead, nSamples, info] = local_parseheader(header, 
     
     % Now we need to create the column headings according to the type of
     % file that we are reading. Also adjust sampleFreq if necessary
-    if strstartcmp('EPcathBIO_', dataElement)
+    dataElementType = translateDataExportElement(dataElement);
+    if strstartcmp('epcath_uni_', dataElementType)
         channels = usedChannels;
         channels.columnHeadings = cell(size(channels.channelNo));
         for i = 1:numel(channels.channelNo)
             channels.columnHeadings{i} = ['c' num2str(channels.channelNo(i))];
         end
-    elseif strstartcmp('EPcathBIObipol_', dataElement) || strstartcmp('EP_Catheter_Bipolar_', dataElement)
+    elseif strstartcmp('epcath_bip_', dataElementType)
         bipolChannels.columnHeadings = cell(size(bipolChannels.channelNo));
         bipolChannels.cathName = cell(size(bipolChannels.channelNo));
         for i = 1:numel(bipolChannels.channelNo)
@@ -231,14 +233,14 @@ function [catheters, columnsToRead, nSamples, info] = local_parseheader(header, 
             bipolChannels.columnHeadings{i} = [nameA '(' elecA '-' elecB ')_c' num2str(bipolChannels.channelNo(i))];
         end
         channels = bipolChannels;
-    elseif strstartcmp('ECG_', dataElement)
+    elseif strstartcmp('ecg_', dataElementType)
         % create a 'catheter' for the 12 lead ECG
         catheters.name = 'ECG';
         catheters.nElectrodes = 12;
         channels.cathName = repmat({'ECG'},12,1);
         channels.electrodeName = {'I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'}';
         channels.columnHeadings = {'I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'}';
-    elseif strstartcmp('Locations', dataElement) || strstartcmp('Electrode_Locations', dataElement)
+    elseif strstartcmp('locations', dataElementType)
         channels = usedChannels;
         channels.columnHeadings = cell(numel(channels.channelNo),3);
         for i = 1:numel(channels.channelNo)
@@ -247,7 +249,7 @@ function [catheters, columnsToRead, nSamples, info] = local_parseheader(header, 
             channels.columnHeadings{i,3} = ['c' num2str(channels.channelNo(i)) 'z'];
         end
         sampleFreq = 2034.5/20;
-    elseif strstartcmp('Respiration', dataElement)
+    elseif strstartcmp('respiration', dataElementType)
         catheters.name = 'Respiration';
         catheters.nElectrodes = 2;
         channels.cathName = repmat({'Respiration'},2,1);
@@ -403,9 +405,10 @@ function success = local_prechecks(fData)
     
     % Check Export Data Element "Export Data Element : NAME"
     tokens = regexp(fData, 'Export Data Element\s*:\s*(\w*)', 'once', 'tokens');
-    goodDataElements = {'EP_Catheter_Bipolar_Raw', 'EPcathBIO_COMPUTED', 'EPcathBIObipol_RAW', 'EPcathBIObipol_FILTERED', 'EPcathBIO_RAW', 'EPcathBIO_FILTERED', 'ECG_RAW', 'ECG_FILTERED', 'Respiration', 'Electrode_Locations', 'Locations' };
+    goodDataElements = {'epcath_bip_raw', 'epcath_bip_filt', 'epcath_uni_raw', 'epcath_uni_filt', 'epcath_uni_comp', 'ecg_raw', 'ecg_filt', 'respiration', 'locations' };
     if ~isempty(tokens)
         dataElement = tokens{1};
+        dataElement = translateDataExportElement(dataElement);
         tf = strcmp(dataElement, goodDataElements);
         if all(not(tf))
             warning('LoadPrecision:InvalidFile','LOADPRECISION_WAVEFILE: Invalid Export Data Element');
@@ -422,9 +425,11 @@ function success = local_prechecks(fData)
     ind4 = regexp(firstLine, 'Export\s*File\s*Version\s*:\s*5\.0R', 'once');
     ind5 = regexp(firstLine, 'Export\s*File\s*Version\s*:\s*5\.1R', 'once');
     ind6 = regexp(firstLine, 'St\.\s*Jude Medical\.\s*File Revision\s*:\s*5\.6', 'once');
-
+    ind7 = regexp(firstLine, 'Export\s*File\s*Version:\s*6\.3', 'once');
+    ind8 = regexp(firstLine, 'Export\s*File\s*Version\s*:\s*5\.2', 'once');
+    ind9 = regexp(firstLine, 'Export\s*File\s*Version\s*:\s*5\.3', 'once');
     
-    if isempty(ind1) && isempty(ind2) && isempty(ind3) && isempty(ind4) && isempty(ind5) && isempty(ind6)
+    if isempty(ind1) && isempty(ind2) && isempty(ind3) && isempty(ind4) && isempty(ind5) && isempty(ind6) && isempty(ind7) && isempty(ind8) && isempty(ind9)
         warning('LoadPrecision:InvalidFile','LOADPRECISION_WAVEFILE: Invalid File Revision Number');
         return
     end
