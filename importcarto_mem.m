@@ -463,6 +463,18 @@ for iMap = selection
                         electrodeNames_bip{iPoint} = pointTree.ECG.ATTRIBUTE.BipolarMappingChannel;
                         electrodeNames_uni{iPoint,1} = pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel;
                         electrodeNames_uni{iPoint,2} = incrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+
+                        % check that the second unipole name actually exists, otherwise decrement the unipole name
+                        if isempty(find(strcmpi(electrodeNames_uni{iPoint,2}, names)))
+                            electrodeNames_uni{iPoint,2} = decrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+                        end
+                        % check that the new second unipole name actually exists, otherwise throw an error (for now)
+                        if isempty(find(strcmpi(electrodeNames_uni{iPoint,2}, names)))
+                            error('OPENEP/IMPORTCARTO_MEM: Unable to identify second unipole channel')
+                        end
+
+                        % TODO: check that the assumed second unipole electrodeNames_uni{iPoint,2} exists in bipole name electrodeNames_bip{iPoint}
+
                     end
                     
                     pointFileName = allPointExport.Point(iPoint).ATTRIBUTE.File_Name;

@@ -55,6 +55,11 @@ for i = 1:numel(allFiles)
        userdata.rf = [];
    end
 
+   % If force data does not exist, add it please
+   if isempty(userdata.surface.uni_imp_frc)
+       userdata.surface.uni_imp_frc = NaN(size(userdata.surface.triRep.X));
+   end
+
    % We save as -v7 because it's faster to load in OpenEP-py than -v7.3,
    % and the saved file is significantly smaller compared to -v6 files.
    outputFile = [outputDir filesep() allFiles{i}];
