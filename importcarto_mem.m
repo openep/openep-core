@@ -473,7 +473,27 @@ for iMap = selection
                             error('OPENEP/IMPORTCARTO_MEM: Unable to identify second unipole channel')
                         end
 
-                        % TODO: check that the assumed second unipole electrodeNames_uni{iPoint,2} exists in bipole name electrodeNames_bip{iPoint}
+                        % if possible check that the assumed second unipole exists in bipole name - this is only possible if two unipoles are identified in the bipole name
+                        if numel(regexp(electrodeNames_bip{iPoint}, '[0-9]+')) == 2
+
+                            % extract the number in the second unipole
+                            uni2Number = regexp(electrodeNames_uni{iPoint,2}, '[0-9]+', 'match');
+                            if numel(uni2Number) ~= 1
+                                error('OPENEP/IMPORTCARTO_MEM: There should only be one unipole number')
+                            end
+                            uni2Number = uni2Number{1};
+
+                            % check that the assumed second unipole number exists in bipole name electrodeNames_bip{iPoint}
+                            if isempty(regexp(electrodeNames_bip{iPoint}, uni2Number))
+                                warning('OPENEP/IMPORTCARTO_MEM: Second unipole channel incorrectly identified: alternatively decrementing unipole number')
+                                electrodeNames_uni{iPoint,2} = decrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+                                % check that the new second unipole name actually exists, otherwise throw an error (for now)
+                                if isempty(find(strcmpi(electrodeNames_uni{iPoint,2}, names)))
+                                    error('OPENEP/IMPORTCARTO_MEM: Unable to identify second unipole channel')
+                                end
+                            end
+
+                        end
 
                     end
                     
