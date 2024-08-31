@@ -1,14 +1,15 @@
 function [result, commentary] = comparestructure(a,b)
 % COMPARESTRUCTURE.
 % Usage:
-%   [result, commentary] = comparestructure(a,b)
+%   b = myfunction(a)
 % Inputs:
-%   a,b  - input structures to compare
+%   a  - input
 % Outputs:
-%   result  - logical
-%   commentary - a cellarray of text messages explaining the differences
+%   b  - output
 %
-% Author: Nick Linton (2023)
+% MYFUNCTION detailed description.
+%
+% Author: Nick Linton (2021)
 % Modifications - 
 
 % Info on Code Testing:
@@ -45,16 +46,18 @@ function local_compare(a,b,level)
         for i = 1:numel(fieldNamesAll)
             if ~any(matches(fieldnamesB, fieldNamesAll{i}))
                 badNamesA(i) = true;
-                local_addmsg(['.' fieldnamesA{i} ' is not in the second structure']);
+                local_addmsg(level, ['.' fieldNamesAll{i} ' is not in the second structure']);
             end
             if ~any(matches(fieldnamesA, fieldNamesAll{i}))
                 badNamesB(i) = true;
-                local_addmsg(['.' fieldnamesA{i} ' is not in the second structure']);
+                local_addmsg(level, ['.' fieldNamesAll{i} ' is not in the first structure']);
             end
         end
+    else
+        local_addmsg(level, 'the order of the fields are different');
     end
     
-    level = level + 1;
+    %level = level + 1;
 % now go through the fieldNames that are shared.
     sharedFieldNames = fieldNamesAll(~badNamesA & ~badNamesB);
     for i = 1:numel(sharedFieldNames)
@@ -65,7 +68,7 @@ function local_compare(a,b,level)
             switch class(a.(f))
                 case 'struct'
                     local_addmsg(level, ['.' f ]);
-                    local_compare(a.(f),b.(f),level)
+                    local_compare(a.(f),b.(f),level+1)
                 otherwise
                     aData = a.(f);
                     bData = b.(f);

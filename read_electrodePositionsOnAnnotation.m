@@ -98,6 +98,39 @@ end
 % get the Filenames that we will need
 connectorFilenames = local_getConnectorFilenames(pointFileName);
 
+% check that we have the file we need
+connectorName = conData(conIndex).connector;
+idx = local_getIndexFirstMatch(connectorFilenames(:,1),connectorName);
+if idx==0
+    % the expected connector does not exist. this is most likely due to
+    % overlap in the naming convention for Navistar and MEC catheters, so
+    % remove the identified connector from conData and try to check again
+    conData(conIndex) = [];
+end
+
+% now repeat the connector identification process - this is a repeat of
+% lines 75-94
+conIndex = zeros(numel(names),1);
+isBipolar = false(numel(names),1);
+for iName = 1:numel(names)
+    for i = 1:numel(conData)
+        testUNI = regexpi(names{iName},[conData(i).unipolarNaming '\d']);
+        if ~isempty(testUNI) && testUNI(1)==1
+            %it's a unipolar channel
+            %isBipolar(iName) = false;
+            conIndex(iName) = i;
+            break
+        end
+        testBI = regexpi(names{iName},[conData(i).bipolarNaming '\d']);
+        if ~isempty(testBI) && testBI(1)==1
+            % it's a bipolar channel
+            isBipolar(iName) = true;
+            conIndex(iName) = i;
+            break
+        end
+    end
+end
+
 electrodePositions = zeros(numel(names),3);
 electrodePositionsAll = [];
 for iCon = 1:numel(conData)
@@ -175,7 +208,8 @@ end
 function idx = local_getIndexFirstMatch(nameList, name)
     idx = 0;
     for i = 1:numel(nameList)
-        if matches(nameList{i},name)
+        %if matches(nameList{i},name)
+        if strstartcmpi(name, nameList{i}) % so we can handle MEC_CONNECTOR and MEC
             idx = i;
             return
         end

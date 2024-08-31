@@ -1,3 +1,4 @@
+
 function area = getArea( userdata, varargin )
 % GETAREA Returns the surface area of an anatomical model
 %

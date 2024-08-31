@@ -46,6 +46,9 @@ for i = 1:numel(allFiles)
 
    % If force data does not exist, add it please
    if isfield(userdata, 'rf')
+       if isempty(userdata.rf)
+           userdata = addForceData(userdata);
+       end
        if ~isfield(userdata.rf.originaldata.ablparams, 'force')
            userdata = addForceData(userdata);
            disp(' ... fake force data added')
