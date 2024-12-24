@@ -67,7 +67,7 @@ for i = 1:numel(allFiles)
    % and the saved file is significantly smaller compared to -v6 files.
    outputFile = [outputDir filesep() allFiles{i}];
    disp(['saving file: ' outputFile])
-   save(outputFile, 'userdata', '-v7');
+   save(outputFile, 'userdata', '-v7.3');
 
 end
 
