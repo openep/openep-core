@@ -87,6 +87,9 @@ for i = 1:tree.DIFBody.Volumes.ATTRIBUTE.number
             end
         end
     end
+    if isfield(tree.DIFBody.Volumes.Volume(i), 'Map_status')
+        dxgeo(i).map_status = str2num(tree.DIFBody.Volumes.Volume(i).Map_status.CONTENT);
+    end
 
     %get the labels
     if isfield(tree.DIFBody.Labels, 'Label')

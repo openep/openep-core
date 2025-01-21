@@ -1,4 +1,4 @@
-function userdata = import_precision(varargin)
+function [userdata, files] = import_precision(varargin)
 % IMPORT_PRECISION is used to import Precision data.
 %
 % Usage:
@@ -9,6 +9,8 @@ function userdata = import_precision(varargin)
 % Where:
 %   directory - an absolute folder path (if empty, user will be asked)
 %   userdata - see importcarto_mem
+%   files - a data structure containing the contents of additional files
+%           exported from Precision
 %
 % IMPORT_PRECISION accepts the following parameter-value pairs
 %   'filematch'     {} | String
@@ -86,11 +88,15 @@ userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfac
 % There appears to be only activation OR voltage data in the mapping file and not both
 if isfield(data.modelgroups(iDxInd).dxgeo, 'act')
     act = data.modelgroups(iDxInd).dxgeo.act;
+    % remove invalid data, beyond interpolation distance
+    act(data.modelgroups(iDxInd).dxgeo.map_status==2) = NaN;
 else 
     act = repmat(NaN, size(X));
 end
 if isfield(data.modelgroups(iDxInd).dxgeo, 'bip')
     bip = data.modelgroups(iDxInd).dxgeo.bip;
+    % remove invalid data, beyond interpolation distance
+    bip(data.modelgroups(iDxInd).dxgeo.map_status==2) = NaN;
 else
     bip = repmat(NaN, size(X));
 end
@@ -136,6 +142,8 @@ for i_dxl = 1:length(dxldata)
         userdata.electric.annotations.woi(:,2) = size(userdata.electric.egm,2) - userdata.electric.annotations.referenceAnnot;
 
         userdata.electric.voltages.bipolar = dxldata(i_dxl).peak2peak';
+        userdata.electric.include = dxldata(i_dxl).utilized';
+        userdata.electric.names = strcat('P', strsplit(num2str(dxldata(i_dxl).ptnumber)))'; 
     else
         warning('OPENEP/IMPORT_PRECISION: This code is not fully tested and likely to yield errors')
         userdata.electric.electrodeNames_uni = dxldata(i_dxl).rovtrace_pts';
@@ -161,5 +169,8 @@ end
 % userdata.rf.originaldata.ablparams.power =
 % userdata.rf.originaldata.ablparams.impedance = 
 % userdata.rf.originaldata.ablparams.distaltemp = 
+
+% Return the additional files data
+files = data;
 
 end

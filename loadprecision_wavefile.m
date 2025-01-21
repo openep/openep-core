@@ -1,7 +1,7 @@
 function info = loadprecision_wavefile(filename)
 % LOADPRECISION_WAVEFILE loads a Precision wavefile (egm data / locations)
 % Usage:
-%   info = loadprecision_egmdata(filename)
+%   info = loadprecision_wavefile(filename)
 % Where:
 %   filename is the filename
 %   info is the output
@@ -405,7 +405,7 @@ function success = local_prechecks(fData)
     
     % Check Export Data Element "Export Data Element : NAME"
     tokens = regexp(fData, 'Export Data Element\s*:\s*(\w*)', 'once', 'tokens');
-    goodDataElements = {'epcath_bip_raw', 'epcath_bip_filt', 'epcath_uni_raw', 'epcath_uni_filt', 'epcath_uni_comp', 'ecg_raw', 'ecg_filt', 'respiration', 'locations' };
+    goodDataElements = {'epcath_bip_raw', 'epcath_bip_filt', 'epcath_uni_raw', 'epcath_uni_filt', 'epcath_uni_comp', 'ecg_raw', 'ecg_filt', 'respiration', 'locations', 'displayedwaveforms' };
     if ~isempty(tokens)
         dataElement = tokens{1};
         dataElement = translateDataExportElement(dataElement);

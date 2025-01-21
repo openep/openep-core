@@ -126,7 +126,7 @@ function [fileList, fullFileList] = local_get_filelist(desiredFileNames, caseDir
         desiredFileNames = {desiredFileNames};
     end
     for iGTF = 1:length(d)
-        if strcmp(d(iGTF).name,'.') || strcmp(d(iGTF).name,'..') || d(iGTF).isdir
+        if strcmp(d(iGTF).name,'.') || strcmp(d(iGTF).name,'..') || d(iGTF).isdir || strstartcmp('._', d(iGTF).name)
             %do nothing
         else
             %check we have a match with listed filenames
