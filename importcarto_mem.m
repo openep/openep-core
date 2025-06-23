@@ -270,6 +270,7 @@ for iMap = selection
                     error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
                 end
             end
+            kRefBu = kRef;
             if isempty(channelECG_cli)
                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelECG_cli = names(kEcg);
@@ -506,6 +507,11 @@ for iMap = selection
                         kRef = find( strcmpi(nameRef, names) );
                         if isempty(kRef)
                             warning(['IMPORTCARTO_MEM: The requested reference channel, ' nameRef ' was not found in file: ' filename '. NaN values will be assigned as the reference for this point' ]);
+                            % % try switching the names CS to DECA
+                            % % TODO add in code here which translates CS
+                            % to DECA, as this is the only use case for
+                            % this we have come across yet
+                            
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
@@ -551,6 +557,9 @@ for iMap = selection
                         disp(filename)
                         disp('')
                     end
+                end
+                if isnan(kRef)
+                    kRef = kRefBu;
                 end
             end
             delete(hWait)
