@@ -49,7 +49,7 @@ for i = 1:numel(allFiles)
        if isempty(userdata.rf)
            userdata = addForceData(userdata);
        end
-       if ~isfield(userdata.rf.originaldata.ablparams, 'force')
+       if ~isfield(userdata.rf.originaldata, 'force')
            userdata = addForceData(userdata);
            disp(' ... fake force data added')
            userdata.notes{end+1} = [date ': fake forcedata added during batchConvert.m'];
