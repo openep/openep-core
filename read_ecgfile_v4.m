@@ -36,6 +36,14 @@ function varargout = read_ecgfile_v4(varargin)
 headerInfo.nSamples = 2500;
 
 filename = varargin{1};
+
+% This section added to be able to remember if a manual gain has been set
+% before in this session
+manualgain = [];
+if nargin==2
+    manualgain = varargin{2};
+end
+
 fid = fopen(filename, 'r', 'ieee-le', 'UTF-8'); % MUCH faster than fid = fopen(filename, 'r')
 if fid == (-1)
     error(['READ_ECGFILE: Could not read the file: "' filename '"']);
@@ -73,7 +81,20 @@ line2(isspace(line2)) = [];
 if startsWith(line2,'rawecgtomv(gain)=0.003000','IgnoreCase',true)
     headerInfo.gain = 0.003;
 else
-    error('READ_ECGFILE: Unexpected statement about gain.') %#ok<*WNTAG>
+    if isempty(manualgain)
+        warning('READ_ECGFILE: Unexpected statement about gain.')
+        if isempty(manualgain)
+            str = input('Do you want to manually set the gain (enter = no; value = yes). This gain will be used for all future points unless the agin is set in the ECG file. Enter a value here (e.g. 0.003): ');
+            if isempty(str)
+                error('READ_ECGFILE: Unexpected statement about gain.') %#ok<*WNTAG>
+            else
+            headerInfo.gain = str;
+            manualgain = headerInfo.gain;
+            end
+        end
+    else
+        headerInfo.gain = manualgain;
+    end
 end
 
 % line 3 (optional)

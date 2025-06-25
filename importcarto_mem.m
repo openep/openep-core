@@ -449,7 +449,7 @@ for iMap = selection
                 filename = pointTree.ECG.ATTRIBUTE.FileName;
 
                 if ~isempty(filename)
-                    [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
+                    [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename), ecgFileHeader.gain);
                     voltages = voltages * headerInfo.gain;
                     names = headerInfo.channelNames;
 
@@ -734,8 +734,11 @@ for iMap = selection
     for i = 1:numel(userdata.electric.electrodeNames_uni)
         userdata.electric.electrodeNames_uni{i} = [userdata.electric.electrodeNames_uni{i} , '('];
     end
-    userdata.electric.egmRefNames = nameRefFull;
-    userdata.electric.ecgNames = nameEcgFull;
+    
+    % Commented out, 25-6-25 - unsure why we are storing these. Format is
+    % e.g. V2(23) rather than V2. Can be added back in if needed.
+    % userdata.electric.egmRefNames = nameRefFull;
+    % userdata.electric.ecgNames = nameEcgFull;
     
     
 
