@@ -225,8 +225,10 @@ else
     cd(saveDir);
     [filename,saveDir] = uiputfile('*.mat', 'Save the userdata to disc for future rapid access?',defaultName);
     cd(originalDir);
+    % We save as -v7 because it's faster to load in OpenEP-py than -v7.3,
+    % and the saved file is significantly smaller compared to -v6 files.
     if filename ~= 0
-        save([saveDir filename], 'userdata','-v7.3'); %needed as sometimes >2GB
+        save([saveDir filename], 'userdata','-v7');
         matFileFullPath = fullfile(saveDir, filename);
     end
 end
