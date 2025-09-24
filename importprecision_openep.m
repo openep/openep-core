@@ -199,7 +199,7 @@ userdata.electric.include = dxldataBip.utilized';
 userdata.electric.names = strcat('P', strsplit(num2str(dxldataBip.ptnumber)))';
 
 userdata.electric.electrodeNames_uni = dxldataUni.rovtrace_pts';
-userdata.electric.egmX = [dxldataUni.rovingx', dxldataUni.rovingy', dxldataUni.rovingz'];
+userdata.electric.egmUniX = [dxldataUni.rovingx', dxldataUni.rovingy', dxldataUni.rovingz'];
 userdata.electric.egmUniSurfX = [dxldataUni.surfPtx', dxldataUni.surfPty', dxldataUni.surfPtz'];
 userdata.electric.egmUni = dxldataUni.rovtrace';
 userdata.electric.egmUni(:,:,2) = 0; % since we only get one unipole channel from Precision

@@ -15,13 +15,14 @@ function [info, varnames, data] = loadensitex_dxldata(filename)
 
 % Info on Code Testing:
 % ---------------------------------------------------------------
-% test code
+% [info, varnames, data] = loadensitex_dxldata('<pathtofile>/Contact_Mapping/Map_PP_bi.csv');
 % ---------------------------------------------------------------
 
 % ---------------------------------------------------------------
 % code
 % ---------------------------------------------------------------
 
+disp(['LOADENSITEX_DXLDATA: Reading file: ' filename]);
 info = [];
 varnames = [];
 data = [];
@@ -61,11 +62,11 @@ end
 % READ THE HEADER
 % ---------------
 % The 'header' finishes at the end of the last line starting with "****,"
-[ind1, ~] = regexp(fData, '****','start','end');
-if isempty(ind1)
+[~, ind2] = regexp(fData, '****','start','end');
+if isempty(ind2)
     error('End of header not found. Double check that maxBytes is large enough to cover header.')
 end
-indEndofHeader = ind1(end);
+indEndofHeader = ind2(end);
 header = fData(1:indEndofHeader);
 
 % Parse the header
@@ -95,7 +96,7 @@ info.filename = filename;
 
 % Read the header line at info.dataStartRow
 fseek(fileID, 0, 'bof');
-for i = 1:info.dataStartRow-2
+for i = 1:info.dataStartRow-1
     fgetl(fileID);
 end
 dataHeaderRowLine = fgetl(fileID);
@@ -132,7 +133,7 @@ numericColumnsToRead = tfNumHeaders;
 varColumnsToRead = ~tfNumHeaders;
 % we are already at the right line in the file as we just read the header line before the data
 
-data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPts, [thisFileName ext]);
+data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext]);
 
 end
 
@@ -165,7 +166,7 @@ nCol = numel(numericColumnsToRead);
 
 maxBytes = 10 * 1024 * 1024; % read in max 10MBytes at a time
 allNumericData = zeros(nSamples, nNumericColToRead, 'double');
-allVarData = cell(nSamples, nCol - nNumericColToRead);
+allVarData = cell(nSamples, nCol - nNumericColToRead);   %CHANGED HERE
 currentLine = 1;
 remainingBytes = filebytes2end(fileID);
 totalBytes = remainingBytes;
@@ -213,11 +214,23 @@ while remainingBytes>0
     numLinesRead = numel(dataChunkCellArray) / nCol;
     wholeLinesRead = floor(numLinesRead);
 
+    if numLinesRead > wholeLinesRead
+        % there was overhanging data, so increment nCol
+        nCol = nCol + 1;
+    end
+
     % check if we need to insert extra cells
 
     % reshape the data
-    reshapedData = reshape(dataChunkCellArray,[nCol, wholeLinesRead]);
+    reshapedData = reshape(dataChunkCellArray(1:nCol*wholeLinesRead),[nCol, wholeLinesRead]);
     reshapedData = reshapedData';
+
+    if numLinesRead > wholeLinesRead
+        % there was overhanging data, now is the time to remove it
+        reshapedData(:,end) = [];
+        % and decrement nCol
+        nCol = nCol-1;
+    end
 
     % Deal first with the numeric data -----
 
@@ -233,7 +246,7 @@ while remainingBytes>0
     % Now deal with the variables data -----
 
     thisVarData = reshapedData(:,~numericColumnsToRead);
-    allVarData(currentLine:currentLine+wholeLinesRead-1,1:nCol - nNumericColToRead) = thisVarData;
+    allVarData(currentLine:currentLine+wholeLinesRead-1,1:(nCol) - nNumericColToRead) = thisVarData;
 
     % increment the current line index, waitbar and remaining bytes
     currentLine = currentLine+wholeLinesRead;
@@ -246,9 +259,11 @@ close(f)
 
 % assign the output
 allOutput = allVarData;
-widthOfAllOutput = size(allOutput,2);
-for i = 1:size(allNumericData,1)
-    allOutput{i,widthOfAllOutput+1} = allNumericData(i,:);
+if ~isempty(allNumericData) %check if we are dealing with a map or an electrogram file ...
+    widthOfAllOutput = size(allOutput,2);
+    for i = 1:size(allNumericData,1)
+        allOutput{i,widthOfAllOutput+1} = allNumericData(i,:);
+    end
 end
 
 end

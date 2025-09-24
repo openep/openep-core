@@ -40,6 +40,7 @@ indNL = [1, 1 + find(header==char(10))];    %#ok<*CHARTEN> %indNL = index of fir
 iL = 0;
 startTime = NaN;
 endTime = NaN;
+mapType = 'N/A';
 while iL < (numel(indNL)-1)
     iL = iL + 1;
     line = header(indNL(iL):(indNL(iL+1)-2));
@@ -54,12 +55,16 @@ while iL < (numel(indNL)-1)
     tokens = regexp(line, 'Map type\s*:\s*,\s*(\w*)', 'tokens');
     if ~isempty(tokens)
         mapType = tokens{1}{1};
-    else
-        mapType = 'N/A';
+    end
+
+    % look for - "Export File Version : TEXTR"
+    tokens = regexp(line, 'Export File Version\s*:\s*([a-zA-Z_.0-9]*)R', 'tokens');
+    if ~isempty(tokens)
+        exportFileVersion = str2double(tokens{1}{1});
     end
 
     % look for - "Export File Version : TEXT"
-    tokens = regexp(line, 'Export File Version\s*:\s*([a-zA-Z_.0-9]*)R', 'tokens');
+    tokens = regexp(line, 'Export File Version\s*:\s*([a-zA-Z_.0-9]*)', 'tokens');
     if ~isempty(tokens)
         exportFileVersion = str2double(tokens{1}{1});
     end
