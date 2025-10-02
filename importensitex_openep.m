@@ -661,7 +661,7 @@ userdata.electric.impedances.value = cell(7110,1);
 
 % we don't have the unipolar peak to peak voltages so we have to do something
 userdata.electric.voltages.unipolar = NaN(size(userdata.electric.voltages.bipolar));
-userdata.electric.voltages.unipolar     = calculatePeak2PeakVoltage( userdata.electric.egmUni, userdata.electric.annotations.referenceAnnot, userdata.electric.annotations.woi );
+userdata.electric.voltages.unipolar = calculatePeak2PeakVoltage( userdata.electric.egmUni, userdata.electric.annotations.referenceAnnot, userdata.electric.annotations.woi );
 
 % Temp - remove signalMaps which, if empty, prevents the file being loaded in EP Workbench
 userdata.surface = rmfield(userdata.surface, 'signalMaps');
