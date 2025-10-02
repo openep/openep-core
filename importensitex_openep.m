@@ -648,7 +648,10 @@ if ~isempty(extraFilesInfo)
 
 end
 
-
+% set up the surface normals
+tr = getMesh(userdata, 'triangulation');
+[closestVertices,~] = findclosestvertex(tr, userdata.electric.egmX, true);
+userdata.electric.barDirection = userdata.surface.normals(closestVertices,:);
 
 % we don't have impedance values, so create NaN values
 userdata.electric.impedances.time = cell(7110,1);
@@ -656,10 +659,9 @@ userdata.electric.impedances.value = cell(7110,1);
 [userdata.electric.impedances.value{:}] = deal(NaN);
 [userdata.electric.impedances.time{:}] = deal(NaN);
 
-
-
-% we don't have the unipolar peak to peak voltages so we have to calculate them
-% userdata.electric.voltages.unipolar     = calculatePeak2PeakVoltage( userdata.electric.egmUni, userdata.electric.annotations.referenceAnnot, userdata.electric.annotations.woi );
+% we don't have the unipolar peak to peak voltages so we have to do something
+userdata.electric.voltages.unipolar = NaN(size(userdata.electric.voltages.bipolar));
+userdata.electric.voltages.unipolar     = calculatePeak2PeakVoltage( userdata.electric.egmUni, userdata.electric.annotations.referenceAnnot, userdata.electric.annotations.woi );
 
 % Temp - remove signalMaps which, if empty, prevents the file being loaded in EP Workbench
 userdata.surface = rmfield(userdata.surface, 'signalMaps');
