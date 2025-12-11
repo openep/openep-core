@@ -145,11 +145,14 @@ data_latMap = loadprecision_modelgroups(fullfile(latMapDir{:}, 'DxLandmarkGeo.xm
 data_bipolarVoltageMap = loadprecision_modelgroups(fullfile(bipMapDir{:}, 'DxLandmarkGeo.xml'));
 data_unipolarVoltageMap = loadprecision_modelgroups(fullfile(uniMapDir{:}, 'DxLandmarkGeo.xml'));
 act = data_latMap.dxgeo.act;
-%act(data_latMap.dxgeo.map_status==2) = NaN;
+act(data_latMap.dxgeo.map_status==2) = NaN;
+
 bip = data_bipolarVoltageMap.dxgeo.bip;
-%bip(data_bipolarVoltageMap.dxgeo.map_status==2) = NaN;
+bip(data_bipolarVoltageMap.dxgeo.map_status==2) = NaN;
+
 uni = data_unipolarVoltageMap.dxgeo.bip;
-%uni(data_unipolarVoltageMap.dxgeo.map_status==2) = NaN;
+uni(data_unipolarVoltageMap.dxgeo.map_status==2) = NaN;
+
 imp = NaN(size(uni));
 frc = NaN(size(uni));
 

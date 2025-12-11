@@ -12,18 +12,36 @@ function [userdata, matFileFullPath] = importensitex_openep(varargin)
 % IMPORTENSITEX_OPENEP accepts the following parameter-value pairs:
 %   'savefilename'      {''}|string
 %       The full path to the location in which to save the output.
-%   'type'              {'standard'}|'omnipolar'
-%       Specifies whether to import a standard map, based on local
-%       activation time (LAT), bipolar (BIP) and unipolar (UNI) folders, or
-%       whether to important an omnipolar dataset
-%   'loadallwavefiles'  {false}|true
-%       If set to true, the programme will load any wave files that are
-%       extra to rov, ref and uni files into the ecg part of the userdata
-%       structure (userdata.electric.ecg). This section of the data format
-%       does not have its own positional information, unlike
-%       userdata.electric.egm and userdata.electric.egmUni.
+%   'egmtype'               {'bipolar'}|'omnipolar'|'unipolar'
+%       Specifies whether to import the bipolar, omnipolar or unipolar
+%       electrograms. There is no option to importa all the electrograms
+%   'maptype'               {'bipolar'}|'omnipolar'|'unipolar'|'all'
+%       Specifies whether to import the bipolar, omnipolar, unipolar or all
+%       maps.
 %
 % IMPORTENSITEX_OPENEP is for parsing data from the EnsiteX mapping system.
+% The function handles data in bipolar, omnipolar and unipolar format. One,
+% two or all of these formats can be present. The function works on a
+% single map.
+%
+% Some important considerations:
+%
+% (1) If maptype is 'all', then the following convetions apply:
+%       - act and bip taken from bipolar map folder
+%       - uni taken from unipolar map folder, imp and frc are not populated
+%       - all other available maps are stored as surface properties
+%       - if any of these folders are missing, a warning is given and the
+%       relevant data fields are empty
+%       - geometry is taken from the first available folder in the order of
+%       preference of bipolar > omnipolar > unipolar
+% (2) If maptype is one of 'bipolar', 'omnipolar' or 'unipolar' then not
+%   all data fields will be populated. Specifically:
+%       - 'bipolar'   - act, bip populated; uni not available
+%       - 'omnipolar' - act populated, bip and uni not available
+%       - 'unipolar'  - act and uni populated, bip not available
+%       - all other available maps are stored as surface properties
+%       - geometry is taken from the specified folder
+%       - if the specified folder does not exist, an error is thrown
 %
 % Example of command line entry ...
 %       userdata = importensitex_openep(<path to folder>, ...
@@ -112,19 +130,20 @@ end
 % and whether a conventional or an omnipolar map is being assessed.
 nStandardArgs = 1; % UPDATE VALUE
 saveFileName_cli = '';
-type = 'standard';
-loadallwavefiles = 'false';
+egmtype = 'bipolar';
+maptype = 'all';
+
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
         switch varargin{i}
             case 'savefilename'
                 saveFileName_cli = varargin{i+1};
-            case 'type'
-                type = varargin{i+1};
-            case 'loadallwavefiles'
-                loadallwavefiles = varargin{i+1};
+            case 'egmtype'
+                egmtype = varargin{i+1};
+            case 'maptype'
+                maptype = varargin{i+1};
             otherwise
-                error('IMPORTCARTO_MEM: Unrecognized input.')
+                error('IMPORTENSITEX_OPENEP: Unrecognized input.')
         end
     end
 end
@@ -145,23 +164,9 @@ end
 % any ambiguity over which folder to import. Details are given in the SOP,
 % "Instructions to convert Abbott Precision and EnSiteX data into OpenEP
 % format"
-switch type
-    case 'standard'
-        disp('IMPORTENSITEX_OPENEP: Type is standard');
-        latMapDir = local_findDirectory('OpenEP_LAT', studyDir);
-        ppMapDir = local_findDirectory('OpenEP_BIP', studyDir);
-        uniMapDir = local_findDirectory('OpenEP_UNI', studyDir);
-    case 'omnipolar'
-        disp('IMPORTENSITEX_OPENEP: Type is omnipolar');
-        latMapDir = local_findDirectory('OpenEP_OMNI_LAT', studyDir);
-        ppMapDir = local_findDirectory('OpenEP_OMNI_PP', studyDir);
-        uniMapDir = []; % TODO: is there a corollary of a uni map under omnipole polarity?
-end
-
-% Include the set of all the automap folders. Note that these are not yet
-% being procesed
-allSubFolds = nameFolds(studyDir);
-automapDirs = allSubFolds(strstartcmpi('OpenEP_AutoMap', allSubFolds));
+omniDir = local_findDirectory('omnipole', studyDir);
+bipDir = local_findDirectory('bipole', studyDir);
+uniDir = local_findDirectory('unipole', studyDir);
 
 
 
@@ -173,11 +178,29 @@ automapDirs = allSubFolds(strstartcmpi('OpenEP_AutoMap', allSubFolds));
 
 
 %% Parse the geometry and surface mapping data
-% By loading the LAT XML file to get the geometry and the LAT map. In
-% standard mode also load the PP and UNI maps to get substrate data. In
-% omnipolar mode, we have the only LAT and PP maps (for now).
-% TODO: check what is an UNI map recorded in omnipolar polarity.
-data_geometry = loadprecision_modelgroups(fullfile(latMapDir{:}, 'Contact_Mapping_Model.xml'));
+% By loading the relevant Contact_Mapping_Model XML file to get the geometry
+
+switch maptype
+    case 'bipolar'
+        data_geometry = loadprecision_modelgroups(fullfile(bipDir, 'Contact_Mapping_Model.xml'));
+
+    case 'omnipolar'
+        data_geometry = loadprecision_modelgroups(fullfile(omniDir, 'Contact_Mapping_Model.xml'));
+
+    case 'unipolar'
+        data_geometry = loadprecision_modelgroups(fullfile(uniDir, 'Contact_Mapping_Model.xml'));
+
+    case 'all'
+        if isfolder(bipDir)
+            data_geometry = loadprecision_modelgroups(fullfile(bipDir, 'Contact_Mapping_Model.xml'));
+        elseif isfolder(omniDir)
+            data_geometry = loadprecision_modelgroups(fullfile(omniDir, 'Contact_Mapping_Model.xml'));
+        elseif isfolder(uniDir)
+            data_geometry = loadprecision_modelgroups(fullfile(uniDir, 'Contact_Mapping_Model.xml'));
+        end
+end
+
+
 TRI = data_geometry.dxgeo.triangles;
 X = data_geometry.dxgeo.vertices(:,1);
 Y = data_geometry.dxgeo.vertices(:,2);
@@ -187,24 +210,181 @@ t.X = tr.X;
 t.Triangulation = tr.Triangulation;
 normals = data_geometry.dxgeo.normals;
 
-data_latMap = data_geometry; % no need to reload this
-data_ppMap = loadprecision_modelgroups(fullfile(ppMapDir{:}, 'Contact_Mapping_Model.xml'));
 
-act = data_latMap.dxgeo.act;
-bip = data_ppMap.dxgeo.bip;
 
-if ~isempty(uniMapDir)
-    data_uniMap = loadprecision_modelgroups(fullfile(uniMapDir{:}, 'Contact_Mapping_Model.xml'));
-    uni = data_uniMap.dxgeo.bip;
-else
-    uni = NaN(size(act));
+
+
+
+%% Parse the mapping data according to the users wishes
+% Note that in this section, any time we store mapping data we also must
+% check the map status to determine whether values should be replaced by
+% NaN values.
+
+switch maptype
+    case 'bipolar'
+        % we know we have a bipolar map of some sort, so we will check for
+        % an activation map, a voltage map or any other maps. We know we
+        % will not have a unipolar map so we will set uni to [];
+        act = data_geometry.dxgeo.act;
+        bip = data_geometry.dxgeo.bip;
+        uni = [];
+        mapData = data_geometry.dxgeo.mapdata;
+        mapType = data_geometry.dxgeo.maptype;
+
+        iStatus = data_geometry.dxgeo.map_status;
+        act(iStatus==2) = NaN;
+        bip(iStatus==2) = NaN;
+        mapData(iStatus==2) = NaN;
+
+    case 'omnipolar'
+        % we know we will have an omnipolar map of some sort, but we will
+        % not have a conventional bipolar LAT map, bipolar voltage map or
+        % unipolar voltage map, so we will set act, uni and bip to [];
+        act = [];
+        bip = [];
+        uni = [];
+        mapData = data_geometry.dxgeo.mapdata;
+        mapType = data_geometry.dxgeo.maptype;
+
+        iStatus = data_geometry.dxgeo.map_status;
+        mapData(iStatus==2) = NaN;
+
+    case 'unipolar'
+        % we know we will have a unipolar map of some sort, but we will not
+        % have a convetional bipolar LAT map, or bipolar votlage map, so we
+        % will check for a uni voltage map and set act and bip to[];
+        act = [];
+        bip = [];
+        uni = data_geometry.dxgeo.uni;
+        mapData = data_geometry.dxgeo.mapdata;
+        mapType = data_geometry.dxgeo.maptype;
+
+        iStatus = data_geometry.dxgeo.map_status;
+        uni(iStatus==2) = NaN;
+        mapData(iStatus==2) = NaN;
+
+    case 'all'
+        act = [];
+        bip = [];
+        uni = [];
+        mapData = [];
+        mapType = [];
+
+        % Lots of logic has to go into here - finding all XML files in
+        % folders or subfolders, loading these XML files, checking whether
+        % the geometry matches, if it does, load the corresponding map into
+        % the right place (act, bip, uni or mapData), removing values that
+        % should be NaN along the way.
+
+        % First find all XML files in folder or subfolders
+        xmlFiles = local_findAllXmlFiles(studyDir);
+
+        % Load all these XML files
+        for iXml = 1:numel(xmlFiles)
+            dataXml{iXml} = loadprecision_modelgroups(xmlFiles{iXml});
+        end
+
+        % Compare the geometry between the XML files and the existing geometry
+        % We define a match as an exact match of vetcies, triangles and
+        % normals.
+        for iXml = 1:numel(xmlFiles)
+            fileIsValid(iXml) = local_compareXmlFiles(dataXml{iXml}, data_geometry);
+        end
+
+        % For every XML file that has a matching geometry, load the corresponding map
+        for iXml = 1:numel(xmlFiles)
+            dataIdentified = false;
+            if fileIsValid(iXml)
+                % First check for any of act, bip or uni
+                if ~isempty(dataXml{iXml}.dxgeo.act)
+                    if isempty(act)
+                        act = dataXml{iXml}.dxgeo.act;
+
+                        iStatus = dataXml{iXml}.dxgeo.map_status;
+                        act(iStatus==2) = NaN;
+    
+                    else
+                        warning(['IMPORTENSITEX_OPENEP: Multiple local activation time surface maps identified. ...' ...
+                            'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
+                            ' and is stored in .act_bip. The remaining maps are stored as surface properties.']);
+                        mapData{end+1} = dataXml{iXml}.dxgeo.act;
+                        mapType{end+1} = ['Additional LAT map ' num2str(nunmel(mapType))];
+
+                        iStatus = dataXml{iXml}.dxgeo.map_status;
+                        mapData{end}(iStatus==2) = NaN;
+
+                    end
+                    dataIdentified = true;
+
+                end
+                if ~isempty(dataXml{iXml}.dxgeo.bip)
+                    if isempty(bip)
+                        bip = dataXml{iXml}.bip;
+
+                        iStatus = dataXml{iXml}.dxgeo.map_status;
+                        bip(iStatus==2) = NaN;
+
+                    else
+                        warning(['IMPORTENSITEX_OPENEP: Multiple bipolar voltage maps identified. ...' ...
+                            'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
+                            ' and is stored in .act_bip. The remaining maps are stored as surface properties.']);
+                        mapData{end+1} = dataXml{iXml}.dxgeo.bip;
+                        mapType{end+1} = ['Additional BIP map ' num2str(nunmel(mapType))];
+
+                        iStatus = dataXml{iXml}.dxgeo.map_status;
+                        mapData{end}(iStatus==2) = NaN;
+
+                    end
+                    dataIdentified = true;
+
+                end
+                if ~isempty(dataXml{iXml}.dxgeo.uni)
+                    if isempty(uni)
+                        uni = dataXml{iXml}.uni;
+
+                        iStatus = dataXml{iXml}.dxgeo.map_status;
+                        uni(iStatus==2) = NaN;
+
+                    else
+                        warning(['IMPORTENSITEX_OPENEP: Multiple unipolar voltage maps identified. ...' ...
+                            'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
+                            ' and is stored in .uni_imp_frc. The remaining maps are stored as surface properties.']);
+                        mapData{end+1} = dataXml{iXml}.dxgeo.uni;
+                        mapType{end+1} = ['Additional UNI map ' num2str(nunmel(mapType))];
+
+                        iStatus = dataXml{iXml}.dxgeo.map_status;
+                        mapData{end}(iStatus==2) = NaN;
+
+                    end
+                    dataIdentified = true;
+
+                end
+
+                % Then check for any other mapping files
+                if ~dataIdentified
+                    mapData{end+1} = dataXml{iXml}.dxgeo.mapdata;
+                    mapType{end+1} = dataXml{iXml}.dxgeo.maptype;
+
+                    iStatus = dataXml{iXml}.dxgeo.map_status;
+                    mapData{end}(iStatus==2) = NaN;
+
+                end
+            else
+                warning(['IMPORTENSITEX_OPENEP: An XML mapping file which does ...' ...
+                    'not match the loaded geometry has been identified. File ...' ...
+                    , dataXml{iXml}.fileLoaded ' will be ignored.'])
+                continue;
+
+            end
+        end
 end
+
+% IMP and FRC are not currently available through the EnsiteX export
+% options
+
 imp = NaN(size(uni));
 frc = NaN(size(uni));
 
-%act(data_latMap.dxgeo.map_status==2) = NaN;
-%bip(data_bipolarVoltageMap.dxgeo.map_status==2) = NaN;
-%uni(data_unipolarVoltageMap.dxgeo.map_status==2) = NaN;
 
 
 
@@ -213,9 +393,7 @@ frc = NaN(size(uni));
 
 
 
-
-
-%% Parse electrogram data by loading the wave files (new equivalent of DxL files)
+%% Parse electrogram metrics by loading the Map files
 
 % work out the mapping points file names
 switch type
@@ -229,6 +407,7 @@ switch type
 
 end
 %load the mapping points data
+latMapDir = []; %TEMP
 [info, varnames, data] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() mapCSV]);
 mappingPoints.info = info;
 mappingPoints.varnames = varnames;
@@ -278,7 +457,7 @@ mappingPoints.data = [mappingPoints.data ppData ppValidData];
 
 
 
-%% Now load the electrogram data
+%% Now load the electrogram data by loading the Wave files (new equivalent of DxL files)
 
 % first load the rovinig trace (Wave_rov.csv),
 % next load the reference trace (Wave_ref.csv),
@@ -367,23 +546,6 @@ end
 
 
 
-
-
-%% Parse electrogram data
-% By loading the automaps
-% This may be necessary to give access to other data such as body surface
-% ECG data
-% TODO: Implement code to load and parse the automap data.
-
-
-
-
-
-
-
-
-
-
 %% Calculate annotation times
 
 % these are all in samples
@@ -457,7 +619,7 @@ end
 
 
 
-%% Save all files in the OpenEP structure
+%% Save all data in the OpenEP format
 
 % General data
 userdata = openep_createuserdata();
@@ -517,7 +679,7 @@ switch type
         userdata.electric.egmUniX = [userdata.electric.egmX; userdata.electric.egmX];
 
         disp('IMPORTENSITEX_OPENEP: Finished parsing unipolar co-ordinates ...');
-        
+
     case 'omnipolar'
         disp('IMPORTENSITEX_OPENEP: Parsing unipolar co-ordinates for omnipolar configuration ...');
 
@@ -603,12 +765,12 @@ if ~isempty(extraFilesInfo)
 
             % Remove any non-ASCII characters, leading or trailing spaces
             % and duplicate rows (cElectrodes for 'clean electrodes')
-            cElectrodes = unique(cellfun(@(s) strtrim(regexprep(s, '[^\x00-\x7F]', '')), electrodes, 'UniformOutput', false)); 
+            cElectrodes = unique(cellfun(@(s) strtrim(regexprep(s, '[^\x00-\x7F]', '')), electrodes, 'UniformOutput', false));
 
             % Add electrode names to the ecgNames cell array
             userdata.electric.ecgNames = union(userdata.electric.ecgNames, cElectrodes);
         else
-            % Then, this extra file does not contain signal data. If the 
+            % Then, this extra file does not contain signal data. If the
             % file has not already been imported (we do not yet have a
             % check for this) then it is likely to be an additional mapping
             % file. Do nothing for the time being.
@@ -623,7 +785,7 @@ if ~isempty(extraFilesInfo)
     fWait = waitbar(0, 'Storing additional ECG data');
     for iEF = 1:numel(extraFilesInfo)
         % check if this is a signals file
-        if any(strcmpi(extraFilesVarnames{iEF}, 'signals'))        
+        if any(strcmpi(extraFilesVarnames{iEF}, 'signals'))
             % Next we iterate through every signal and work out where to
             % put it in the ECG array.
 
@@ -637,7 +799,7 @@ if ~isempty(extraFilesInfo)
                 userdata.electric.ecg(jSg,:,strcmpi(userdata.electric.ecgNames, thisName)) = thisSig{:};
             end
         else
-            % Then, this extra file does not contain signal data. If the 
+            % Then, this extra file does not contain signal data. If the
             % file has not already been imported (we do not yet have a
             % check for this) then it is likely to be an additional mapping
             % file. Do nothing for the time being.
@@ -757,23 +919,24 @@ end
 
     function pathName = local_findDirectory(stub, studyDir)
         allSubFolders = nameFolds(studyDir);
-        thisFolder = allSubFolders(strstartcmpi(stub, allSubFolders));
-        % Check if more than one folder meets the critiera, and ask the user
-        % to choose
+        tf = cellfun(@(p) contains(p, stub, 'IgnoreCase', true), allSubFolders);
+        thisFolder = allSubFolders(tf);
+        % Check if more than one folder meets the critiera, and ask the user to choose
         if numel(thisFolder)>1
-            warning(['IMPORTPRECISION_OPENEP: More than one candidate folder selected for the export of ***' stub '*** data. Please choose one folder ...'])
+            warning(['IMPORTENSITEX_OPENEP: More than one candidate folder selected for the export of ***' stub '*** data. Please choose one folder ...'])
             [indx, tf] = listdlg('ListString', thisFolder ...
                 ,'ListSize', [480 300] ...
                 , 'name', ['Which is the correct ***' stub '*** folder?'] ...
                 , 'selectionmode', 'single' ...
                 );
             if ~tf
-                error('IMPORTPRECISION_OPENEP: Operation cancelled')
+                error('IMPORTENSITEX_OPENEP: Operation cancelled')
             else
                 thisFolder = thisFolder{indx};
             end
         end
         pathName = fullfile(studyDir, thisFolder);
+        pathName = pathName{:};
     end
 
     function hd = local_homedirec()
@@ -828,5 +991,48 @@ end
             % uniNames{iPair,2} = splt{2};
         end
     end
+
+    function xmlFiles = local_findAllXmlFiles(parentDirectory)
+        % findAllXmlFiles  Recursively finds all .xml files under parentDirectory.
+        
+        % Use dir with recursive wildcard
+        fileList = dir(fullfile(parentDirectory, '**', '*.xml'));
+
+        % Extract full paths into a cell array
+        xmlFiles = fullfile({fileList.folder}, {fileList.name});
+    end
+
+    function tf = local_compareXmlFiles(S1, S2)
+        % compareMeshStructs  Compare two mesh structures containing dxgeo subfields.
+        %
+        % Returns true only if S1.dxgeo and S2.dxgeo both contain the fields
+        % 'vertices', 'triangles', and 'normals', and all three arrays are exactly equal.
+
+        % Required subfields within dxgeo
+        requiredFields = {'vertices', 'triangles', 'normals'};
+
+        % Check dxgeo exists in both structures
+        if ~isfield(S1, 'dxgeo') || ~isfield(S2, 'dxgeo')
+            tf = false;
+            return;
+        end
+
+        % Check required subfields exist
+        for k = 1:numel(requiredFields)
+            f = requiredFields{k};
+            if ~isfield(S1.dxgeo, f) || ~isfield(S2.dxgeo, f)
+                tf = false;
+                return;
+            end
+        end
+
+        % Compare arrays for exact equality
+        tf = isequal(S1.dxgeo.vertices,  S2.dxgeo.vertices)  && ...
+            isequal(S1.dxgeo.triangles, S2.dxgeo.triangles) && ...
+            isequal(S1.dxgeo.normals,   S2.dxgeo.normals);
+    end
+
+
+ 
 
 end

@@ -45,6 +45,10 @@ if ~strcmpi(tree.DIFHeader.Version, 'SJM_DIF_5.0')
 end
 
 for i = 1:tree.DIFBody.Volumes.ATTRIBUTE.number
+    % pre-populate .act, .bip and .uni
+    dxgeo(i).act = [];
+    dxgeo(i).bip = [];
+    dxgeo(i).uni = [];
     if isfield(tree.DIFBody.Volumes.Volume(i), 'Vertices')
         dxgeo(i).vertices = str2num(tree.DIFBody.Volumes.Volume(i).Vertices.CONTENT);
     end
@@ -64,7 +68,14 @@ for i = 1:tree.DIFBody.Volumes.ATTRIBUTE.number
         dxgeo(i).surface_of_origin = str2num(tree.DIFBody.Volumes.Volume(i).Surface_of_origin.CONTENT);
     end
     if isfield(tree.DIFBody.Volumes.Volume(i), 'Map_data')
-        % identify the type of data that we have
+        % Identify the type of data that we have. LAT calculated from a
+        % bipolar map will be stored in .act; voltage calcualted from a
+        % bipolar map will be stored in .bip; voltage calculated from a
+        % unipolar map will be stored in .uni. Anything else will be stored
+        % in .mapData with a description given in .mapType. In a future
+        % version we may want to modify this logic so that all surface maps
+        % are stored as mapData/mapType, to align with the concept of
+        % surface properties in the OpenEP data format.
         stub = 'Data values at each vertex of DxL map';
         iComment = [];
         for j=1:numel(dxgeo.comment)
@@ -75,15 +86,26 @@ for i = 1:tree.DIFBody.Volumes.ATTRIBUTE.number
             end
         end
         if isempty(iComment)
-            warning('OPENEP/LOADPRECISION_MODELGROUPS: Map data was found but no comment describing its type was identified');
+            warning(['OPENEP/LOADPRECISION_MODELGROUPS: Map data was ...' ...
+                'found but no comment describing its type was identified. ...' ...
+                'The data will be stored in mapdata, and the description will be set to UNKNOWN']);
+            dxgeo(i).mapdata = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
+            dxgeo(i).maptype = 'UNKNWOWN';
         else
             dataTypeString = dxgeo.comment{iComment};
-            if contains(dataTypeString, 'P-P Voltage')
+            if contains(dataTypeString, 'P-P Voltage') && contains(dataTypeString, 'bi')
                 dxgeo(i).bip = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
-            elseif contains(dataTypeString, 'LAT Isochronal')
+            elseif contains(dataTypeString, 'P-P Voltage') && contains(dataTypeString, 'uni')
+                dxgeo(i).uni = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
+            elseif contains(dataTypeString, 'LAT Isochronal') && contains(dataTypeString, 'bi')
                 dxgeo(i).act = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
-            else
-                warning('OPENEP/LOADPRECISION_MODELGROUPS: Map data was found but its type was not identifiable as P-P Voltage or LAT Isochronal');
+            elseif contains(dataTypeString, 'LAT Isochronal')
+                warning(['OPENEP/LOADPRECISION_MODELGROUPS: Map data was  ...' ...
+                    'found but its type was not identifiable as act, ...' ...
+                    'bip or uni. The data will be stored in mapdata, and the description in maptype']);
+                dxgeo(i).mapdata = str2num(tree.DIFBody.Volumes.Volume(i).Map_data.CONTENT);
+                maptype = regexp(dataTypeString, 'map\s+(.*)$', 'tokens', 'once');
+                dxgeo(i).maptype = maptype{1};
             end
         end
     end
