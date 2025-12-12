@@ -10,14 +10,21 @@ function [userdata, matFileFullPath] = importensitex_openep(varargin)
 %   matFileFullPath is the path to the .mat file, if opened or saved
 %
 % IMPORTENSITEX_OPENEP accepts the following parameter-value pairs:
+%   'maptoread'         {''}|string|double
+%       Specifies which map to read. Can be a string referring
+%       to the map name or a double referring to the number of points in the
+%       map. If there are multiple maps with the same number of points an error
+%       will be thrown.
+%       Specifies whether to import the bipolar, omnipolar or unipolar
+%       electrograms. 
+%   'egmtype'           'bi'|'omni'|'uni'
+%   'maptype'           {'asegm'}|'all'
+%       Specifies whether to only import the surface map linked to the
+%       chosen electrograms; or to search for additional matching
+%       Contact_Mapping_Model.xml files and import them too.
 %   'savefilename'      {''}|string
 %       The full path to the location in which to save the output.
-%   'egmtype'               {'bipolar'}|'omnipolar'|'unipolar'
-%       Specifies whether to import the bipolar, omnipolar or unipolar
-%       electrograms. There is no option to importa all the electrograms
-%   'maptype'               {'bipolar'}|'omnipolar'|'unipolar'|'all'
-%       Specifies whether to import the bipolar, omnipolar, unipolar or all
-%       maps.
+
 %
 % IMPORTENSITEX_OPENEP is for parsing data from the EnsiteX mapping system.
 % The function handles data in bipolar, omnipolar and unipolar format. One,
@@ -25,6 +32,9 @@ function [userdata, matFileFullPath] = importensitex_openep(varargin)
 % single map.
 %
 % Some important considerations:
+%
+% re: egmtype There is no option to import all the electrograms. - if this
+% is desired multiple imports must be run creating different OpenEP files.
 %
 % (1) If maptype is 'all', then the following convetions apply:
 %       - act and bip taken from bipolar map folder
@@ -129,19 +139,22 @@ end
 % Additional command line input is parsed to determine the save location
 % and whether a conventional or an omnipolar map is being assessed.
 nStandardArgs = 1; % UPDATE VALUE
-saveFileName_cli = '';
-egmtype = 'bipolar';
-maptype = 'all';
+mapToRead = '';
+egmtype = '';
+maptype = 'asegm';
+saveFileName = '';
 
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
         switch varargin{i}
-            case 'savefilename'
-                saveFileName_cli = varargin{i+1};
+            case 'maptoread'
+                mapToRead = varargin{i+1};
             case 'egmtype'
                 egmtype = varargin{i+1};
             case 'maptype'
                 maptype = varargin{i+1};
+            case 'savefilename'
+                saveFileName = varargin{i+1};
             otherwise
                 error('IMPORTENSITEX_OPENEP: Unrecognized input.')
         end
@@ -157,6 +170,158 @@ end
 
 
 
+%% Identify all available maps and export styles (uni, omni, bip)
+
+% This logic is reasonably robust but there are some requirements. 
+% All wave and Map files that are related to each other are stored in 
+% separate directories. This is the default way that the files come out of the 
+% system, named by a timestamp plus any other text that the user added. 
+% However, if the user has moved these files 
+% to a different location this code will throw an error since _almost 
+% certainly_ the number of points in wave and map files will no longer 
+% match. 
+
+csvFiles = local_findAllCsvFiles(studyDir);
+allCsvHeaders = [];
+for iCsv = 1:numel(csvFiles)
+    csvHeader = local_loadCsvFileHeader(csvFiles{iCsv});
+    if ~isempty(csvHeader)
+        allCsvHeaders{end+1} = csvHeader;
+    end
+end
+
+% Identify the names of unique maps in the dataset
+uniqueMapNames = unique( cellfun(@(s) s.mapName, allCsvHeaders, 'UniformOutput', false) );
+
+% Identify all folder locations in which files pertaining to each map are stored
+numMaps = numel(uniqueMapNames);
+locations = cell(numel(uniqueMapNames), 2);
+for iMap = 1:numMaps
+    name = uniqueMapNames{iMap};
+
+    % Select structures belonging to this map name
+    idx = cellfun(@(s) strcmp(s.mapName, name), allCsvHeaders);
+
+    % Extract filenames for this map
+    files = cellfun(@(s) s.filename, allCsvHeaders(idx), 'UniformOutput', false);
+
+    % Extract unique folder paths
+    folders = unique(cellfun(@fileparts, files, 'UniformOutput', false));
+
+    % Store results
+    locations{iMap,1} = strrep(name, sprintf('\t'), ' ');
+    locations{iMap,2} = folders;
+end
+
+% CHECK1A: Check that all map files within each directory pertaining to an 
+% individual map have the same type (uni, omni, bi). There is redundancy in
+% this section since we re-read the CSV file headers per folder, and we
+% have already read them all collectively. However, this avoids any
+% ambiguity about what files are being read and compared.
+% CHECK2: Check that all wave files within each directory pertaining to an
+% individual map have the same number of electrograms as number of points
+% in the map files; with the one exception being wave_rov files
+allMapTypes = {};
+for iMap = 1:numMaps
+    folders = locations{iMap,2};
+    numFolds = numel(folders);
+
+    folderMapType = {};
+    numberOfPoints = [];
+    for iFolder = 1:numFolds
+
+        % identify the CSV files for this map
+        csvFilesInThisFolder = local_findAllCsvFiles(locations{iMap,2}{iFolder});
+
+        % read the header of these CSV files
+        csvFilesInThisFolderHeaders = [];
+        for iCsv = 1:numel(csvFilesInThisFolder)
+            csvHeader = local_loadCsvFileHeader(csvFilesInThisFolder{iCsv});
+            if ~isempty(csvHeader)
+                csvFilesInThisFolderHeaders{end+1} = csvHeader;
+            end
+        end
+
+        % get all the map types for these csv files
+        allMapTypesInThisFolder = {};
+        mappingCsvFiles = [];
+        for iCsv = 1:numel(csvFilesInThisFolderHeaders)
+            thisMapType = csvFilesInThisFolderHeaders{iCsv}.mapType;
+            thisMapNumPts = csvFilesInThisFolderHeaders{iCsv}.numPoints;
+            if ~strcmp(thisMapType, 'N/A')
+                allMapTypesInThisFolder{end+1} = thisMapType;
+                mappingCsvFiles{end+1} = csvFilesInThisFolderHeaders{iCsv}; % this ensure we are only dealing with mapping files, and not wave files
+            end
+        end
+
+        [mapTypesAreTheSame, identifiedType] = local_areMapSuffixesUniform(allMapTypesInThisFolder);
+
+        [numberOfMappingPointsAreTheSame, numMappingPts] = local_areMapPointNumbersUniform(mappingCsvFiles);
+
+        % check that the map types are the same
+        if mapTypesAreTheSame
+            disp(['CHECK1 TEST PASSED: map types check passed for map ' num2str(iMap) ' folder ' num2str(iFolder)]);
+            
+            % store the type of maps that are in this folder
+            folderMapType{end+1} = identifiedType;
+        else
+            error(['CHECK1 TEST FAILED: map types check failed for map ' num2str(iMap) ' folder ' num2str(iFolder)])
+        end
+
+        % check that the number of mapping points are the same
+        if numberOfMappingPointsAreTheSame
+            disp(['CHECK2 TEST PASSED: number of mapping points are the same for map ' num2str(iMap) ' folder ' num2str(iFolder)]);
+
+            % store the number of mapping points
+            numberOfPoints(end+1) = numMappingPts;
+        else
+            error(['CHECK2 TEST FAILED: number of mapping points are different for map ' num2str(iMap) ' folder ' num2str(iFolder)]);
+        end
+    end
+    locations{iMap,3} = folderMapType;
+    locations{iMap,5} = numberOfPoints;
+end
+
+% Identify the geoemtry location (Contact_Mapping_Model.xml)
+% Option A - this file is 1 level up from the mapping/wave files
+% Option B - this file is within the same folder as the mapping/wave files
+% Option C - give an error
+numMaps = numel(locations(:,1));
+for iMap = 1:numMaps
+    numFolders = numel(locations{1,2});
+    for jFolder = 1:numFolders
+        thisFolderPath = locations{iMap, 2}{jFolder};
+        [path, ~] = fileparts(thisFolderPath);
+        geomFile = [path filesep() 'Contact_Mapping_Model.xml'];
+        if isfile(geomFile)
+            locations{iMap,4}{jFolder} = geomFile;
+        else
+            geomFile = [thisFolderPath filesep() 'Contact_Mapping_Model.xml'];
+            if isfile(geomFile)
+                locations{iMap,4}{jFolder} = geomFile;
+            else
+                error('IMPORTENSITEX_OPENEP: Unable to idetnify the Contact_Mapping_Model.xml file');
+            end
+        end
+    end
+end
+
+
+
+
+
+
+%% Save all the data we have worked out in a table for easy access
+variableNames = {'mapname', 'egmfiles', 'egmtype', 'mapfiles', 'numpts'};
+T = cell2table(locations, 'variablenames', variableNames);
+
+
+
+
+
+
+
+
 %% Identify the relevant subfolders
 
 % Naming of these folders needs to be done by the user either at the time
@@ -164,14 +329,88 @@ end
 % any ambiguity over which folder to import. Details are given in the SOP,
 % "Instructions to convert Abbott Precision and EnSiteX data into OpenEP
 % format"
-omniDir = local_findDirectory('omnipole', studyDir);
-bipDir = local_findDirectory('bipole', studyDir);
-uniDir = local_findDirectory('unipole', studyDir);
+% omniDir = local_findDirectory('omnipole', studyDir);
+% bipDir = local_findDirectory('bipole', studyDir);
+% uniDir = local_findDirectory('unipole', studyDir);
 
 
 
 
 
+
+%% Ask the user which map they want to import
+names = T.mapname;
+numPtsPerMap = T.numpts;
+
+if isempty(mapToRead)
+    [selection,ok] = listdlg(     'ListString', names ...
+        , 'SelectionMode', 'single' ...
+        , 'PromptString', 'Which map do you want to access?' ...
+        , 'ListSize', [300 300] ...
+        );
+    if ~ok
+        return
+    end
+    mapToRead = names{selection};
+else
+    if isnumeric(mapToRead)
+        selection = numel(find(numPtsPerMap==mapToRead));
+        if numel(selection)>1
+            error(['IMPORTENSITEX_OPENEP: Multiple maps with ' ...
+                num2str(mapToRead) ...
+                ' points identified. Use an alternative method to identify map.']);
+        elseif isempty(selection)
+            error(['IMPORTENSITEX_OPENEP: No map with ' ...
+                num2str(mapToRead) ...
+                ' points identified. Check the number of points specified is correct.']);
+        else
+            [selection, ~] = find(numPtsPerMap==mapToRead);
+        end
+    elseif ischar(mapToRead)
+        selection = find(strstartcmpi(mapToRead, names));
+    end
+end
+mapID = selection; % calling it map ID to be more understandable. MapID maps into rows of T.
+
+%% Ask the user which mapping style they want to import, based on the available mapping styles
+names = T(mapID, 'egmtype');
+names = names{1,:};
+uNames = unique(names); % convert to cell array and identify the unique names
+if isempty(egmtype)
+    [selection,ok] = listdlg(     'ListString', uNames ...
+        , 'SelectionMode', 'single' ...
+        , 'PromptString', 'Which electrogram type do you want?' ...
+        , 'ListSize', [300 300] ...
+        );
+    if ~ok
+        return
+    end
+end
+reqEgmType = names{selection};
+egmID = find(strcmpi(names, reqEgmType)); 
+% note that egmID by itself is not interpretable, but it indexes into T
+% table entries to ensure that the desired electrograms are read
+
+if numel(egmID)>1
+    warningMessage = ['Multiple ' reqEgmType ' electrograms identified for map ' mapToRead '. Which folder of electrograms do you want to import?'];
+    warning(['IMPORTENSITEX_OPENEP: ' warningMessage]);
+
+    names = T.egmfiles(1,egmID);
+    shortNames = local_lastTwoParts(names);
+
+    [selection,ok] = listdlg(     'ListString', shortNames ...
+        , 'SelectionMode', 'single' ...
+        , 'PromptString', warningMessage ...
+        , 'ListSize', [600 300] ...
+        );
+    if ~ok
+        return
+    end
+    egmID = egmID(selection);
+end
+
+
+    
 
 
 
@@ -180,26 +419,28 @@ uniDir = local_findDirectory('unipole', studyDir);
 %% Parse the geometry and surface mapping data
 % By loading the relevant Contact_Mapping_Model XML file to get the geometry
 
-switch maptype
-    case 'bipolar'
-        data_geometry = loadprecision_modelgroups(fullfile(bipDir, 'Contact_Mapping_Model.xml'));
+contactMappingModel = T(mapID,:).mapfiles{egmID};
+data_geometry = loadprecision_modelgroups(contactMappingModel);
 
-    case 'omnipolar'
-        data_geometry = loadprecision_modelgroups(fullfile(omniDir, 'Contact_Mapping_Model.xml'));
-
-    case 'unipolar'
-        data_geometry = loadprecision_modelgroups(fullfile(uniDir, 'Contact_Mapping_Model.xml'));
-
-    case 'all'
-        if isfolder(bipDir)
-            data_geometry = loadprecision_modelgroups(fullfile(bipDir, 'Contact_Mapping_Model.xml'));
-        elseif isfolder(omniDir)
-            data_geometry = loadprecision_modelgroups(fullfile(omniDir, 'Contact_Mapping_Model.xml'));
-        elseif isfolder(uniDir)
-            data_geometry = loadprecision_modelgroups(fullfile(uniDir, 'Contact_Mapping_Model.xml'));
-        end
-end
-
+% switch maptype
+%     case 'bipolar'
+%         data_geometry = loadprecision_modelgroups(fullfile(bipDir, 'Contact_Mapping_Model.xml'));
+% 
+%     case 'omnipolar'
+%         data_geometry = loadprecision_modelgroups(fullfile(omniDir, 'Contact_Mapping_Model.xml'));
+% 
+%     case 'unipolar'
+%         data_geometry = loadprecision_modelgroups(fullfile(uniDir, 'Contact_Mapping_Model.xml'));
+% 
+%     case 'all'
+%         if isfolder(bipDir)
+%             data_geometry = loadprecision_modelgroups(fullfile(bipDir, 'Contact_Mapping_Model.xml'));
+%         elseif isfolder(omniDir)
+%             data_geometry = loadprecision_modelgroups(fullfile(omniDir, 'Contact_Mapping_Model.xml'));
+%         elseif isfolder(uniDir)
+%             data_geometry = loadprecision_modelgroups(fullfile(uniDir, 'Contact_Mapping_Model.xml'));
+%         end
+% end
 
 TRI = data_geometry.dxgeo.triangles;
 X = data_geometry.dxgeo.vertices(:,1);
@@ -219,56 +460,39 @@ normals = data_geometry.dxgeo.normals;
 % Note that in this section, any time we store mapping data we also must
 % check the map status to determine whether values should be replaced by
 % NaN values.
+act = [];
+bip = [];
+uni = [];
+mapData = [];
+mapType = [];
 
 switch maptype
-    case 'bipolar'
-        % we know we have a bipolar map of some sort, so we will check for
-        % an activation map, a voltage map or any other maps. We know we
-        % will not have a unipolar map so we will set uni to [];
-        act = data_geometry.dxgeo.act;
-        bip = data_geometry.dxgeo.bip;
-        uni = [];
-        mapData = data_geometry.dxgeo.mapdata;
-        mapType = data_geometry.dxgeo.maptype;
-
-        iStatus = data_geometry.dxgeo.map_status;
-        act(iStatus==2) = NaN;
-        bip(iStatus==2) = NaN;
-        mapData(iStatus==2) = NaN;
-
-    case 'omnipolar'
-        % we know we will have an omnipolar map of some sort, but we will
-        % not have a conventional bipolar LAT map, bipolar voltage map or
-        % unipolar voltage map, so we will set act, uni and bip to [];
-        act = [];
-        bip = [];
-        uni = [];
-        mapData = data_geometry.dxgeo.mapdata;
-        mapType = data_geometry.dxgeo.maptype;
-
-        iStatus = data_geometry.dxgeo.map_status;
-        mapData(iStatus==2) = NaN;
-
-    case 'unipolar'
-        % we know we will have a unipolar map of some sort, but we will not
-        % have a convetional bipolar LAT map, or bipolar votlage map, so we
-        % will check for a uni voltage map and set act and bip to[];
-        act = [];
-        bip = [];
-        uni = data_geometry.dxgeo.uni;
-        mapData = data_geometry.dxgeo.mapdata;
-        mapType = data_geometry.dxgeo.maptype;
-
-        iStatus = data_geometry.dxgeo.map_status;
-        uni(iStatus==2) = NaN;
-        mapData(iStatus==2) = NaN;
+    case 'asegm'
+        if ~isempty(data_geometry.dxgeo.act)
+            act = data_geometry.dxgeo.act;
+            iStatus = data_geometry.dxgeo.map_status;
+            act(iStatus==2) = NaN;
+        end
+        if ~isempty(data_geometry.dxgeo.bip)
+            bip = data_geometry.dxgeo.bip;
+            iStatus = data_geometry.dxgeo.map_status;
+            bip(iStatus==2) = NaN;
+        end
+        if ~isempty(data_geometry.dxgeo.uni)
+            uni = data_geometry.dxgeo.uni;
+            iStatus = data_geometry.dxgeo.map_status;
+            uni(iStatus==2) = NaN;
+        end
+        if isfield(data_geometry.dxgeo, 'mapdata')
+            if ~isempty(data_geometry.dxgeo.mapdata)
+                mapData = data_geometry.dxgeo.mapdata;
+                mapType = data_geometry.dxgeo.maptype;
+                iStatus = data_geometry.dxgeo.map_status;
+                mapData(iStatus==2) = NaN;
+            end
+        end
 
     case 'all'
-        act = [];
-        bip = [];
-        uni = [];
-        mapData = [];
-        mapType = [];
 
         % Lots of logic has to go into here - finding all XML files in
         % folders or subfolders, loading these XML files, checking whether
@@ -379,12 +603,172 @@ switch maptype
         end
 end
 
+% switch maptype
+    % case 'bipolar'
+    %     % we know we have a bipolar map of some sort, so we will check for
+    %     % an activation map, a voltage map or any other maps. We know we
+    %     % will not have a unipolar map so we will set uni to [];
+    %     act = data_geometry.dxgeo.act;
+    %     bip = data_geometry.dxgeo.bip;
+    %     uni = [];
+    %     mapData = data_geometry.dxgeo.mapdata;
+    %     mapType = data_geometry.dxgeo.maptype;
+    % 
+    %     iStatus = data_geometry.dxgeo.map_status;
+    %     act(iStatus==2) = NaN;
+    %     bip(iStatus==2) = NaN;
+    %     mapData(iStatus==2) = NaN;
+    % 
+    % case 'omnipolar'
+    %     % we know we will have an omnipolar map of some sort, but we will
+    %     % not have a conventional bipolar LAT map, bipolar voltage map or
+    %     % unipolar voltage map, so we will set act, uni and bip to [];
+    %     act = [];
+    %     bip = [];
+    %     uni = [];
+    %     mapData = data_geometry.dxgeo.mapdata;
+    %     mapType = data_geometry.dxgeo.maptype;
+    % 
+    %     iStatus = data_geometry.dxgeo.map_status;
+    %     mapData(iStatus==2) = NaN;
+    % 
+    % case 'unipolar'
+    %     % we know we will have a unipolar map of some sort, but we will not
+    %     % have a convetional bipolar LAT map, or bipolar votlage map, so we
+    %     % will check for a uni voltage map and set act and bip to[];
+    %     act = [];
+    %     bip = [];
+    %     uni = data_geometry.dxgeo.uni;
+    %     mapData = data_geometry.dxgeo.mapdata;
+    %     mapType = data_geometry.dxgeo.maptype;
+    % 
+    %     iStatus = data_geometry.dxgeo.map_status;
+    %     uni(iStatus==2) = NaN;
+    %     mapData(iStatus==2) = NaN;
+% 
+%     case 'all'
+%         act = [];
+%         bip = [];
+%         uni = [];
+%         mapData = [];
+%         mapType = [];
+% 
+%         % Lots of logic has to go into here - finding all XML files in
+%         % folders or subfolders, loading these XML files, checking whether
+%         % the geometry matches, if it does, load the corresponding map into
+%         % the right place (act, bip, uni or mapData), removing values that
+%         % should be NaN along the way.
+% 
+%         % First find all XML files in folder or subfolders
+%         xmlFiles = local_findAllXmlFiles(studyDir);
+% 
+%         % Load all these XML files
+%         for iXml = 1:numel(xmlFiles)
+%             dataXml{iXml} = loadprecision_modelgroups(xmlFiles{iXml});
+%         end
+% 
+%         % Compare the geometry between the XML files and the existing geometry
+%         % We define a match as an exact match of vetcies, triangles and
+%         % normals.
+%         for iXml = 1:numel(xmlFiles)
+%             fileIsValid(iXml) = local_compareXmlFiles(dataXml{iXml}, data_geometry);
+%         end
+% 
+%         % For every XML file that has a matching geometry, load the corresponding map
+%         for iXml = 1:numel(xmlFiles)
+%             dataIdentified = false;
+%             if fileIsValid(iXml)
+%                 % First check for any of act, bip or uni
+%                 if ~isempty(dataXml{iXml}.dxgeo.act)
+%                     if isempty(act)
+%                         act = dataXml{iXml}.dxgeo.act;
+% 
+%                         iStatus = dataXml{iXml}.dxgeo.map_status;
+%                         act(iStatus==2) = NaN;
+% 
+%                     else
+%                         warning(['IMPORTENSITEX_OPENEP: Multiple local activation time surface maps identified. ...' ...
+%                             'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
+%                             ' and is stored in .act_bip. The remaining maps are stored as surface properties.']);
+%                         mapData{end+1} = dataXml{iXml}.dxgeo.act;
+%                         mapType{end+1} = ['Additional LAT map ' num2str(nunmel(mapType))];
+% 
+%                         iStatus = dataXml{iXml}.dxgeo.map_status;
+%                         mapData{end}(iStatus==2) = NaN;
+% 
+%                     end
+%                     dataIdentified = true;
+% 
+%                 end
+%                 if ~isempty(dataXml{iXml}.dxgeo.bip)
+%                     if isempty(bip)
+%                         bip = dataXml{iXml}.bip;
+% 
+%                         iStatus = dataXml{iXml}.dxgeo.map_status;
+%                         bip(iStatus==2) = NaN;
+% 
+%                     else
+%                         warning(['IMPORTENSITEX_OPENEP: Multiple bipolar voltage maps identified. ...' ...
+%                             'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
+%                             ' and is stored in .act_bip. The remaining maps are stored as surface properties.']);
+%                         mapData{end+1} = dataXml{iXml}.dxgeo.bip;
+%                         mapType{end+1} = ['Additional BIP map ' num2str(nunmel(mapType))];
+% 
+%                         iStatus = dataXml{iXml}.dxgeo.map_status;
+%                         mapData{end}(iStatus==2) = NaN;
+% 
+%                     end
+%                     dataIdentified = true;
+% 
+%                 end
+%                 if ~isempty(dataXml{iXml}.dxgeo.uni)
+%                     if isempty(uni)
+%                         uni = dataXml{iXml}.uni;
+% 
+%                         iStatus = dataXml{iXml}.dxgeo.map_status;
+%                         uni(iStatus==2) = NaN;
+% 
+%                     else
+%                         warning(['IMPORTENSITEX_OPENEP: Multiple unipolar voltage maps identified. ...' ...
+%                             'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
+%                             ' and is stored in .uni_imp_frc. The remaining maps are stored as surface properties.']);
+%                         mapData{end+1} = dataXml{iXml}.dxgeo.uni;
+%                         mapType{end+1} = ['Additional UNI map ' num2str(nunmel(mapType))];
+% 
+%                         iStatus = dataXml{iXml}.dxgeo.map_status;
+%                         mapData{end}(iStatus==2) = NaN;
+% 
+%                     end
+%                     dataIdentified = true;
+% 
+%                 end
+% 
+%                 % Then check for any other mapping files
+%                 if ~dataIdentified
+%                     mapData{end+1} = dataXml{iXml}.dxgeo.mapdata;
+%                     mapType{end+1} = dataXml{iXml}.dxgeo.maptype;
+% 
+%                     iStatus = dataXml{iXml}.dxgeo.map_status;
+%                     mapData{end}(iStatus==2) = NaN;
+% 
+%                 end
+%             else
+%                 warning(['IMPORTENSITEX_OPENEP: An XML mapping file which does ...' ...
+%                     'not match the loaded geometry has been identified. File ...' ...
+%                     , dataXml{iXml}.fileLoaded ' will be ignored.'])
+%                 continue;
+% 
+%             end
+%         end
+% end
+
 % IMP and FRC are not currently available through the EnsiteX export
 % options
 
 imp = NaN(size(uni));
 frc = NaN(size(uni));
 
+disp('!!!! FINISHED PARSING MAPPING DATA ACCCORDING TO USER WISHES !!!!')
 
 
 
@@ -413,6 +797,7 @@ mappingPoints.info = info;
 mappingPoints.varnames = varnames;
 mappingPoints.data = data;
 
+ppMapDir = []; % TEMP
 %additionally get the substrate mapping data for each point (there is unavoidable redundancy here)
 [info, varnames, data] = loadensitex_dxldata([ppMapDir{:} filesep() 'Contact_Mapping' filesep() voltCSV]);
 voltageData.info = info;
@@ -840,9 +1225,9 @@ userdata.electric.tags = cell(length(userdata.electric.names),1);
 
 %% Encourage user to save the data
 matFileFullPath = [];
-if ~isempty(saveFileName_cli)
-    save(saveFileName_cli, 'userdata');
-    matFileFullPath = saveFileName_cli;
+if ~isempty(saveFileName)
+    save(saveFileName, 'userdata');
+    matFileFullPath = saveFileName;
 else
     defaultName = [mappingPoints.info.study '_' mappingPoints.info.mapName];
     defaultName(isspace(defaultName)) = '_';
@@ -993,13 +1378,66 @@ end
     end
 
     function xmlFiles = local_findAllXmlFiles(parentDirectory)
-        % findAllXmlFiles  Recursively finds all .xml files under parentDirectory.
+        % local_findAllXmlFiles  Recursively finds all .xml files under parentDirectory.
         
         % Use dir with recursive wildcard
         fileList = dir(fullfile(parentDirectory, '**', '*.xml'));
 
+        % Filter hidden files
+        fileList = fileList(~startsWith({fileList.name}, '.'));
+
         % Extract full paths into a cell array
         xmlFiles = fullfile({fileList.folder}, {fileList.name});
+    end
+
+    function csvFiles = local_findAllCsvFiles(parentDirectory)
+        % local_findAllCsvFiles  Recursively finds all .csv files under parentDirectory
+
+        % Use dir with recursive wildcard
+        fileList = dir(fullfile(parentDirectory, '**', '*.csv'));
+
+        % Filter hidden files
+        fileList = fileList(~startsWith({fileList.name}, '.'));
+
+        % Extract full paths into a cell array
+        csvFiles = fullfile({fileList.folder}, {fileList.name});
+    end
+
+    function info = local_loadCsvFileHeader(csvFile)
+
+        info = [];
+        fileID = fopen(csvFile, 'r');
+        if fileID == (-1)
+            error('LOADENSITEX_DXLDATA: Could not open file.')
+        end
+        cleanupFile = onCleanup(@()fclose(fileID));
+
+        maxBytes = 100000; % enough data to cover the header
+        fseek(fileID, 0, 'bof'); % move to the beginning of the file
+        if maxBytes > filebytes2end(fileID)
+            maxBytes = filebytes2end(fileID);
+        end
+        [fData, fDataSize] = fread(fileID, maxBytes, '*char');
+        fData = fData(1:fDataSize)';
+
+        % do the prechecks and return if bad
+        if ~loadensitex_prechecks(fData, 'DxL')
+            warning('IMPORTENSITEX_OPENEP/LOCAL_LOADCSVFILEHEADER: A non-DxL CSV file was identified, such as a lesions or automark file. We will ignore this.')
+            return
+        end
+
+        % The 'header' finishes at the end of the last line starting with "****,"
+        [~, ind2] = regexp(fData, '****','start','end');
+        if isempty(ind2)
+            error('End of header not found. Double check that maxBytes is large enough to cover header.')
+        end
+        indEndofHeader = ind2(end);
+        header = fData(1:indEndofHeader);
+
+        % Parse the header
+        info = parse_header(header, 'dxl');
+        info.filename = csvFile;
+
     end
 
     function tf = local_compareXmlFiles(S1, S2)
@@ -1031,6 +1469,73 @@ end
             isequal(S1.dxgeo.triangles, S2.dxgeo.triangles) && ...
             isequal(S1.dxgeo.normals,   S2.dxgeo.normals);
     end
+
+    function [tf, identifiedType] = local_areMapSuffixesUniform(allMapTypes)
+        % Return true if all map suffixes (text after last '_')
+        % are identical in all entries of the input cell array of strings.
+
+        % Extract suffix from each map type
+        suffixes = cellfun( ...
+            @(s) s( find(s=='_',1,'last')+1 : end ), ...
+            allMapTypes, 'UniformOutput', false);
+
+        % True only if all suffixes are the same
+        tf = numel(unique(suffixes)) == 1;
+
+        % The type, if true
+        if tf
+            identifiedType = suffixes{1};
+        else
+            identifiedType = false;
+        end
+    end
+
+    function [tf, numMappingPts] = local_areMapPointNumbersUniform(allMaps)
+        % Return true if all maps in the input cell array of map headers 
+        % have the same number of mapping points. Return these in numMappingPoints
+
+        % Extract the number of mapping points
+        numPoints = cellfun(@(s) s.numPoints, allMaps);
+
+        % True only if all numbers are the same
+        tf = numel(unique(numPoints)) == 1;
+        
+        if tf
+            numMappingPts = numPoints(1);
+        else
+            numMappingPts = false;
+        end
+    end
+
+    function out = local_lastTwoParts(paths)
+        % lastTwoParts returns the last two parts of each path in a cell array
+        % paths: 1×N or N×1 cell array of full paths
+        % out:   1×N cell array of "secondLastPart/lastPart"
+
+        if ischar(paths) || isstring(paths)
+            paths = {char(paths)};
+        elseif ~iscell(paths)
+            error('Input must be char, string, or cell array of char/string.');
+        end
+
+        N = numel(paths);
+        out = cell(1, N);
+
+        for k = 1:N
+            p = paths{k};
+
+            % Get the last part
+            [~, lastPart, ext] = fileparts(p);
+            lastPartFull = [lastPart ext];  % include extension if any
+
+            % Get the second-to-last folder
+            [parentFolder, secondLastPart] = fileparts(fileparts(p));
+
+            % Combine
+            out{k} = fullfile(secondLastPart, lastPartFull);
+        end
+    end
+
 
 
  
