@@ -372,6 +372,12 @@ else
 end
 mapID = selection; % calling it map ID to be more understandable. MapID maps into rows of T.
 
+
+
+
+
+
+
 %% Ask the user which mapping style they want to import, based on the available mapping styles
 names = T(mapID, 'egmtype');
 names = names{1,:};
@@ -390,6 +396,7 @@ reqEgmType = names{selection};
 egmID = find(strcmpi(names, reqEgmType)); 
 % note that egmID by itself is not interpretable, but it indexes into T
 % table entries to ensure that the desired electrograms are read
+egmtype = reqEgmType;
 
 if numel(egmID)>1
     warningMessage = ['Multiple ' reqEgmType ' electrograms identified for map ' mapToRead '. Which folder of electrograms do you want to import?'];
@@ -407,6 +414,7 @@ if numel(egmID)>1
         return
     end
     egmID = egmID(selection);
+    egmtype = shortNames{selection};
 end
 
 
@@ -460,11 +468,16 @@ normals = data_geometry.dxgeo.normals;
 % Note that in this section, any time we store mapping data we also must
 % check the map status to determine whether values should be replaced by
 % NaN values.
-act = [];
-bip = [];
-uni = [];
+lenX = size(tr.X,1);
+act = NaN(lenX,1);
+bip = NaN(lenX,1);
+uni = NaN(lenX,1);
 mapData = [];
 mapType = [];
+
+actSaved = false;
+bipSaved = false;
+uniSaved = false;
 
 switch maptype
     case 'asegm'
@@ -472,16 +485,19 @@ switch maptype
             act = data_geometry.dxgeo.act;
             iStatus = data_geometry.dxgeo.map_status;
             act(iStatus==2) = NaN;
+            actSaved = true;
         end
         if ~isempty(data_geometry.dxgeo.bip)
             bip = data_geometry.dxgeo.bip;
             iStatus = data_geometry.dxgeo.map_status;
             bip(iStatus==2) = NaN;
+            bipSaved = true;
         end
         if ~isempty(data_geometry.dxgeo.uni)
             uni = data_geometry.dxgeo.uni;
             iStatus = data_geometry.dxgeo.map_status;
             uni(iStatus==2) = NaN;
+            uniSaved = true;
         end
         if isfield(data_geometry.dxgeo, 'mapdata')
             if ~isempty(data_geometry.dxgeo.mapdata)
@@ -521,53 +537,47 @@ switch maptype
             if fileIsValid(iXml)
                 % First check for any of act, bip or uni
                 if ~isempty(dataXml{iXml}.dxgeo.act)
-                    if isempty(act)
+                    if ~actSaved
                         act = dataXml{iXml}.dxgeo.act;
-
                         iStatus = dataXml{iXml}.dxgeo.map_status;
                         act(iStatus==2) = NaN;
-    
+                        actSaved = true;
                     else
                         warning(['IMPORTENSITEX_OPENEP: Multiple local activation time surface maps identified. ...' ...
                             'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
                             ' and is stored in .act_bip. The remaining maps are stored as surface properties.']);
                         mapData{end+1} = dataXml{iXml}.dxgeo.act;
-                        mapType{end+1} = ['Additional LAT map ' num2str(nunmel(mapType))];
-
+                        mapType{end+1} = ['Additional LAT map ' num2str(numel(mapType))];
                         iStatus = dataXml{iXml}.dxgeo.map_status;
                         mapData{end}(iStatus==2) = NaN;
-
                     end
                     dataIdentified = true;
 
                 end
                 if ~isempty(dataXml{iXml}.dxgeo.bip)
-                    if isempty(bip)
+                    if ~bipSaved
                         bip = dataXml{iXml}.bip;
-
                         iStatus = dataXml{iXml}.dxgeo.map_status;
                         bip(iStatus==2) = NaN;
-
+                        bipSaved = true;
                     else
                         warning(['IMPORTENSITEX_OPENEP: Multiple bipolar voltage maps identified. ...' ...
                             'The first identified map comes from the file ', dataXml{iXml}.fileLoaded, ...
                             ' and is stored in .act_bip. The remaining maps are stored as surface properties.']);
                         mapData{end+1} = dataXml{iXml}.dxgeo.bip;
                         mapType{end+1} = ['Additional BIP map ' num2str(nunmel(mapType))];
-
                         iStatus = dataXml{iXml}.dxgeo.map_status;
                         mapData{end}(iStatus==2) = NaN;
-
                     end
                     dataIdentified = true;
 
                 end
                 if ~isempty(dataXml{iXml}.dxgeo.uni)
-                    if isempty(uni)
+                    if ~uniSaved
                         uni = dataXml{iXml}.uni;
-
                         iStatus = dataXml{iXml}.dxgeo.map_status;
                         uni(iStatus==2) = NaN;
+                        uniSaved = true;
 
                     else
                         warning(['IMPORTENSITEX_OPENEP: Multiple unipolar voltage maps identified. ...' ...
@@ -575,10 +585,8 @@ switch maptype
                             ' and is stored in .uni_imp_frc. The remaining maps are stored as surface properties.']);
                         mapData{end+1} = dataXml{iXml}.dxgeo.uni;
                         mapType{end+1} = ['Additional UNI map ' num2str(nunmel(mapType))];
-
                         iStatus = dataXml{iXml}.dxgeo.map_status;
                         mapData{end}(iStatus==2) = NaN;
-
                     end
                     dataIdentified = true;
 
@@ -867,7 +875,7 @@ thisFilename = 'Wave_rov.csv';
 [rovInfo, rovVarnames, rovData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
 %import the unipolar electrograms
-switch type
+switch egmtype
     case 'bi'
         %import uni distal
         thisFilename = 'Wave_uni_distal.csv';
@@ -991,18 +999,25 @@ end
 
 %% Calculate annotation times
 
+% first we need to find out which file stored in mappingData is labelled as
+% a local activation time map.
+isLAT = cellfun(@(s) contains(s.info.mapType, 'LAT'), mappingData);
+if sum(isLAT)>1
+    error(['IMPORTENSITEX_OPENEP: Too many local activation time mapping files found in folder ' wavesFolder '. Please ensure only one Map_LAT_*.csv file is present.']);
+end
+
 % these are all in samples
-refTick_adj   = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'Ref Tick'))); % _adj because these already reflect the user adjustments
-rovTick_adj   = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'Rov Tick 1')));
+refTick_adj   = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'Ref Tick'))); % _adj because these already reflect the user adjustments
+rovTick_adj   = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'Rov Tick 1')));
 
 %TODO: CHECK THESE TIMES ARE ADJUSTED APPROPRIATELY
-leftCurtain     = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'left curtain (ms)'))) / 1000 * rovInfo.sampleFreq;
-rightCurtain    = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'right curtain (ms)'))) / 1000 * rovInfo.sampleFreq;
+leftCurtain     = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'left curtain (ms)'))) / 1000 * rovInfo.sampleFreq;
+rightCurtain    = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'right curtain (ms)'))) / 1000 * rovInfo.sampleFreq;
 
 startTime_s       = str2double(rovData(:,strcmpi(rovVarnames, 'startTime (abs)'))); % this comes from the roving wave file
-refTime_s         = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'refTime (abs)'))); % this comes from the mapping file
-adjTime_ms        = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'adjTime (ms)'))); % from the mapping file
-lat_ms            = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'LAT'))); % from the mapping file
+refTime_s         = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'refTime (abs)'))); % this comes from the mapping file
+adjTime_ms        = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'adjTime (ms)'))); % from the mapping file
+lat_ms            = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'LAT'))); % from the mapping file
 adjTime_samples   = adjTime_ms / 1000 * rovInfo.sampleFreq;
 
 % annot method time based
@@ -1053,7 +1068,27 @@ if strcmpi(annotMethod, 'tickbased') && strcmpi(adjustTimes, 'no')
     latAnnot = latAnnot_tick_noadj;
 end
 
+% Calculate the windows of interest
+leftCurtain = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'left curtain (ms)'))) / 1000 * rovInfo.sampleFreq;
+rightCurtain = str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'right curtain (ms)'))) / 1000 * rovInfo.sampleFreq;
 
+
+
+
+
+
+
+
+%% Calculate voltages
+
+isPP = cellfun(@(s) contains(s.info.mapType, 'PP'), mappingData);
+if sum(isPP)>1
+    error(['IMPORTENSITEX_OPENEP: Too many peak to peak mapping files found in folder ' wavesFolder '. Please ensure only one Map_PP_*.csv file is present.']);
+end
+
+bipolarVoltages = str2double(mappingData{isPP}.data(:,strcmpi(mappingData{isPP}.varnames, 'P-P')));
+includeFlag = str2double(mappingData{isPP}.data(:,strcmpi(mappingData{isPP}.varnames, 'utilized')));
+pointNumberFromFile = mappingData{isPP}.data(:,strcmpi(mappingData{isPP}.varnames, '(Point #)'));
 
 
 
@@ -1068,27 +1103,36 @@ end
 userdata = openep_createuserdata();
 userdata.systemName = 'ensitex';
 userdata.notes{1} = [date() ': Created'];
-userdata.ensitexFolder = studyDir;
+
+% this is the directory containing the Contact_Mapping folder that the 
+% electrograms came from; noting that Contact_Mapping_Model.xml files might
+% have been parsed from adjacent directories.
+userdata.notes{end+1} = [date() ': userdata.ensitexFolder stores the directory containing the Contact_Mapping folder that was parsed. Additional Contact_Mapping_Model.xml files might have been parsed from adjacent directories.'];
+userdata.ensitexFolder = fileparts(T(mapID,:).egmfiles{egmID}); 
 userdata.electric.sampleFrequency = rovInfo.sampleFreq;
 
 % Geometry
 userdata.surface.triRep = t;
-surfaceData = data_geometry.dxgeo.surface_of_origin;
-userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceData, 'definedOn', 'elements');
 userdata.surface.normals = normals;
+
+surfaceOfOrigin = data_geometry.dxgeo.surface_of_origin;
+userdata = setSurfaceProperty(userdata, 'name', 'surfaceOfOrigin', 'map', surfaceOfOrigin, 'definedOn', 'elements');
+
 
 % Surface maps, removing invalid data beyond interpolation distance
 userdata.surface.act_bip = [act bip];
 userdata.surface.uni_imp_frc = [uni imp frc];
 
-% Electric data
-userdata.electric.electrodeNames_bip    = mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'Rov trace'));
-userdata.electric.egmX                  = [str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'roving x'))) ...
-    str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'roving y'))) ...
-    str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'roving z')))];
-userdata.electric.egmSurfX              = [str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'surface x'))) ...
-    str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'surface y'))) ...
-    str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'surface z')))];
+% Electric data - this should be refactored and moved higher in the code.
+% In this section we should only have pre-calculated variables and be
+% storing them in userdata, for clarity.
+userdata.electric.electrodeNames_bip    = mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'Rov trace'));
+userdata.electric.egmX                  = [str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'roving x'))) ...
+    str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'roving y'))) ...
+    str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'roving z')))];
+userdata.electric.egmSurfX              = [str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'surface x'))) ...
+    str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'surface y'))) ...
+    str2double(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames, 'surface z')))];
 userdata.electric.egmRef                = local_concatdata(refData(:,strcmpi(refVarnames,'signals')) ...
     ,refData(:,strcmpi(refVarnames,'Freeze Grp #')) ...
     ,rovData(:,strcmpi(rovVarnames,'Freeze Grp #')) ...
@@ -1097,33 +1141,37 @@ userdata.electric.egm                   = local_concatdata(rovData(:,strcmpi(rov
 
 userdata.electric.annotations.referenceAnnot = refAnnot;
 userdata.electric.annotations.mapAnnot  = latAnnot;
-userdata.electric.annotations.woi       = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'left curtain (ms)'))) / 1000 * userdata.electric.sampleFrequency;
-userdata.electric.annotations.woi(:,2)  = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'right curtain (ms)'))) / 1000 * userdata.electric.sampleFrequency;
+userdata.electric.annotations.woi       = leftCurtain;
+userdata.electric.annotations.woi(:,2)  = rightCurtain;
 
-userdata.electric.voltages.bipolar      = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'P-P')));
-userdata.electric.include               = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'utilized')));
-userdata.electric.names                 = mappingPoints.data(:,strcmpi(mappingPoints.varnames, '(Point #)'));
+%userdata.electric.annotations.woi       = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'left curtain (ms)'))) / 1000 * userdata.electric.sampleFrequency;
+%userdata.electric.annotations.woi(:,2)  = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'right curtain (ms)'))) / 1000 * userdata.electric.sampleFrequency;
 
-userdata.electric.electrodeNames_uni    = local_parseuninames(mappingPoints.data(:,strcmpi(mappingPoints.varnames,'Electrodes')));
+userdata.electric.voltages.bipolar   = bipolarVoltages;
+userdata.electric.include            = includeFlag;
+userdata.electric.names               = pointNumberFromFile;
 
+% userdata.electric.voltages.bipolar      = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'P-P')));
+% userdata.electric.include               = str2double(mappingPoints.data(:,strcmpi(mappingPoints.varnames, 'utilized')));
+% userdata.electric.names                 = mappingPoints.data(:,strcmpi(mappingPoints.varnames, '(Point #)'));
+
+% Unipolar electrograms
+userdata.electric.electrodeNames_uni    = local_parseuninames(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames,'Electrodes')));
 userdata.electric.egmUni = zeros([size(userdata.electric.egm) size(userdata.electric.egmUniX,3)]);
 
-
-
-
-
 % Unipolar electrogram locations are stored differently for standard and omnipolar configurations
-switch type
-    case 'standard'
-        disp('IMPORTENSITEX_OPENEP: Parsing unipolar co-ordinates for omnipolar configuration ...');
+switch egmtype
+    case 'bi'
+        disp('IMPORTENSITEX_OPENEP: Parsing unipolar co-ordinates for bipolar configuration ...');
 
-        warning('IMPORTENSITEX_OPENEP: When a map is exported in non-unipolar mode we are not given the individual unipole co-ordinates ... assuming uni distal and uni proximal are at the same location')
+        warning('IMPORTENSITEX_OPENEP: When a map is exported we are not given the individual unipole co-ordinates ... assuming uni distal and uni proximal are at the same location')
+        userdata.electric.egmUniX = cat(3, userdata.electric.egmX, userdata.electric.egmX);
 
-        userdata.electric.egmUniX = [userdata.electric.egmX; userdata.electric.egmX];
+        disp('IMPORTENSITEX_OPENEP: Parsing unipolar electrograms for bipolar configuration ...');
+        userdata.electric.egmUni(:,:,1) = local_concatdata(uniDistData(:,strcmpi(uniDisVarnames,'signals')),[],[],uniDistInfo.filename);
+        userdata.electric.egmUni(:,:,2) = local_concatdata(uniProxData(:,strcmpi(uniProxVarnames,'signals')),[],[],uniProxInfo.filename);
 
-        disp('IMPORTENSITEX_OPENEP: Finished parsing unipolar co-ordinates ...');
-
-    case 'omnipolar'
+    case 'omni'
         disp('IMPORTENSITEX_OPENEP: Parsing unipolar co-ordinates for omnipolar configuration ...');
 
         % now we need to locate the correct co-ordinates from mappingPoints,
@@ -1134,10 +1182,10 @@ switch type
         uni2Assigned = false;
         uni3Assigned = false;
         for iPoint = 1:size(userdata.electric.electrodeNames_uni,1)
-            if strcmpi(userdata.electric.electrodeNames_uni{iPoint,1}, mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_Corner_Elec')))
-                X = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_CornerX'));
-                Y = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_CornerY'));
-                Z = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_CornerZ'));
+            if strcmpi(userdata.electric.electrodeNames_uni{iPoint,1}, mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_Corner_Elec')))
+                X = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_CornerX'));
+                Y = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_CornerY'));
+                Z = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_CornerZ'));
                 userdata.electric.egmUniX(iPoint,1:3,1) = str2double([X Y Z]);
 
                 % Identify the correct uni data and varnames - corner
@@ -1150,10 +1198,10 @@ switch type
             else
                 error('IMPORTENSITEX_OPENEP: Electrode naming mismatch')
             end
-            if strcmpi(userdata.electric.electrodeNames_uni{iPoint,2}, mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_Along_Elec')))
-                X = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_AlongX'));
-                Y = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_AlongY'));
-                Z = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_AlongZ'));
+            if strcmpi(userdata.electric.electrodeNames_uni{iPoint,2}, mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_Along_Elec')))
+                X = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AlongX'));
+                Y = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AlongY'));
+                Z = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AlongZ'));
                 userdata.electric.egmUniX(iPoint,1:3,2) = str2double([X Y Z]);
 
                 % Identify the correct uni data and varnames - along
@@ -1166,10 +1214,10 @@ switch type
             else
                 error('IMPORTENSITEX_OPENEP: Electrode naming mismatch')
             end
-            if strcmpi(userdata.electric.electrodeNames_uni{iPoint,3}, mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_Across_Elec')))
-                X = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_AcrossX'));
-                Y = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_AcrossY'));
-                Z = mappingPoints.data(iPoint,strcmpi(mappingPoints.varnames,'Uni_AcrossZ'));
+            if strcmpi(userdata.electric.electrodeNames_uni{iPoint,3}, mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_Across_Elec')))
+                X = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AcrossX'));
+                Y = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AcrossY'));
+                Z = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AcrossZ'));
                 userdata.electric.egmUniX(iPoint,1:3,3) = str2double([X Y Z]);
 
                 % Identify the corret uni data and varnames - across
@@ -1192,66 +1240,65 @@ switch type
         disp('IMPORTENSITEX_OPENEP: Finished parsing unipolar co-ordinates ...');
 end
 
-% Store any additional signals in the ecg array
-disp('dealing with ECG electrograms')
-userdata.electric.ecgNames = {};
-if ~isempty(extraFilesInfo)
-    % for speed first work out the dimensions and pre-populate
-    fWait = waitbar(0, 'Storing additional ECG names');
-    for iEF = 1:numel(extraFilesInfo)
-        if any(strcmpi(extraFilesVarnames{iEF}, 'signals'))
-            % Then, this extra file contains signal data - store these in
-            % the ECG array.
-
-            % First check for unique electrode names in this file
-            electrodes = unique(extraFilesData{iEF}(:,1));
-
-            % Remove any non-ASCII characters, leading or trailing spaces
-            % and duplicate rows (cElectrodes for 'clean electrodes')
-            cElectrodes = unique(cellfun(@(s) strtrim(regexprep(s, '[^\x00-\x7F]', '')), electrodes, 'UniformOutput', false));
-
-            % Add electrode names to the ecgNames cell array
-            userdata.electric.ecgNames = union(userdata.electric.ecgNames, cElectrodes);
-        else
-            % Then, this extra file does not contain signal data. If the
-            % file has not already been imported (we do not yet have a
-            % check for this) then it is likely to be an additional mapping
-            % file. Do nothing for the time being.
-        end
-        waitbar(iEF/numel(extraFilesInfo),fWait);
-    end
-    close(fWait);
-
-    % prepopulate for speed
-    userdata.electric.ecg = zeros([size(userdata.electric.egm) size(userdata.electric.ecgNames,1)]);
-
-    fWait = waitbar(0, 'Storing additional ECG data');
-    for iEF = 1:numel(extraFilesInfo)
-        % check if this is a signals file
-        if any(strcmpi(extraFilesVarnames{iEF}, 'signals'))
-            % Next we iterate through every signal and work out where to
-            % put it in the ECG array.
-
-            for jSg = 1:size(extraFilesData{iEF},1)
-                thisSig = extraFilesData{iEF}(jSg,strcmpi(extraFilesVarnames{iEF},'signals'));
-                thisName = extraFilesData{iEF}(jSg,strcmpi(extraFilesVarnames{iEF},'Trace'));
-
-                % clean the name
-                thisName = strtrim(regexprep(thisName, '[^\x00-\x7F]', ''));
-
-                userdata.electric.ecg(jSg,:,strcmpi(userdata.electric.ecgNames, thisName)) = thisSig{:};
-            end
-        else
-            % Then, this extra file does not contain signal data. If the
-            % file has not already been imported (we do not yet have a
-            % check for this) then it is likely to be an additional mapping
-            % file. Do nothing for the time being.
-        end
-        waitbar(iEF/numel(extraFilesInfo),fWait);
-    end
-    close(fWait);
-
-end
+% % Store any additional signals in the ecg array
+% disp('dealing with ECG electrograms')
+% userdata.electric.ecgNames = {};
+% if ~isempty(extraFilesInfo)
+%     % for speed first work out the dimensions and pre-populate
+%     fWait = waitbar(0, 'Storing additional ECG names');
+%     for iEF = 1:numel(extraFilesInfo)
+%         if any(strcmpi(extraFilesVarnames{iEF}, 'signals'))
+%             % Then, this extra file contains signal data - store these in
+%             % the ECG array.
+% 
+%             % First check for unique electrode names in this file
+%             electrodes = unique(extraFilesData{iEF}(:,1));
+% 
+%             % Remove any non-ASCII characters, leading or trailing spaces
+%             % and duplicate rows (cElectrodes for 'clean electrodes')
+%             cElectrodes = unique(cellfun(@(s) strtrim(regexprep(s, '[^\x00-\x7F]', '')), electrodes, 'UniformOutput', false));
+% 
+%             % Add electrode names to the ecgNames cell array
+%             userdata.electric.ecgNames = union(userdata.electric.ecgNames, cElectrodes);
+%         else
+%             % Then, this extra file does not contain signal data. If the
+%             % file has not already been imported (we do not yet have a
+%             % check for this) then it is likely to be an additional mapping
+%             % file. Do nothing for the time being.
+%         end
+%         waitbar(iEF/numel(extraFilesInfo),fWait);
+%     end
+%     close(fWait);
+% 
+%     % prepopulate for speed
+%     userdata.electric.ecg = zeros([size(userdata.electric.egm) size(userdata.electric.ecgNames,1)]);
+% 
+%     fWait = waitbar(0, 'Storing additional ECG data');
+%     for iEF = 1:numel(extraFilesInfo)
+%         % check if this is a signals file
+%         if any(strcmpi(extraFilesVarnames{iEF}, 'signals'))
+%             % Next we iterate through every signal and work out where to
+%             % put it in the ECG array.
+% 
+%             for jSg = 1:size(extraFilesData{iEF},1)
+%                 thisSig = extraFilesData{iEF}(jSg,strcmpi(extraFilesVarnames{iEF},'signals'));
+%                 thisName = extraFilesData{iEF}(jSg,strcmpi(extraFilesVarnames{iEF},'Trace'));
+% 
+%                 % clean the name
+%                 thisName = strtrim(regexprep(thisName, '[^\x00-\x7F]', ''));
+% 
+%                 userdata.electric.ecg(jSg,:,strcmpi(userdata.electric.ecgNames, thisName)) = thisSig{:};
+%             end
+%         else
+%             % Then, this extra file does not contain signal data. If the
+%             % file has not already been imported (we do not yet have a
+%             % check for this) then it is likely to be an additional mapping
+%             % file. Do nothing for the time being.
+%         end
+%         waitbar(iEF/numel(extraFilesInfo),fWait);
+%     end
+%     close(fWait);
+% end
 
 % set up the surface normals
 tr = getMesh(userdata, 'triangulation');
@@ -1287,7 +1334,7 @@ if ~isempty(saveFileName)
     save(saveFileName, 'userdata');
     matFileFullPath = saveFileName;
 else
-    defaultName = [mappingPoints.info.study '_' mappingPoints.info.mapName];
+    defaultName = [mappingData{isLAT}.info.study '_' mapToRead];
     defaultName(isspace(defaultName)) = '_';
     originalDir = cd();
     matFileFullPath = fullfile(saveDir, defaultName); %default

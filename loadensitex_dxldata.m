@@ -133,9 +133,13 @@ end
 numericColumnsToRead = tfNumHeaders;
 varColumnsToRead = ~tfNumHeaders;
 if isfield(info, 'mapType')
-    parseMethod = 'internal'; % we are dealing with a map file
+    if ~strcmpi(info.mapType, 'N/A')
+        parseMethod = 'internal' % we are dealing with a map file
+    else 
+        parseMethod = 'regexp' % we are dealing with a wave file
+    end
 else
-    parseMethod = 'regexp'; % faster for dealing with wave data
+    parseMethod = 'regexp' % faster for dealing with wave data
 end
 data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext], parseMethod);
 
