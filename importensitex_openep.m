@@ -1168,7 +1168,7 @@ switch egmtype
         userdata.electric.egmUniX = cat(3, userdata.electric.egmX, userdata.electric.egmX);
 
         disp('IMPORTENSITEX_OPENEP: Parsing unipolar electrograms for bipolar configuration ...');
-        userdata.electric.egmUni(:,:,1) = local_concatdata(uniDistData(:,strcmpi(uniDisVarnames,'signals')),[],[],uniDistInfo.filename);
+        userdata.electric.egmUni(:,:,1) = local_concatdata(uniDistData(:,strcmpi(uniDistVarnames,'signals')),[],[],uniDistInfo.filename);
         userdata.electric.egmUni(:,:,2) = local_concatdata(uniProxData(:,strcmpi(uniProxVarnames,'signals')),[],[],uniProxInfo.filename);
 
     case 'omni'
