@@ -1475,7 +1475,9 @@ end
         for iPair = 1:nPairs
             splt = strsplit(A{iPair});
             for j = 1:numel(splt)
-                uniNames{iPair,j} = splt{j};
+                if ~isempty(splt{j})
+                    uniNames{iPair,j} = splt{j};
+                end
             end
             % uniNames{iPair,1} = splt{1};
             % uniNames{iPair,2} = splt{2};
