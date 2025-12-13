@@ -129,11 +129,15 @@ else
     varnames = dataHeaders;
 end
 
+% we are already at the right line in the file as we just read the header line before the data
 numericColumnsToRead = tfNumHeaders;
 varColumnsToRead = ~tfNumHeaders;
-% we are already at the right line in the file as we just read the header line before the data
-
-data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext]);
+if isfield(info, 'mapType')
+    parseMethod = 'internal'; % we are dealing with a map file
+else
+    parseMethod = 'regexp'; % faster for dealing with wave data
+end
+data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext], parseMethod);
 
 end
 
@@ -155,7 +159,7 @@ for iPt=1:size(rawdata,2)
 end
 end
 
-function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples, fname)
+function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples, fname, parseMethod)
 %   nSamples - the number of samples to read; which may be a number of
 %   points or a number of freeze groups
 %   columnsToRead - logical array indicating which columns will be read
@@ -196,56 +200,69 @@ while remainingBytes>0
     % save the remaining data for the next time round
     remainingData = temp;
 
-    % split the text at commas
-    dataChunkCellArray = regexp(dataChunk', ',', 'split'); % deals with successive delimiters correctly in contrast to strsplit(dataChunk', ',');
+    switch parseMethod
+        % This section needs to output reshapedData and wholeLinesRead
+        % The internal method is robust and seems to work with most files
+        % but is quite slow. The regexp method is much faster but fails
+        % with some mapping files. 
+        %
+        % We need to confirm but the regexp method MIGHT work fine with all
+        % wave files; in which case we will detault to using INTERNAL for
+        % mapping files and REGEXP for wave files.
+        case 'internal'
+            % Internal method - robust but very slow
+            dataChunkCellArray = parseCSVString(dataChunk);
+            reshapedData = dataChunkCellArray(:, 1:nCol);  % remove extra columns
 
-    % remove any leading or trailing empty cells if needed
-    if isempty(dataChunkCellArray{1})
-        dataChunkCellArray(1) = [];
+            numLinesRead = numel(reshapedData) / nCol;
+            wholeLinesRead = floor(numLinesRead);
+
+        case 'regexp'
+            % split the text at commas
+            dataChunkCellArray = regexp(dataChunk', ',', 'split'); % deals with successive delimiters correctly in contrast to strsplit(dataChunk', ',');
+
+            %remove any leading or trailing empty cells if needed
+            if isempty(dataChunkCellArray{1})
+                dataChunkCellArray(1) = [];
+            end
+            if isempty(dataChunkCellArray{end})
+                dataChunkCellArray(end) = [];
+            end
+            if strcmpi(dataChunkCellArray{end}(2:end), 'EOF')
+                dataChunkCellArray(end) = [];
+            end
+
+            % % work out the valid cells
+            numLinesRead = numel(dataChunkCellArray) / nCol;
+            wholeLinesRead = floor(numLinesRead);
+
+            if numLinesRead > wholeLinesRead
+                % there was overhanging data, so increment nCol
+                nCol = nCol + 1;
+            end
+
+            % reshape the data
+            reshapedData = reshape(dataChunkCellArray(1:nCol*wholeLinesRead),[nCol, wholeLinesRead]);
+            reshapedData = reshapedData';
+
+            if numLinesRead > wholeLinesRead
+                % there was overhanging data, now is the time to remove it
+                reshapedData(:,end) = [];
+                % and decrement nCol
+                nCol = nCol-1;
+            end
     end
-    if isempty(dataChunkCellArray{end})
-        dataChunkCellArray(end) = [];
-    end
-    if strcmpi(dataChunkCellArray{end}(2:end), 'EOF')
-        dataChunkCellArray(end) = [];
-    end
 
-    % work out the valid cells
-    numLinesRead = numel(dataChunkCellArray) / nCol;
-    wholeLinesRead = floor(numLinesRead);
-
-    if numLinesRead > wholeLinesRead
-        % there was overhanging data, so increment nCol
-        nCol = nCol + 1;
-    end
-
-    % check if we need to insert extra cells
-
-    % reshape the data
-    reshapedData = reshape(dataChunkCellArray(1:nCol*wholeLinesRead),[nCol, wholeLinesRead]);
-    reshapedData = reshapedData';
-
-    if numLinesRead > wholeLinesRead
-        % there was overhanging data, now is the time to remove it
-        reshapedData(:,end) = [];
-        % and decrement nCol
-        nCol = nCol-1;
-    end
-
-    % Deal first with the numeric data -----
-
-    % only keep the columns we want for signal data
+    % Deal first with the numeric data - only keep the columns we want for signal data
     thisSignalData = reshapedData(:,numericColumnsToRead);
 
-    % equivalent to, but much faster than
-    %allData(currentLine:currentLine+wholeLinesRead-1,1:nColToRead) = str2double(thisEgmData);
+    % equivalent to, but much faster than, allData(currentLine:currentLine+wholeLinesRead-1,1:nColToRead) = str2double(thisEgmData);
     doubleValues = sscanf(sprintf(' %s',thisSignalData{:}),'%f',[1,Inf]);
     doubleValueReshaped = reshape(doubleValues, size(thisSignalData));
     allNumericData(currentLine:currentLine+wholeLinesRead-1,1:nNumericColToRead) = doubleValueReshaped;
 
-    % Now deal with the variables data -----
-
-    thisVarData = reshapedData(:,~numericColumnsToRead);
+    % Now deal with the variables data
+    thisVarData = reshapedData(:,varColumnsToRead); %opposite of numericColumnsToRead
     allVarData(currentLine:currentLine+wholeLinesRead-1,1:(nCol) - nNumericColToRead) = thisVarData;
 
     % increment the current line index, waitbar and remaining bytes
@@ -261,9 +278,110 @@ close(f)
 allOutput = allVarData;
 if ~isempty(allNumericData) %check if we are dealing with a map or an electrogram file ...
     widthOfAllOutput = size(allOutput,2);
-    for i = 1:size(allNumericData,1)
-        allOutput{i,widthOfAllOutput+1} = allNumericData(i,:);
+    for iD = 1:size(allNumericData,1)
+        allOutput{iD,widthOfAllOutput+1} = allNumericData(iD,:);
     end
 end
+
+    function C = parseCSVString(s)
+        % parseCSVString Parse CSV from a character vector into a cell array.
+        %   C = parseCSVString(s) returns an MxN cell array of char, where each
+        %   row is a CSV record and each column a field. Quoted fields and
+        %   embedded commas/newlines are handled. Empty fields are preserved.
+        %
+        %   Input:
+        %     s - character vector (single string) containing the whole CSV text.
+        %
+        % Example:
+        %   s = 'A,"B, with comma",,C\n"D with ""quote""",E,';
+        %   C = parseCSVString(s);
+
+        if ~ischar(s) && ~isstring(s)
+            error('Input must be a character vector or string.');
+        end
+        s = char(s);                % ensure char vector
+        n = numel(s);
+
+        rows = {};                  % cell array of rows (each row is a cell vector)
+        curField = '';              % current field buffer (char)
+        curRow = {};                % current row (cell array)
+        inQuote = false;
+        i = 1;
+
+        while i <= n
+            ch = s(i);
+            if ch == '"'         % quote handling
+                if inQuote
+                    % possible escaped quote: lookahead
+                    if i < n && s(i+1) == '"'
+                        curField(end+1) = '"'; % append one quote
+                        i = i + 1;             % skip the escaped quote
+                    else
+                        % closing quote
+                        inQuote = false;
+                    end
+                else
+                    % starting quote (enter quoted mode)
+                    inQuote = true;
+                end
+                i = i + 1;
+                continue;
+            end
+
+            if ~inQuote
+                if ch == ','    % field separator
+                    curRow{end+1} = curField; %#ok<AGROW>
+                    curField = '';
+                    i = i + 1;
+                    continue;
+                end
+
+                % newline handling: support \r\n, \n, or \r
+                if ch == sprintf('\r')    % CR
+                    % check for CRLF
+                    if i < n && s(i+1) == sprintf('\n')
+                        i = i + 2;
+                    else
+                        i = i + 1;
+                    end
+                    % finish row
+                    curRow{end+1} = curField; %#ok<AGROW>
+                    rows{end+1,1} = curRow;    %#ok<AGROW>
+                    curRow = {}; curField = '';
+                    inQuote = false;
+                    continue;
+                elseif ch == sprintf('\n') % LF
+                    i = i + 1;
+                    curRow{end+1} = curField; %#ok<AGROW>
+                    rows{end+1,1} = curRow;    %#ok<AGROW>
+                    curRow = {}; curField = '';
+                    inQuote = false;
+                    continue;
+                end
+            end
+
+            % normal character (either inside quotes or plain text)
+            curField(end+1) = ch;
+            i = i + 1;
+        end
+
+        % End of input: push remaining field/row
+        % If the input ended while inside a quoted field, we treat it as finished.
+        curRow{end+1} = curField;
+        rows{end+1,1} = curRow;
+
+        % Convert rows (cell of cell) into a rectangular M-by-N cell array padded with ''
+        M = numel(rows);
+        maxCols = 0;
+        for r = 1:M
+            maxCols = max(maxCols, numel(rows{r}));
+        end
+
+        C = repmat({''}, M, maxCols);
+        for r = 1:M
+            rowCells = rows{r};
+            C(r,1:numel(rowCells)) = rowCells;
+        end
+    end
 
 end

@@ -777,152 +777,210 @@ disp('!!!! FINISHED PARSING MAPPING DATA ACCCORDING TO USER WISHES !!!!')
 
 
 
-%% Parse electrogram metrics by loading the Map files
+%% Parse annotation metrics by loading the Map files
+
+mappingPointsFolder = T(mapID,:).egmfiles{egmID};
+csvFiles = local_findAllCsvFiles(mappingPointsFolder);
+csvHeaders = [];
+for iFile = 1:numel(csvFiles)
+    tempCsvHeader = local_loadCsvFileHeader(csvFiles{iFile});
+    if ~strcmp(tempCsvHeader.mapType, 'N/A') % we want the files where mapType is NOT N/A
+        csvHeaders{end+1} = tempCsvHeader;
+    end
+end
+for iFile = 1:numel(csvHeaders)
+    [info, varnames, data] = loadensitex_dxldata(csvHeaders{iFile}.filename);
+    mappingData{iFile}.info = info;
+    mappingData{iFile}.varnames = varnames;
+    mappingData{iFile}.data = data;
+end
+
 
 % work out the mapping points file names
-switch type
-    case 'standard'
-        mapCSV = 'Map_LAT_bi.csv';
-        voltCSV = 'Map_PP_bi.csv';
-
-    case 'omnipolar'
-        mapCSV = 'Map_LAT_omni.csv';
-        voltCSV = 'Map_PP_omni.csv';
-
-end
-%load the mapping points data
-latMapDir = []; %TEMP
-[info, varnames, data] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() mapCSV]);
-mappingPoints.info = info;
-mappingPoints.varnames = varnames;
-mappingPoints.data = data;
-
-ppMapDir = []; % TEMP
-%additionally get the substrate mapping data for each point (there is unavoidable redundancy here)
-[info, varnames, data] = loadensitex_dxldata([ppMapDir{:} filesep() 'Contact_Mapping' filesep() voltCSV]);
-voltageData.info = info;
-voltageData.varnames = varnames;
-voltageData.data = data;
-
-% do some simple checks for compatibility between the PP and LAT datasets
-isError = false;
-if mappingPoints.info.numPoints ~= voltageData.info.numPoints
-    warning('IMPORTENSITEX_OPENEP: Mismatch between number of points in the voltage and activation time datasets');
-    isError = true;
-end
-if ~strcmpi(mappingPoints.info.mapName, voltageData.info.mapName)
-    warning('IMPORTENSITEX_OPENEP: Mismatch between map names in the voltage and activation time datasets');
-    isError = true;
-end
-if ~strcmpi(mappingPoints.info.study, voltageData.info.study)
-    warning('IMPORTENSITEX_OPENEP: Mismatch between study names in the voltage and activation time datasets');
-    isError = true;
-end
-if isError
-    error('IMPORTENSITEX_OPENEP: Error parsing data. See warnings above for hints');
-end
-% TODO: there are likely to be other checks we could add in here
-
-% access the voltage data from the PP data and save along with the LAT data
-ppStr = 'P-P'; ppValidStr = 'P-P valid';
-mappingPoints.varnames{end+1} = ppStr;
-mappingPoints.varnames{end+1} = ppValidStr;
-ppData = voltageData.data(:,strcmpi(voltageData.varnames, ppStr));
-ppValidData = voltageData.data(:,strcmpi(voltageData.varnames, ppValidStr));
-
-% concatenate
-mappingPoints.data = [mappingPoints.data ppData ppValidData];
-
-
+% switch type
+%     case 'standard'
+%         mapCSV = 'Map_LAT_bi.csv';
+%         voltCSV = 'Map_PP_bi.csv';
+% 
+%     case 'omnipolar'
+%         mapCSV = 'Map_LAT_omni.csv';
+%         voltCSV = 'Map_PP_omni.csv';
+% 
+% end
+% %load the mapping points data
+% latMapDir = []; %TEMP
+% [info, varnames, data] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() mapCSV]);
+% mappingPoints.info = info;
+% mappingPoints.varnames = varnames;
+% mappingPoints.data = data;
+% 
+% ppMapDir = []; % TEMP
+% %additionally get the substrate mapping data for each point (there is unavoidable redundancy here)
+% [info, varnames, data] = loadensitex_dxldata([ppMapDir{:} filesep() 'Contact_Mapping' filesep() voltCSV]);
+% voltageData.info = info;
+% voltageData.varnames = varnames;
+% voltageData.data = data;
+% 
+% % do some simple checks for compatibility between the PP and LAT datasets
+% isError = false;
+% if mappingPoints.info.numPoints ~= voltageData.info.numPoints
+%     warning('IMPORTENSITEX_OPENEP: Mismatch between number of points in the voltage and activation time datasets');
+%     isError = true;
+% end
+% if ~strcmpi(mappingPoints.info.mapName, voltageData.info.mapName)
+%     warning('IMPORTENSITEX_OPENEP: Mismatch between map names in the voltage and activation time datasets');
+%     isError = true;
+% end
+% if ~strcmpi(mappingPoints.info.study, voltageData.info.study)
+%     warning('IMPORTENSITEX_OPENEP: Mismatch between study names in the voltage and activation time datasets');
+%     isError = true;
+% end
+% if isError
+%     error('IMPORTENSITEX_OPENEP: Error parsing data. See warnings above for hints');
+% end
+% % TODO: there are likely to be other checks we could add in here
+% 
+% % access the voltage data from the PP data and save along with the LAT data
+% ppStr = 'P-P'; ppValidStr = 'P-P valid';
+% mappingPoints.varnames{end+1} = ppStr;
+% mappingPoints.varnames{end+1} = ppValidStr;
+% ppData = voltageData.data(:,strcmpi(voltageData.varnames, ppStr));
+% ppValidData = voltageData.data(:,strcmpi(voltageData.varnames, ppValidStr));
+% 
+% % concatenate
+% mappingPoints.data = [mappingPoints.data ppData ppValidData];
 
 
 
 
 
+%% Parse electrogram data by loading the Wave files
 
-
-
-%% Now load the electrogram data by loading the Wave files (new equivalent of DxL files)
-
-% first load the rovinig trace (Wave_rov.csv),
-% next load the reference trace (Wave_ref.csv),
-% then load the unipolar electrograms, (Wave_uni_distal.csv, Wave_uni_along.csv), and
-% finally load any other wave files that are present
-
-%create loadedFiles boolean array to keep track of which wave files have already been loaded
-allFiles = nameFiles([latMapDir{:} filesep() 'Contact_Mapping']);
-waveFiles = find(~cellfun('isempty', regexp(allFiles, '^Wave', 'once')));
-loadedFiles = false(size(waveFiles));
+wavesFolder = T(mapID,:).egmfiles{egmID};
 
 %get the reference electrograms
 thisFilename = 'Wave_refs.csv';
-[refInfo, refVarnames, refData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-loadedFiles(iThisFile) = true;
+[refInfo, refVarnames, refData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
-
-%get the roving bipolar electrograms
+%get the roving electrograms
 thisFilename = 'Wave_rov.csv';
-[rovInfo, rovVarnames, rovData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-loadedFiles(iThisFile) = true;
+[rovInfo, rovVarnames, rovData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
 %import the unipolar electrograms
 switch type
-    case 'standard'
+    case 'bi'
         %import uni distal
-        thisFilename = 'Wave_uni_distal.csv'
-        [uniDistInfo, uniDistVarnames, uniDistData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-        iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-        loadedFiles(iThisFile) = true;
+        thisFilename = 'Wave_uni_distal.csv';
+        [uniDistInfo, uniDistVarnames, uniDistData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
         %import uni proximal
         thisFilename = 'Wave_uni_proximal.csv';
-        [uniProxInfo, uniProxVarnames, uniProxData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-        iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-        loadedFiles(iThisFile) = true;
+        [uniProxInfo, uniProxVarnames, uniProxData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
-    case 'omnipolar'
+    case 'omni'
         %import uni across
         thisFilename = 'Wave_uni_across.csv';
-        [uniAcrossInfo, uniAcrossVarnames, uniAcrossData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-        iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-        loadedFiles(iThisFile) = true;
+        [uniAcrossInfo, uniAcrossVarnames, uniAcrossData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
         %import uni along
         thisFilename = 'Wave_uni_along.csv';
-        [uniAlongInfo, uniAlongVarnames, uniAlongData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-        iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-        loadedFiles(iThisFile) = true;
+        [uniAlongInfo, uniAlongVarnames, uniAlongData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
 
         %import uni corner
         thisFilename = 'Wave_uni_corner.csv';
-        [uniCornerInfo, uniCornerVarnames, uniCornerData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
-        iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
-        loadedFiles(iThisFile) = true;
+        [uniCornerInfo, uniCornerVarnames, uniCornerData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+
+    case 'uni'
+        % In the case of uni electrogram mode, the roving electrogram is
+        % the unipolar electrogram used to create the map and there are no
+        % additional unipolar wave files so there is nothing else to do
 end
 
-%check for any other wave or map files
-if any(~loadedFiles)
-    % we have additional wave files, check whether to just load these or
-    % ask the user what to do
-    if loadallwavefiles
-        extraFilesToLoad = allFiles(~loadedFiles);
-        for iFile = 1:numel(extraFilesToLoad)
-            if strcmpi(extraFilesToLoad{iFile}, 'Wave_refs2.csv')
-                % This is to make sure that we do not attempt to load a
-                % Wave_refs2.csv file, which for now seemt to be empty.
-                % TODO: revisit Wave_refs2.csv files in the future if new
-                % data is present
-                continue
-            else
-                [extraFilesInfo{iFile}, extraFilesVarnames{iFile}, extraFilesData{iFile}] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() extraFilesToLoad{iFile}]);
-            end
-        end
-    else
-        warning('IMPORTENSITEX_OPENEP: Extra wave files identified, but code to ask the user what to do has not yet been implemented. For now if you want access to these wavefiles, re-run this programme with the option loadallwavefiles set to TRUE');
-    end
-end
+
+
+
+
+% %% Now load the electrogram data by loading the Wave files (new equivalent of DxL files)
+% 
+% % first load the rovinig trace (Wave_rov.csv),
+% % next load the reference trace (Wave_ref.csv),
+% % then load the unipolar electrograms, (Wave_uni_distal.csv, Wave_uni_along.csv), and
+% % finally load any other wave files that are present
+% 
+% %create loadedFiles boolean array to keep track of which wave files have already been loaded
+% allFiles = nameFiles([latMapDir{:} filesep() 'Contact_Mapping']);
+% waveFiles = find(~cellfun('isempty', regexp(allFiles, '^Wave', 'once')));
+% loadedFiles = false(size(waveFiles));
+% 
+% %get the reference electrograms
+% thisFilename = 'Wave_refs.csv';
+% [refInfo, refVarnames, refData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+% iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+% loadedFiles(iThisFile) = true;
+% 
+% 
+% %get the roving bipolar electrograms
+% thisFilename = 'Wave_rov.csv';
+% [rovInfo, rovVarnames, rovData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+% iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+% loadedFiles(iThisFile) = true;
+% 
+% %import the unipolar electrograms
+% switch type
+%     case 'standard'
+%         %import uni distal
+%         thisFilename = 'Wave_uni_distal.csv'
+%         [uniDistInfo, uniDistVarnames, uniDistData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+%         iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+%         loadedFiles(iThisFile) = true;
+% 
+%         %import uni proximal
+%         thisFilename = 'Wave_uni_proximal.csv';
+%         [uniProxInfo, uniProxVarnames, uniProxData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+%         iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+%         loadedFiles(iThisFile) = true;
+% 
+%     case 'omnipolar'
+%         %import uni across
+%         thisFilename = 'Wave_uni_across.csv';
+%         [uniAcrossInfo, uniAcrossVarnames, uniAcrossData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+%         iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+%         loadedFiles(iThisFile) = true;
+% 
+%         %import uni along
+%         thisFilename = 'Wave_uni_along.csv';
+%         [uniAlongInfo, uniAlongVarnames, uniAlongData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+%         iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+%         loadedFiles(iThisFile) = true;
+% 
+%         %import uni corner
+%         thisFilename = 'Wave_uni_corner.csv';
+%         [uniCornerInfo, uniCornerVarnames, uniCornerData] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() thisFilename]);
+%         iThisFile = find(~cellfun('isempty', regexp(allFiles, ['^' thisFilename], 'once')));
+%         loadedFiles(iThisFile) = true;
+% end
+
+% %check for any other wave or map files
+% if any(~loadedFiles)
+%     % we have additional wave files, check whether to just load these or
+%     % ask the user what to do
+%     if loadallwavefiles
+%         extraFilesToLoad = allFiles(~loadedFiles);
+%         for iFile = 1:numel(extraFilesToLoad)
+%             if strcmpi(extraFilesToLoad{iFile}, 'Wave_refs2.csv')
+%                 % This is to make sure that we do not attempt to load a
+%                 % Wave_refs2.csv file, which for now seemt to be empty.
+%                 % TODO: revisit Wave_refs2.csv files in the future if new
+%                 % data is present
+%                 continue
+%             else
+%                 [extraFilesInfo{iFile}, extraFilesVarnames{iFile}, extraFilesData{iFile}] = loadensitex_dxldata([latMapDir{:} filesep() 'Contact_Mapping' filesep() extraFilesToLoad{iFile}]);
+%             end
+%         end
+%     else
+%         warning('IMPORTENSITEX_OPENEP: Extra wave files identified, but code to ask the user what to do has not yet been implemented. For now if you want access to these wavefiles, re-run this programme with the option loadallwavefiles set to TRUE');
+%     end
+% end
 
 
 
