@@ -76,6 +76,11 @@ while iL < (numel(indNL)-1)
             error('OPENEP/PARSE_HEADER: exportFileVersion has already been set');
         else
             exportFileVersion = str2double(tokens{1}{1});
+
+            % *** TEMPORARY FIX - NEED TO UPDATE VERSION NUMBER PARSING ***
+            if isnan(exportFileVersion)
+                exportFileVersion = 5.6;
+            end
         end
     end
 
