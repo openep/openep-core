@@ -1,4 +1,4 @@
-function [info, varnames, data] = loadensitex_dxldata(filename)
+function [info, varnames, data] = loadensitex_dxldata(filename, varargin)
 % LOADPRECISION_DXLDATA loads the map stored in an EnSiteX DxL file.
 % Usage:
 %   [info, points, egms] = loadprecision_dxldata(filename)
@@ -21,6 +21,21 @@ function [info, varnames, data] = loadensitex_dxldata(filename)
 % ---------------------------------------------------------------
 % code
 % ---------------------------------------------------------------
+
+
+% parse command line input
+nStandardArgs = 1;
+showProgress = true;
+if nargin > nStandardArgs
+    for i = 1:2:nargin-nStandardArgs
+        switch lower(varargin{i})
+            case 'showprogress'
+                showProgress = varargin{i+1};
+            otherwise
+                error('LOADENSITEX_DXLDATA: Unrecognised input.');
+        end
+    end
+end
 
 disp(['LOADENSITEX_DXLDATA: Reading file: ' filename]);
 info = [];
@@ -141,7 +156,7 @@ if isfield(info, 'mapType')
 else
     parseMethod = 'regexp' % faster for dealing with wave data
 end
-data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext], parseMethod);
+data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext], parseMethod, showProgress);
 
 end
 
@@ -163,7 +178,7 @@ for iPt=1:size(rawdata,2)
 end
 end
 
-function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples, fname, parseMethod)
+function allOutput = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, nSamples, fname, parseMethod, showProgress)
 %   nSamples - the number of samples to read; which may be a number of
 %   points or a number of freeze groups
 %   columnsToRead - logical array indicating which columns will be read
@@ -180,7 +195,9 @@ remainingBytes = filebytes2end(fileID);
 totalBytes = remainingBytes;
 remainingData = [];
 set(0,'DefaultTextInterpreter','none')
-f = waitbar(0, ['Loading data from file: ' fname]);
+if showProgress
+    f = waitbar(0, ['Loading data from file: ' fname]);
+end
 while remainingBytes>0
     % Read chunk of data
     bytesToRead = min([maxBytes, remainingBytes+1]);     % The +1 ensures we read into the end of the file.
@@ -271,12 +288,16 @@ while remainingBytes>0
 
     % increment the current line index, waitbar and remaining bytes
     currentLine = currentLine+wholeLinesRead;
-    waitbar((totalBytes-remainingBytes)/totalBytes, f);
+    if showProgress
+        waitbar((totalBytes-remainingBytes)/totalBytes, f);
+    end
     remainingBytes = filebytes2end(fileID);
 end
 
 % destroy the waitbar
-close(f)
+if showProgress
+    close(f)
+end
 
 % assign the output
 allOutput = allVarData;
