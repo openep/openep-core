@@ -14,6 +14,9 @@ function area = triarea(varargin)
 
 % Author: Nick Linton (2010)
 % Modifications - 2013 capability for triangulation object added
+% 2026 - handle a situations where poorly formed triangles with two 
+% co-incident vertices return imaginary numbers. If such simplices exist, 
+% their area is now returned as 0.
 
 switch nargin
     case 1
@@ -60,4 +63,9 @@ c2 = sum(c.*c,2);
 s2 = a2+b2+c2;                  % s2 = sum of squared lenths
 s4 = a2.*a2 + b2.*b2 + c2.*c2;  % s4 = sum of fourth powered lengths
 
-area = 0.25 * sqrt(  s2.*s2 - 2*s4  );
+A = s2.*s2 - 2*s4;
+
+% Handle poorly formed triangles e.g. wtih co-incident vertices
+A(A<0) = 0;
+
+area = 0.25 * sqrt(A);
