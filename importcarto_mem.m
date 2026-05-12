@@ -746,7 +746,7 @@ for iMap = selection
 
     % Encourage user to save the data
     if ~isempty(saveFileName_cli)
-        save(saveFileName_cli, 'userdata');
+        save(saveFileName_cli, 'userdata', '-v7.3'); %needed as sometimes >2GB
         matFileFullPath = saveFileName_cli;
     else
         defaultName = [map.studyName '_' map.name];
