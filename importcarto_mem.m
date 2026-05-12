@@ -221,7 +221,7 @@ else
                 ' points identified. Check the number of points specified is correct.']);
         end
     elseif ischar(mapToRead_cli)
-        selection = find(strstartcmpi(mapToRead_cli, names));
+        selection = find(strcmpi(mapToRead_cli, names));
     end
 end
 
