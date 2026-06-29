@@ -54,7 +54,7 @@ end
 function extractionBase = chooseExtractionBase(requiredBytes)
 candidates = {};
 if isfolder('/dev/shm')
-    candidates{end+1} = '/dev/shm'; %#ok<AGROW>
+    candidates{end+1} = '/dev/shm';
 end
 candidates{end+1} = tempdir;
 

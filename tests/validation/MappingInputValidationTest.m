@@ -81,7 +81,7 @@ classdef MappingInputValidationTest < matlab.unittest.TestCase
             testCase.verifyTrue(isfolder(caseFolder));
             testCase.verifyTrue(info.wasArchive);
             testCase.verifyTrue(isfile(fullfile(caseFolder, 'map.mesh')));
-            clear cleanupObj
+            delete(cleanupObj);
             testCase.verifyFalse(isfolder(info.extractionRoot));
         end
     end
@@ -103,7 +103,7 @@ end
 function writeTextFile(filePath, text)
 fid = fopen(filePath, 'w');
 assert(fid ~= -1, 'Could not create test file: %s', filePath);
-cleanupObj = onCleanup(@() fclose(fid)); %#ok<NASGU>
+cleanupObj = onCleanup(@() fclose(fid));
 fprintf(fid, '%s', text);
 end
 

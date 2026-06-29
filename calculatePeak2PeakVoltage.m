@@ -29,8 +29,9 @@ nEgm = size(egms,1);
 V = NaN(nEgm,1);
 for iEgm = 1:nEgm
 
-    thisEgm = egms(iEgm,[refAnnot(iEgm)+woi(iEgm,1):refAnnot(iEgm)+woi(iEgm,2)]);
-    V(iEgm) = range(thisEgm);
+    sampleRange = refAnnot(iEgm)+woi(iEgm,1):refAnnot(iEgm)+woi(iEgm,2);
+    thisEgm = egms(iEgm, sampleRange);
+    V(iEgm) = max(thisEgm) - min(thisEgm);
 
 end
 end

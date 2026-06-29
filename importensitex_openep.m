@@ -24,6 +24,8 @@ function [userdata, matFileFullPath] = importensitex_openep(varargin)
 %       Contact_Mapping_Model.xml files and import them too.
 %   'savefilename'      {''}|string
 %       The full path to the location in which to save the output.
+%   'showprogress'      {true}|false
+%       Show progress windows while loading map and waveform CSV files.
 
 %
 % IMPORTENSITEX_OPENEP is for parsing data from the EnsiteX mapping system.
@@ -143,6 +145,7 @@ mapToRead = '';
 egmtype = '';
 maptype = 'asegm';
 saveFileName = '';
+showProgress = true;
 
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
@@ -155,6 +158,8 @@ if nargin > nStandardArgs
                 maptype = varargin{i+1};
             case 'savefilename'
                 saveFileName = varargin{i+1};
+            case 'showprogress'
+                showProgress = varargin{i+1};
             otherwise
                 error('IMPORTENSITEX_OPENEP: Unrecognized input.')
         end
@@ -230,17 +235,11 @@ for iMap = 1:numMaps
     numberOfPoints = [];
     for iFolder = 1:numFolds
 
-        % identify the CSV files for this map
-        csvFilesInThisFolder = local_findAllCsvFiles(locations{iMap,2}{iFolder});
-
-        % read the header of these CSV files
-        csvFilesInThisFolderHeaders = [];
-        for iCsv = 1:numel(csvFilesInThisFolder)
-            csvHeader = local_loadCsvFileHeader(csvFilesInThisFolder{iCsv});
-            if ~isempty(csvHeader)
-                csvFilesInThisFolderHeaders{end+1} = csvHeader;
-            end
-        end
+        % Reuse headers loaded during initial discovery.
+        thisFolder = locations{iMap,2}{iFolder};
+        isInFolder = cellfun(@(s) strcmp(fileparts(s.filename), thisFolder), ...
+            allCsvHeaders);
+        csvFilesInThisFolderHeaders = allCsvHeaders(isInFolder);
 
         % get all the map types for these csv files
         allMapTypesInThisFolder = {};
@@ -288,7 +287,7 @@ end
 % Option C - give an error
 numMaps = numel(locations(:,1));
 for iMap = 1:numMaps
-    numFolders = numel(locations{1,2});
+    numFolders = numel(locations{iMap,2});
     for jFolder = 1:numFolders
         thisFolderPath = locations{iMap, 2}{jFolder};
         [path, ~] = fileparts(thisFolderPath);
@@ -799,16 +798,13 @@ disp('!!!! FINISHED PARSING MAPPING DATA ACCCORDING TO USER WISHES !!!!')
 %% Parse annotation metrics by loading the Map files
 
 mappingPointsFolder = T(mapID,:).egmfiles{egmID};
-csvFiles = local_findAllCsvFiles(mappingPointsFolder);
-csvHeaders = [];
-for iFile = 1:numel(csvFiles)
-    tempCsvHeader = local_loadCsvFileHeader(csvFiles{iFile});
-    if ~strcmp(tempCsvHeader.mapType, 'N/A') % we want the files where mapType is NOT N/A
-        csvHeaders{end+1} = tempCsvHeader;
-    end
-end
+isInFolder = cellfun(@(s) strcmp(fileparts(s.filename), mappingPointsFolder), ...
+    allCsvHeaders);
+isMapFile = cellfun(@(s) ~strcmp(s.mapType, 'N/A'), allCsvHeaders);
+csvHeaders = allCsvHeaders(isInFolder & isMapFile);
 for iFile = 1:numel(csvHeaders)
-    [info, varnames, data] = loadensitex_dxldata(csvHeaders{iFile}.filename);
+    [info, varnames, data] = loadensitex_dxldata( ...
+        csvHeaders{iFile}.filename, 'ShowProgress', showProgress);
     mappingData{iFile}.info = info;
     mappingData{iFile}.varnames = varnames;
     mappingData{iFile}.data = data;
@@ -879,35 +875,42 @@ wavesFolder = T(mapID,:).egmfiles{egmID};
 
 %get the reference electrograms
 thisFilename = 'Wave_refs.csv';
-[refInfo, refVarnames, refData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+[refInfo, refVarnames, refData] = loadensitex_dxldata( ...
+    [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
 %get the roving electrograms
 thisFilename = 'Wave_rov.csv';
-[rovInfo, rovVarnames, rovData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+[rovInfo, rovVarnames, rovData] = loadensitex_dxldata( ...
+    [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
 %import the unipolar electrograms
 switch egmtype
     case 'bi'
         %import uni distal
         thisFilename = 'Wave_uni_distal.csv';
-        [uniDistInfo, uniDistVarnames, uniDistData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+        [uniDistInfo, uniDistVarnames, uniDistData] = loadensitex_dxldata( ...
+            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
         %import uni proximal
         thisFilename = 'Wave_uni_proximal.csv';
-        [uniProxInfo, uniProxVarnames, uniProxData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+        [uniProxInfo, uniProxVarnames, uniProxData] = loadensitex_dxldata( ...
+            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
     case 'omni'
         %import uni across
         thisFilename = 'Wave_uni_across.csv';
-        [uniAcrossInfo, uniAcrossVarnames, uniAcrossData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+        [uniAcrossInfo, uniAcrossVarnames, uniAcrossData] = loadensitex_dxldata( ...
+            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
         %import uni along
         thisFilename = 'Wave_uni_along.csv';
-        [uniAlongInfo, uniAlongVarnames, uniAlongData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+        [uniAlongInfo, uniAlongVarnames, uniAlongData] = loadensitex_dxldata( ...
+            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
         %import uni corner
         thisFilename = 'Wave_uni_corner.csv';
-        [uniCornerInfo, uniCornerVarnames, uniCornerData] = loadensitex_dxldata([wavesFolder filesep() thisFilename]);
+        [uniCornerInfo, uniCornerVarnames, uniCornerData] = loadensitex_dxldata( ...
+            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
 
     case 'uni'
         % In the case of uni electrogram mode, the roving electrogram is

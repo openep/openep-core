@@ -16,8 +16,8 @@ if ~isfolder(caseRoot)
     return
 end
 
-manifest = [manifest discoverCartoCases(caseRoot)]; %#ok<AGROW>
-manifest = [manifest discoverEnsiteCases(caseRoot)]; %#ok<AGROW>
+manifest = [manifest discoverCartoCases(caseRoot)];
+manifest = [manifest discoverEnsiteCases(caseRoot)];
 end
 
 function cases = discoverCartoCases(caseRoot)
@@ -30,8 +30,8 @@ end
 zipFiles = visibleFiles(dir(fullfile(cartoRoot, '**', '*.zip')));
 for i = 1:numel(zipFiles)
     zipPath = fullfile(zipFiles(i).folder, zipFiles(i).name);
-    cases(end+1) = makeCase('carto', zipPath, true, zipPath, zipFiles(i).bytes, ... %#ok<AGROW>
-        {}, {}, {}, 'CARTO ZIP export');
+    cases(end+1) = makeCase('carto', zipPath, true, zipPath, zipFiles(i).bytes, ...
+        {}, {}, {}, 'CARTO ZIP export'); %#ok<AGROW>
 end
 
 meshFiles = visibleFiles(dir(fullfile(cartoRoot, '**', '*.mesh')));
@@ -42,8 +42,8 @@ for i = 1:numel(folders)
     names = {xmlFiles.name};
     hasStudyXml = any(~contains(names, 'Point_Export') & ~contains(names, 'Points_Export'));
     if hasStudyXml
-        cases(end+1) = makeCase('carto', folderPath, false, '', folderSizeBytes(folderPath), ... %#ok<AGROW>
-            inferCartoMapNames(folderPath), {}, {}, 'Extracted CARTO export');
+        cases(end+1) = makeCase('carto', folderPath, false, '', folderSizeBytes(folderPath), ...
+            inferCartoMapNames(folderPath), {}, {}, 'Extracted CARTO export'); %#ok<AGROW>
     end
 end
 end
@@ -59,9 +59,9 @@ modelFiles = visibleFiles(dir(fullfile(ensiteRoot, '**', 'Contact_Mapping_Model.
 for i = 1:numel(modelFiles)
     exportFolder = modelFiles(i).folder;
     [candidateMaps, candidateMapFiles, egmTypes] = inferEnsiteMaps(exportFolder);
-    cases(end+1) = makeCase('ensitex', exportFolder, false, '', ... %#ok<AGROW>
+    cases(end+1) = makeCase('ensitex', exportFolder, false, '', ...
         folderSizeBytes(exportFolder), candidateMaps, candidateMapFiles, egmTypes, ...
-        'Extracted EnSiteX export');
+        'Extracted EnSiteX export'); %#ok<AGROW>
 end
 end
 
