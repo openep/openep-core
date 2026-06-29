@@ -391,8 +391,19 @@ if isempty(egmtype)
     if ~ok
         return
     end
+    reqEgmType = uNames{selection};
+else
+    selection = find(strcmpi(egmtype, uNames));
+    if isempty(selection)
+        selection = find(strstartcmpi(egmtype, uNames));
+    end
+    if isempty(selection)
+        error(['IMPORTENSITEX_OPENEP: No electrogram type matching ' egmtype ' was found for map ' mapToRead]);
+    elseif numel(selection)>1
+        error(['IMPORTENSITEX_OPENEP: Multiple electrogram types matching ' egmtype ' were found for map ' mapToRead]);
+    end
+    reqEgmType = uNames{selection};
 end
-reqEgmType = names{selection};
 egmID = find(strcmpi(names, reqEgmType)); 
 % note that egmID by itself is not interpretable, but it indexes into T
 % table entries to ensure that the desired electrograms are read

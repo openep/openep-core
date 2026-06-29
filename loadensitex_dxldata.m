@@ -119,7 +119,14 @@ dataHeaders = regexp(dataHeaderRowLine,',','split'); % previously, this was: dat
 
 % Tidy up the heading data
 if strcmpi(dataHeaderRowLine(end), ',')
-    dataHeaders(end) = [];
+    headersBeforeTrailingComma = dataHeaders(1:end-1);
+    hasNumericSignalHeaders = isfield(info, 'sampleFreq') && ...
+        any(~isnan(str2double(headersBeforeTrailingComma)));
+    if hasNumericSignalHeaders || ~isfield(info, 'sampleFreq')
+        dataHeaders(end) = [];
+    else
+        dataHeaders{end} = '0';
+    end
 end
 if strcmpi(dataHeaders(end), '...')
     dataHeaders(end) = [];
@@ -149,12 +156,12 @@ numericColumnsToRead = tfNumHeaders;
 varColumnsToRead = ~tfNumHeaders;
 if isfield(info, 'mapType')
     if ~strcmpi(info.mapType, 'N/A')
-        parseMethod = 'internal' % we are dealing with a map file
+        parseMethod = 'internal'; % we are dealing with a map file
     else 
-        parseMethod = 'regexp' % we are dealing with a wave file
+        parseMethod = 'regexp'; % we are dealing with a wave file
     end
 else
-    parseMethod = 'regexp' % faster for dealing with wave data
+    parseMethod = 'regexp'; % faster for dealing with wave data
 end
 data = local_parsedata(fileID, varColumnsToRead, numericColumnsToRead, info.numPoints, [thisFileName ext], parseMethod, showProgress);
 
@@ -279,7 +286,11 @@ while remainingBytes>0
 
     % equivalent to, but much faster than, allData(currentLine:currentLine+wholeLinesRead-1,1:nColToRead) = str2double(thisEgmData);
     doubleValues = sscanf(sprintf(' %s',thisSignalData{:}),'%f',[1,Inf]);
-    doubleValueReshaped = reshape(doubleValues, size(thisSignalData));
+    if numel(doubleValues) == numel(thisSignalData)
+        doubleValueReshaped = reshape(doubleValues, size(thisSignalData));
+    else
+        doubleValueReshaped = str2double(thisSignalData);
+    end
     allNumericData(currentLine:currentLine+wholeLinesRead-1,1:nNumericColToRead) = doubleValueReshaped;
 
     % Now deal with the variables data
