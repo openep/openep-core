@@ -186,132 +186,63 @@ end
 % certainly_ the number of points in wave and map files will no longer 
 % match. 
 
-csvFiles = local_findAllCsvFiles(studyDir);
-allCsvHeaders = [];
-for iCsv = 1:numel(csvFiles)
-    csvHeader = local_loadCsvFileHeader(csvFiles{iCsv});
-    if ~isempty(csvHeader)
-        allCsvHeaders{end+1} = csvHeader;
-    end
+ensiteManifest = inspectensitex_export(studyDir);
+if isempty(ensiteManifest.exports)
+    error('IMPORTENSITEX_OPENEP: No EnSiteX DXL exports were identified.');
 end
 
-% Identify the names of unique maps in the dataset
-uniqueMapNames = unique( cellfun(@(s) s.mapName, allCsvHeaders, 'UniformOutput', false) );
-
-% Identify all folder locations in which files pertaining to each map are stored
-numMaps = numel(uniqueMapNames);
-locations = cell(numel(uniqueMapNames), 2);
-for iMap = 1:numMaps
-    name = uniqueMapNames{iMap};
-
-    % Select structures belonging to this map name
-    idx = cellfun(@(s) strcmp(s.mapName, name), allCsvHeaders);
-
-    % Extract filenames for this map
-    files = cellfun(@(s) s.filename, allCsvHeaders(idx), 'UniformOutput', false);
-
-    % Extract unique folder paths
-    folders = unique(cellfun(@fileparts, files, 'UniformOutput', false));
-
-    % Store results
-    locations{iMap,1} = strrep(name, sprintf('\t'), ' ');
-    locations{iMap,2} = folders;
+allCsvHeaders = cell(1, numel(ensiteManifest.files));
+for iManifestFile = 1:numel(ensiteManifest.files)
+    fileInfo = ensiteManifest.files(iManifestFile);
+    allCsvHeaders{iManifestFile} = struct( ...
+        'mapName', fileInfo.mapName, ...
+        'mapType', fileInfo.mapType, ...
+        'numPoints', fileInfo.numPoints, ...
+        'filename', fileInfo.path);
 end
 
-% CHECK1A: Check that all map files within each directory pertaining to an 
-% individual map have the same type (uni, omni, bi). There is redundancy in
-% this section since we re-read the CSV file headers per folder, and we
-% have already read them all collectively. However, this avoids any
-% ambiguity about what files are being read and compared.
-% CHECK2: Check that all wave files within each directory pertaining to an
-% individual map have the same number of electrograms as number of points
-% in the map files; with the one exception being wave_rov files
-allMapTypes = {};
-for iMap = 1:numMaps
-    folders = locations{iMap,2};
-    numFolds = numel(folders);
+rawMapNames = unique({ensiteManifest.exports.mapName}, 'stable');
+locations = cell(numel(rawMapNames), 6);
+for iMap = 1:numel(rawMapNames)
+    exportIndices = find(strcmp({ensiteManifest.exports.mapName}, rawMapNames{iMap}));
+    mapExports = ensiteManifest.exports(exportIndices);
+    modes = {mapExports.recordingMode};
 
-    folderMapType = {};
-    numberOfPoints = [];
-    for iFolder = 1:numFolds
-
-        % Reuse headers loaded during initial discovery.
-        thisFolder = locations{iMap,2}{iFolder};
-        isInFolder = cellfun(@(s) strcmp(fileparts(s.filename), thisFolder), ...
-            allCsvHeaders);
-        csvFilesInThisFolderHeaders = allCsvHeaders(isInFolder);
-
-        % get all the map types for these csv files
-        allMapTypesInThisFolder = {};
-        mappingCsvFiles = [];
-        for iCsv = 1:numel(csvFilesInThisFolderHeaders)
-            thisMapType = csvFilesInThisFolderHeaders{iCsv}.mapType;
-            thisMapNumPts = csvFilesInThisFolderHeaders{iCsv}.numPoints;
-            if ~strcmp(thisMapType, 'N/A')
-                allMapTypesInThisFolder{end+1} = thisMapType;
-                mappingCsvFiles{end+1} = csvFilesInThisFolderHeaders{iCsv}; % this ensure we are only dealing with mapping files, and not wave files
+    for iExport = 1:numel(mapExports)
+        if strcmp(modes{iExport}, 'conflict')
+            error('IMPORTENSITEX_OPENEP: %s', strjoin(mapExports(iExport).errors, ' '));
+        elseif strcmp(modes{iExport}, 'unknown')
+            if isempty(egmtype)
+                error(['IMPORTENSITEX_OPENEP: Recording mode could not be identified for ', ...
+                    mapExports(iExport).folder, '. Specify egmtype explicitly.']);
             end
+            modes{iExport} = lower(char(egmtype));
+            warning(['IMPORTENSITEX_OPENEP: Recording mode was not identifiable from ', ...
+                'content; using explicit egmtype=%s for %s.'], ...
+                modes{iExport}, mapExports(iExport).folder);
         end
-
-        [mapTypesAreTheSame, identifiedType] = local_areMapSuffixesUniform(allMapTypesInThisFolder);
-
-        [numberOfMappingPointsAreTheSame, numMappingPts] = local_areMapPointNumbersUniform(mappingCsvFiles);
-
-        % check that the map types are the same
-        if mapTypesAreTheSame
-            disp(['CHECK1 TEST PASSED: map types check passed for map ' num2str(iMap) ' folder ' num2str(iFolder)]);
-            
-            % store the type of maps that are in this folder
-            folderMapType{end+1} = identifiedType;
-        else
-            error(['CHECK1 TEST FAILED: map types check failed for map ' num2str(iMap) ' folder ' num2str(iFolder)])
+        for iWarning = 1:numel(mapExports(iExport).warnings)
+            warning('IMPORTENSITEX_OPENEP: %s', mapExports(iExport).warnings{iWarning});
         end
-
-        % check that the number of mapping points are the same
-        if numberOfMappingPointsAreTheSame
-            disp(['CHECK2 TEST PASSED: number of mapping points are the same for map ' num2str(iMap) ' folder ' num2str(iFolder)]);
-
-            % store the number of mapping points
-            numberOfPoints(end+1) = numMappingPts;
-        else
-            error(['CHECK2 TEST FAILED: number of mapping points are different for map ' num2str(iMap) ' folder ' num2str(iFolder)]);
+        if isempty(mapExports(iExport).geometryFile)
+            error('IMPORTENSITEX_OPENEP: Contact_Mapping_Model.xml was not found for %s.', ...
+                mapExports(iExport).folder);
+        end
+        if numel(mapExports(iExport).numPoints) ~= 1
+            error('IMPORTENSITEX_OPENEP: Map files have inconsistent point counts in %s.', ...
+                mapExports(iExport).folder);
         end
     end
-    locations{iMap,3} = folderMapType;
-    locations{iMap,5} = numberOfPoints;
+
+    locations{iMap,1} = strrep(rawMapNames{iMap}, sprintf('\t'), ' ');
+    locations{iMap,2} = {mapExports.folder};
+    locations{iMap,3} = modes;
+    locations{iMap,4} = {mapExports.geometryFile};
+    locations{iMap,5} = [mapExports.numPoints];
+    locations{iMap,6} = exportIndices;
 end
 
-% Identify the geoemtry location (Contact_Mapping_Model.xml)
-% Option A - this file is 1 level up from the mapping/wave files
-% Option B - this file is within the same folder as the mapping/wave files
-% Option C - give an error
-numMaps = numel(locations(:,1));
-for iMap = 1:numMaps
-    numFolders = numel(locations{iMap,2});
-    for jFolder = 1:numFolders
-        thisFolderPath = locations{iMap, 2}{jFolder};
-        [path, ~] = fileparts(thisFolderPath);
-        geomFile = [path filesep() 'Contact_Mapping_Model.xml'];
-        if isfile(geomFile)
-            locations{iMap,4}{jFolder} = geomFile;
-        else
-            geomFile = [thisFolderPath filesep() 'Contact_Mapping_Model.xml'];
-            if isfile(geomFile)
-                locations{iMap,4}{jFolder} = geomFile;
-            else
-                error('IMPORTENSITEX_OPENEP: Unable to idetnify the Contact_Mapping_Model.xml file');
-            end
-        end
-    end
-end
-
-
-
-
-
-
-%% Save all the data we have worked out in a table for easy access
-variableNames = {'mapname', 'egmfiles', 'egmtype', 'mapfiles', 'numpts'};
+variableNames = {'mapname', 'egmfiles', 'egmtype', 'mapfiles', 'numpts', 'exportindex'};
 T = cell2table(locations, 'variablenames', variableNames);
 
 
@@ -427,6 +358,9 @@ if numel(egmID)>1
     egmtype = shortNames{selection};
 end
 
+selectedExportIndex = locations{mapID,6}(egmID);
+selectedExport = ensiteManifest.exports(selectedExportIndex);
+
 
     
 
@@ -437,7 +371,7 @@ end
 %% Parse the geometry and surface mapping data
 % By loading the relevant Contact_Mapping_Model XML file to get the geometry
 
-contactMappingModel = T(mapID,:).mapfiles{egmID};
+contactMappingModel = selectedExport.geometryFile;
 data_geometry = loadprecision_modelgroups(contactMappingModel);
 
 % switch maptype
@@ -797,7 +731,7 @@ disp('!!!! FINISHED PARSING MAPPING DATA ACCCORDING TO USER WISHES !!!!')
 
 %% Parse annotation metrics by loading the Map files
 
-mappingPointsFolder = T(mapID,:).egmfiles{egmID};
+mappingPointsFolder = selectedExport.folder;
 isInFolder = cellfun(@(s) strcmp(fileparts(s.filename), mappingPointsFolder), ...
     allCsvHeaders);
 isMapFile = cellfun(@(s) ~strcmp(s.mapType, 'N/A'), allCsvHeaders);
@@ -871,51 +805,35 @@ end
 
 %% Parse electrogram data by loading the Wave files
 
-wavesFolder = T(mapID,:).egmfiles{egmID};
+wavesFolder = selectedExport.folder;
 
-%get the reference electrograms
-thisFilename = 'Wave_refs.csv';
+% Get the reference and roving electrograms by semantic header role.
+referenceWave = local_requireWaveRole(selectedExport, {'refs', 'reference'});
 [refInfo, refVarnames, refData] = loadensitex_dxldata( ...
-    [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
+    referenceWave.path, 'ShowProgress', showProgress);
 
-%get the roving electrograms
-thisFilename = 'Wave_rov.csv';
+rovingWave = local_requireWaveRole(selectedExport, {'rov', 'roving'});
 [rovInfo, rovVarnames, rovData] = loadensitex_dxldata( ...
-    [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
+    rovingWave.path, 'ShowProgress', showProgress);
 
-%import the unipolar electrograms
+componentInfo = {};
+componentVarnames = {};
+componentData = {};
 switch egmtype
     case 'bi'
-        %import uni distal
-        thisFilename = 'Wave_uni_distal.csv';
-        [uniDistInfo, uniDistVarnames, uniDistData] = loadensitex_dxldata( ...
-            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
-
-        %import uni proximal
-        thisFilename = 'Wave_uni_proximal.csv';
-        [uniProxInfo, uniProxVarnames, uniProxData] = loadensitex_dxldata( ...
-            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
-
+        componentFiles = local_unipolarComponentFiles(selectedExport, 2);
     case 'omni'
-        %import uni across
-        thisFilename = 'Wave_uni_across.csv';
-        [uniAcrossInfo, uniAcrossVarnames, uniAcrossData] = loadensitex_dxldata( ...
-            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
-
-        %import uni along
-        thisFilename = 'Wave_uni_along.csv';
-        [uniAlongInfo, uniAlongVarnames, uniAlongData] = loadensitex_dxldata( ...
-            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
-
-        %import uni corner
-        thisFilename = 'Wave_uni_corner.csv';
-        [uniCornerInfo, uniCornerVarnames, uniCornerData] = loadensitex_dxldata( ...
-            [wavesFolder filesep() thisFilename], 'ShowProgress', showProgress);
-
+        componentFiles = local_unipolarComponentFiles(selectedExport, 3);
     case 'uni'
-        % In the case of uni electrogram mode, the roving electrogram is
-        % the unipolar electrogram used to create the map and there are no
-        % additional unipolar wave files so there is nothing else to do
+        componentFiles = struct('role', {}, 'path', {}, 'source', {});
+    otherwise
+        error('IMPORTENSITEX_OPENEP: Unsupported egmtype: %s', egmtype);
+end
+
+for iComponent = 1:numel(componentFiles)
+    [componentInfo{iComponent}, componentVarnames{iComponent}, ...
+        componentData{iComponent}] = loadensitex_dxldata( ... %#ok<AGROW>
+        componentFiles(iComponent).path, 'ShowProgress', showProgress);
 end
 
 
@@ -1171,7 +1089,12 @@ userdata.electric.names               = pointNumberFromFile;
 
 % Unipolar electrograms
 userdata.electric.electrodeNames_uni    = local_parseuninames(mappingData{isLAT}.data(:,strcmpi(mappingData{isLAT}.varnames,'Electrodes')));
-userdata.electric.egmUni = zeros([size(userdata.electric.egm) size(userdata.electric.egmUniX,3)]);
+if ~isempty(componentData)
+    [componentInfo, componentVarnames, componentData] = ...
+        local_orderComponentsByElectrode(componentInfo, componentVarnames, ...
+        componentData, mappingData{isLAT}, ...
+        userdata.electric.electrodeNames_uni);
+end
 
 % Unipolar electrogram locations are stored differently for standard and omnipolar configurations
 switch egmtype
@@ -1182,33 +1105,25 @@ switch egmtype
         userdata.electric.egmUniX = cat(3, userdata.electric.egmX, userdata.electric.egmX);
 
         disp('IMPORTENSITEX_OPENEP: Parsing unipolar electrograms for bipolar configuration ...');
-        userdata.electric.egmUni(:,:,1) = local_concatdata(uniDistData(:,strcmpi(uniDistVarnames,'signals')),[],[],uniDistInfo.filename);
-        userdata.electric.egmUni(:,:,2) = local_concatdata(uniProxData(:,strcmpi(uniProxVarnames,'signals')),[],[],uniProxInfo.filename);
+        userdata.electric.egmUni = zeros( ...
+            size(userdata.electric.egm, 1), size(userdata.electric.egm, 2), 2);
+        for iComponent = 1:2
+            userdata.electric.egmUni(:,:,iComponent) = local_concatdata( ...
+                componentData{iComponent}(:,strcmpi(componentVarnames{iComponent},'signals')), ...
+                [], [], componentInfo{iComponent}.filename);
+        end
 
     case 'omni'
         disp('IMPORTENSITEX_OPENEP: Parsing unipolar co-ordinates for omnipolar configuration ...');
 
-        % now we need to locate the correct co-ordinates from mappingPoints,
-        % without assuming that the order is correct. The order is however
-        % usually (1) corner, (2) along, (3) across, so that is what we will
-        % check first
-        uni1Assigned = false;
-        uni2Assigned = false;
-        uni3Assigned = false;
+        userdata.electric.egmUniX = zeros( ...
+            size(userdata.electric.egmX, 1), 3, 3);
         for iPoint = 1:size(userdata.electric.electrodeNames_uni,1)
             if strcmpi(userdata.electric.electrodeNames_uni{iPoint,1}, mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_Corner_Elec')))
                 X = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_CornerX'));
                 Y = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_CornerY'));
                 Z = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_CornerZ'));
                 userdata.electric.egmUniX(iPoint,1:3,1) = str2double([X Y Z]);
-
-                % Identify the correct uni data and varnames - corner
-                if ~uni1Assigned
-                    uni1Data = uniCornerData;
-                    uni1Varnames = uniCornerVarnames;
-                    uni1Info = uniCornerInfo;
-                    uni1Assigned = true;
-                end
             else
                 error('IMPORTENSITEX_OPENEP: Electrode naming mismatch')
             end
@@ -1217,14 +1132,6 @@ switch egmtype
                 Y = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AlongY'));
                 Z = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AlongZ'));
                 userdata.electric.egmUniX(iPoint,1:3,2) = str2double([X Y Z]);
-
-                % Identify the correct uni data and varnames - along
-                if ~uni2Assigned
-                    uni2Data = uniAlongData;
-                    uni2Varnames = uniAlongVarnames;
-                    uni2Info = uniAlongInfo;
-                    uni2Assigned = true;
-                end
             else
                 error('IMPORTENSITEX_OPENEP: Electrode naming mismatch')
             end
@@ -1233,25 +1140,25 @@ switch egmtype
                 Y = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AcrossY'));
                 Z = mappingData{isLAT}.data(iPoint,strcmpi(mappingData{isLAT}.varnames,'Uni_AcrossZ'));
                 userdata.electric.egmUniX(iPoint,1:3,3) = str2double([X Y Z]);
-
-                % Identify the corret uni data and varnames - across
-                if ~uni3Assigned
-                    uni3Data = uniAcrossData;
-                    uni3Varnames = uniAcrossVarnames;
-                    uni3Info = uniAcrossInfo;
-                    uni3Assigned = true;
-                end
             else
                 error('IMPORTENSITEX_OPENEP: Electrode naming mismatch')
             end
         end
 
-        userdata.electric.egmUni(:,:,1) = local_concatdata(uni1Data(:,strcmpi(uni1Varnames,'signals')),[],[],uni1Info.filename);
-        userdata.electric.egmUni(:,:,2) = local_concatdata(uni2Data(:,strcmpi(uni2Varnames,'signals')),[],[],uni2Info.filename);
-        userdata.electric.egmUni(:,:,3) = local_concatdata(uni3Data(:,strcmpi(uni3Varnames,'signals')),[],[],uni3Info.filename);
+        userdata.electric.egmUni = zeros( ...
+            size(userdata.electric.egm, 1), size(userdata.electric.egm, 2), 3);
+        for iComponent = 1:3
+            userdata.electric.egmUni(:,:,iComponent) = local_concatdata( ...
+                componentData{iComponent}(:,strcmpi(componentVarnames{iComponent},'signals')), ...
+                [], [], componentInfo{iComponent}.filename);
+        end
 
         %userdata.electric.egmUniSurfX           = userdata.electric.egmUniX; % note that we do not have co-ordinates for the second unipole
         disp('IMPORTENSITEX_OPENEP: Finished parsing unipolar co-ordinates ...');
+
+    case 'uni'
+        userdata.electric.egmUni = userdata.electric.egm;
+        userdata.electric.egmUniX = userdata.electric.egmX;
 end
 
 % % Store any additional signals in the ecg array
@@ -1498,9 +1405,105 @@ end
         end
     end
 
+    function waveFile = local_requireWaveRole(exportInfo, acceptedRoles)
+        roles = {exportInfo.waveFiles.role};
+        isAccepted = false(size(roles));
+        for iRole = 1:numel(acceptedRoles)
+            isAccepted = isAccepted | strcmpi(roles, acceptedRoles{iRole});
+        end
+        matches = find(isAccepted);
+        if isempty(matches)
+            error('IMPORTENSITEX_OPENEP: Required wave role was not found: %s', ...
+                strjoin(acceptedRoles, ' or '));
+        elseif numel(matches) > 1
+            error('IMPORTENSITEX_OPENEP: Multiple files provide wave role: %s', ...
+                strjoin(acceptedRoles, ' or '));
+        end
+        waveFile = exportInfo.waveFiles(matches);
+    end
+
+    function componentFiles = local_unipolarComponentFiles(exportInfo, expectedCount)
+        roles = {exportInfo.waveFiles.role};
+        componentFiles = exportInfo.waveFiles(startsWith(roles, 'uni_', ...
+            'IgnoreCase', true));
+        if numel(componentFiles) ~= expectedCount
+            error(['IMPORTENSITEX_OPENEP: Expected %d unipolar component ', ...
+                'wave files for egmtype=%s, found %d.'], ...
+                expectedCount, egmtype, numel(componentFiles));
+        end
+    end
+
+    function [orderedInfo, orderedVarnames, orderedData] = ...
+            local_orderComponentsByElectrode(inInfo, inVarnames, inData, ...
+            latMap, electrodeNames)
+        nComponents = numel(inData);
+        if size(electrodeNames, 2) ~= nComponents
+            error(['IMPORTENSITEX_OPENEP: Map electrode count (%d) does not ', ...
+                'match component wave file count (%d).'], ...
+                size(electrodeNames, 2), nComponents);
+        end
+
+        mapPointColumn = find(strcmpi(latMap.varnames, '(Point #)'), 1);
+        if isempty(mapPointColumn)
+            error('IMPORTENSITEX_OPENEP: LAT map does not contain (Point #).');
+        end
+        mapPoints = local_stringValues(latMap.data(:, mapPointColumn));
+        scores = zeros(nComponents, nComponents);
+
+        for iComponentFile = 1:nComponents
+            traceColumn = find(strcmpi(inVarnames{iComponentFile}, 'Trace'), 1);
+            pointColumn = find(strcmpi(inVarnames{iComponentFile}, '(Point #)'), 1);
+            if isempty(traceColumn) || isempty(pointColumn)
+                error(['IMPORTENSITEX_OPENEP: Component wave file lacks ', ...
+                    'Trace or (Point #): %s'], inInfo{iComponentFile}.filename);
+            end
+            traces = local_stringValues(inData{iComponentFile}(:, traceColumn));
+            wavePoints = local_stringValues(inData{iComponentFile}(:, pointColumn));
+            [isMatched, mapRows] = ismember(wavePoints, mapPoints);
+
+            for iElectrode = 1:nComponents
+                expected = electrodeNames(mapRows(isMatched), iElectrode);
+                observed = traces(isMatched);
+                scores(iComponentFile, iElectrode) = sum(cellfun( ...
+                    @local_electrodeMatches, observed, expected));
+            end
+        end
+
+        assignments = perms(1:nComponents);
+        assignmentScores = zeros(size(assignments, 1), 1);
+        for iAssignment = 1:size(assignments, 1)
+            for iElectrode = 1:nComponents
+                assignmentScores(iAssignment) = assignmentScores(iAssignment) + ...
+                    scores(assignments(iAssignment, iElectrode), iElectrode);
+            end
+        end
+        bestScore = max(assignmentScores);
+        bestRows = find(assignmentScores == bestScore);
+        if bestScore == 0 || numel(bestRows) ~= 1
+            error(['IMPORTENSITEX_OPENEP: Component wave files could not be ', ...
+                'matched unambiguously to map electrode labels.']);
+        end
+
+        order = assignments(bestRows, :);
+        orderedInfo = inInfo(order);
+        orderedVarnames = inVarnames(order);
+        orderedData = inData(order);
+    end
+
+    function values = local_stringValues(values)
+        values = cellstr(strtrim(string(values)));
+    end
+
+    function tf = local_electrodeMatches(observed, expected)
+        observed = strtrim(char(observed));
+        expected = strtrim(char(expected));
+        tf = strcmpi(observed, expected) || ...
+            endsWith(observed, [' ', expected], 'IgnoreCase', true);
+    end
+
     function xmlFiles = local_findAllXmlFiles(parentDirectory)
         % local_findAllXmlFiles  Recursively finds all .xml files under parentDirectory.
-        
+
         % Use dir with recursive wildcard
         fileList = dir(fullfile(parentDirectory, '**', '*.xml'));
 
@@ -1509,56 +1512,6 @@ end
 
         % Extract full paths into a cell array
         xmlFiles = fullfile({fileList.folder}, {fileList.name});
-    end
-
-    function csvFiles = local_findAllCsvFiles(parentDirectory)
-        % local_findAllCsvFiles  Recursively finds all .csv files under parentDirectory
-
-        % Use dir with recursive wildcard
-        fileList = dir(fullfile(parentDirectory, '**', '*.csv'));
-
-        % Filter hidden files
-        fileList = fileList(~startsWith({fileList.name}, '.'));
-
-        % Extract full paths into a cell array
-        csvFiles = fullfile({fileList.folder}, {fileList.name});
-    end
-
-    function info = local_loadCsvFileHeader(csvFile)
-
-        info = [];
-        fileID = fopen(csvFile, 'r');
-        if fileID == (-1)
-            error('LOADENSITEX_DXLDATA: Could not open file.')
-        end
-        cleanupFile = onCleanup(@()fclose(fileID));
-
-        maxBytes = 100000; % enough data to cover the header
-        fseek(fileID, 0, 'bof'); % move to the beginning of the file
-        if maxBytes > filebytes2end(fileID)
-            maxBytes = filebytes2end(fileID);
-        end
-        [fData, fDataSize] = fread(fileID, maxBytes, '*char');
-        fData = fData(1:fDataSize)';
-
-        % do the prechecks and return if bad
-        if ~loadensitex_prechecks(fData, 'DxL')
-            warning('IMPORTENSITEX_OPENEP/LOCAL_LOADCSVFILEHEADER: A non-DxL CSV file was identified, such as a lesions or automark file. We will ignore this.')
-            return
-        end
-
-        % The 'header' finishes at the end of the last line starting with "****,"
-        [~, ind2] = regexp(fData, '****','start','end');
-        if isempty(ind2)
-            error('End of header not found. Double check that maxBytes is large enough to cover header.')
-        end
-        indEndofHeader = ind2(end);
-        header = fData(1:indEndofHeader);
-
-        % Parse the header
-        info = parse_header(header, 'dxl');
-        info.filename = csvFile;
-
     end
 
     function tf = local_compareXmlFiles(S1, S2)
@@ -1589,43 +1542,6 @@ end
         tf = isequal(S1.dxgeo.vertices,  S2.dxgeo.vertices)  && ...
             isequal(S1.dxgeo.triangles, S2.dxgeo.triangles) && ...
             isequal(S1.dxgeo.normals,   S2.dxgeo.normals);
-    end
-
-    function [tf, identifiedType] = local_areMapSuffixesUniform(allMapTypes)
-        % Return true if all map suffixes (text after last '_')
-        % are identical in all entries of the input cell array of strings.
-
-        % Extract suffix from each map type
-        suffixes = cellfun( ...
-            @(s) s( find(s=='_',1,'last')+1 : end ), ...
-            allMapTypes, 'UniformOutput', false);
-
-        % True only if all suffixes are the same
-        tf = numel(unique(suffixes)) == 1;
-
-        % The type, if true
-        if tf
-            identifiedType = suffixes{1};
-        else
-            identifiedType = false;
-        end
-    end
-
-    function [tf, numMappingPts] = local_areMapPointNumbersUniform(allMaps)
-        % Return true if all maps in the input cell array of map headers 
-        % have the same number of mapping points. Return these in numMappingPoints
-
-        % Extract the number of mapping points
-        numPoints = cellfun(@(s) s.numPoints, allMaps);
-
-        % True only if all numbers are the same
-        tf = numel(unique(numPoints)) == 1;
-        
-        if tf
-            numMappingPts = numPoints(1);
-        else
-            numMappingPts = false;
-        end
     end
 
     function out = local_lastTwoParts(paths)
