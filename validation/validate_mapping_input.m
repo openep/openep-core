@@ -30,7 +30,11 @@ validLevels = {'quick', 'standard', 'full'};
 checks = emptyCheck();
 report = struct();
 if isstruct(inputPath)
-    report.inputPath = '<OpenEP userdata struct>';
+    if strcmp(workflowMode, 'openep_case')
+        report.inputPath = '<OpenEP case struct>';
+    else
+        report.inputPath = '<OpenEP userdata struct>';
+    end
 else
     inputPath = char(inputPath);
     report.inputPath = inputPath;
@@ -45,9 +49,10 @@ if ~any(strcmp(opts.validationLevel, validLevels))
     report.checks = checks;
     report = finalizeReport(report);
     return
-elseif isstruct(inputPath) && ~strcmp(workflowMode, 'openep_userdata')
+elseif isstruct(inputPath) && ~any(strcmp(workflowMode, ...
+        {'openep_userdata', 'openep_case'}))
     checks = addCheck(checks, 'fail', 1, 'workflow.input_type_invalid', ...
-        'Struct input is only supported with workflowMode=''openep_userdata''.', report.inputPath);
+        'Struct input requires workflowMode openep_userdata or openep_case.', report.inputPath);
     report.checks = checks;
     report = finalizeReport(report);
     return
@@ -62,6 +67,8 @@ end
 switch workflowMode
     case 'openep_userdata'
         checks = validateOpenepUserdata(inputPath, checks, report.inputPath);
+    case 'openep_case'
+        checks = validateOpenepCase(inputPath, checks, report.inputPath);
     case 'openep_mat'
         checks = validateOpenepMat(inputPath, checks);
     case 'carto_openep'
@@ -95,19 +102,83 @@ end
 
 try
     contents = whos('-file', inputPath);
-    hasUserdata = any(strcmp({contents.name}, 'userdata'));
+    names = {contents.name};
+    hasUserdata = any(strcmp(names, 'userdata'));
+    hasOpenepCase = any(strcmp(names, 'openepCase'));
     if hasUserdata
         checks = addCheck(checks, 'pass', 1, 'openep_mat.userdata', ...
             'MAT file contains userdata.', inputPath);
         loaded = load(inputPath, 'userdata');
         checks = validateOpenepUserdata(loaded.userdata, checks, inputPath);
+    elseif hasOpenepCase
+        checks = addCheck(checks, 'pass', 1, 'openep_mat.case', ...
+            'MAT file contains openepCase.', inputPath);
+        loaded = load(inputPath, 'openepCase');
+        checks = validateOpenepCase(loaded.openepCase, checks, inputPath);
     else
         checks = addCheck(checks, 'fail', 1, 'openep_mat.no_userdata', ...
-            'MAT file does not contain a variable named userdata.', inputPath);
+            'MAT file does not contain userdata or openepCase.', inputPath);
     end
 catch ME
     checks = addCheck(checks, 'fail', 1, 'openep_mat.unreadable', ...
         ['Could not inspect MAT file: ', ME.message], inputPath);
+end
+end
+
+function checks = validateOpenepCase(openepCase, checks, sourceLabel)
+if ~isstruct(openepCase) || ~isscalar(openepCase)
+    checks = addCheck(checks, 'fail', 5, 'openep.case.not_struct', ...
+        'openepCase must be a scalar struct.', sourceLabel);
+    return
+end
+
+requiredFields = {'schemaName', 'schemaVersion', 'source', 'mapName', 'datasets'};
+missing = requiredFields(~isfield(openepCase, requiredFields));
+if ~isempty(missing)
+    checks = addCheck(checks, 'fail', 5, 'openep.case.fields.missing', ...
+        ['Missing openepCase fields: ', strjoin(missing, ', ')], sourceLabel);
+    return
+end
+
+if ~isstruct(openepCase.datasets) || isempty(openepCase.datasets)
+    checks = addCheck(checks, 'fail', 5, 'openep.case.datasets.invalid', ...
+        'openepCase.datasets must be a non-empty struct array.', sourceLabel);
+    return
+end
+
+datasets = openepCase.datasets;
+datasetFields = {'id', 'recordingMode', 'mapName', 'sourceFolder', ...
+    'detection', 'userdata'};
+missing = datasetFields(~isfield(datasets, datasetFields));
+if ~isempty(missing)
+    checks = addCheck(checks, 'fail', 5, ...
+        'openep.case.dataset_fields.missing', ...
+        ['Missing dataset fields: ', strjoin(missing, ', ')], sourceLabel);
+    return
+end
+
+ids = {datasets.id};
+modes = {datasets.recordingMode};
+if any(cellfun('isempty', ids)) || numel(unique(ids)) ~= numel(ids)
+    checks = addCheck(checks, 'fail', 5, 'openep.case.ids.invalid', ...
+        'Dataset IDs must be non-empty and unique.', sourceLabel);
+else
+    checks = addCheck(checks, 'pass', 5, 'openep.case.ids.valid', ...
+        sprintf('Found %d unique dataset ID(s).', numel(ids)), sourceLabel);
+end
+
+validModes = {'bi', 'uni', 'omni'};
+if any(~ismember(modes, validModes)) || numel(unique(modes)) ~= numel(modes)
+    checks = addCheck(checks, 'fail', 5, 'openep.case.modes.invalid', ...
+        'Recording modes must be unique bi, uni or omni values.', sourceLabel);
+else
+    checks = addCheck(checks, 'pass', 5, 'openep.case.modes.valid', ...
+        ['Recording modes: ', strjoin(modes, ', ')], sourceLabel);
+end
+
+for i = 1:numel(datasets)
+    datasetLabel = sprintf('%s [%s]', sourceLabel, datasets(i).id);
+    checks = validateOpenepUserdata(datasets(i).userdata, checks, datasetLabel);
 end
 end
 

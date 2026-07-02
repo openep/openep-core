@@ -10,7 +10,7 @@ classdef EnsiteFullCaseImportTest < matlab.unittest.TestCase
     end
 
     methods (Test)
-        function importsSelectedEgmTypeAndValidatesUserdata(testCase)
+        function importsAllModesIntoValidatedCaseContainer(testCase)
             testCase.assumeTrue(runFullImporterTests(), ...
                 'Set RUN_FULL_IMPORTER_SMOKE_TESTS=1 to run full imports.');
 
@@ -27,27 +27,27 @@ classdef EnsiteFullCaseImportTest < matlab.unittest.TestCase
             if isempty(mapName)
                 mapName = 'VoXel SR 1 ENDO';
             end
-            egmType = getenv('OPENEP_FULL_ENSITEX_EGMTYPE');
-            if isempty(egmType)
-                egmType = 'bi';
-            end
-
             outputFile = [tempname, '.mat'];
             cleanupObj = onCleanup(@() deleteIfPresent(outputFile));
 
-            [userdata, savedFile] = importensitex_openep( ...
+            [openepCase, savedFile] = importensitex_case( ...
                 caseRoot, ...
                 'maptoread', mapName, ...
-                'egmtype', egmType, ...
+                'modes', {'bi', 'uni', 'omni'}, ...
                 'maptype', 'asegm', ...
                 'showprogress', false, ...
                 'savefilename', outputFile);
 
             testCase.verifyTrue(isfile(savedFile));
-            report = validate_mapping_input(userdata, 'openep_userdata');
+            report = validate_mapping_input(openepCase, 'openep_case');
             testCase.verifyEqual(report.numFail, 0, report.summary);
-            testCase.verifyTrue(any(strcmp({report.checks.id}, ...
-                'openep.userdata.electric.present')));
+            testCase.verifyEqual({openepCase.datasets.recordingMode}, ...
+                {'bi', 'uni', 'omni'});
+
+            expectedPoints = [4585, 3620, 7110];
+            actualPoints = arrayfun(@(d) size(d.userdata.electric.egmX, 1), ...
+                openepCase.datasets);
+            testCase.verifyEqual(actualPoints, expectedPoints);
         end
     end
 end

@@ -1,10 +1,8 @@
-function results = import_ensitex_study3(caseRoot, outputRoot, egmTypes)
-%IMPORT_ENSITEX_STUDY3 Import the three Study3 EnSiteX EGM configurations.
+function [openepCase, outputFile] = import_ensitex_study3(caseRoot, outputRoot, egmTypes)
+%IMPORT_ENSITEX_STUDY3 Import Study3 into one multi-dataset MAT file.
 %
-% results = import_ensitex_study3(caseRoot, outputRoot)
-% results = import_ensitex_study3(caseRoot, outputRoot, {'bi', 'uni'})
-%
-% One OpenEP MAT file is created per requested EGM configuration.
+% openepCase = import_ensitex_study3(caseRoot, outputRoot)
+% openepCase = import_ensitex_study3(caseRoot, outputRoot, {'bi', 'uni'})
 
 repoRoot = fileparts(fileparts(mfilename('fullpath')));
 addpath(repoRoot);
@@ -27,47 +25,21 @@ end
 caseRoot = char(caseRoot);
 outputRoot = char(outputRoot);
 egmTypes = cellstr(egmTypes);
-mapName = 'VoXel SR 1 ENDO';
 
 assert(isfolder(caseRoot), 'EnSiteX Study3 folder not found: %s', caseRoot);
 if ~isfolder(outputRoot)
     mkdir(outputRoot);
 end
 
-preflight = validate_mapping_input(caseRoot, 'ensitex_openep', ...
-    'validationLevel', 'quick', ...
-    'maxWaveFiles', 6);
-fprintf('Pre-import validation: %s\n', preflight.summary);
-assert(preflight.numFail == 0, 'Study3 pre-import validation failed.');
+outputFile = fullfile(outputRoot, 'Study3_Gharaviri_Brussels_all.mat');
+[openepCase, outputFile] = importensitex_case( ...
+    caseRoot, ...
+    'maptoread', 'VoXel SR 1 ENDO', ...
+    'modes', egmTypes, ...
+    'showprogress', false, ...
+    'savefilename', outputFile);
 
-results = repmat(struct('egmType', '', 'outputFile', '', ...
-    'elapsedSeconds', NaN, 'validationReport', struct()), numel(egmTypes), 1);
-
-for i = 1:numel(egmTypes)
-    egmType = lower(char(egmTypes{i}));
-    outputFile = fullfile(outputRoot, ...
-        sprintf('Study3_Gharaviri_Brussels_%s.mat', egmType));
-
-    fprintf('\nImporting Study3 EGM type: %s\n', egmType);
-    timer = tic;
-    [userdata, savedFile] = importensitex_openep( ...
-        caseRoot, ...
-        'maptoread', mapName, ...
-        'egmtype', egmType, ...
-        'maptype', 'asegm', ...
-        'showprogress', false, ...
-        'savefilename', outputFile);
-    elapsedSeconds = toc(timer);
-
-    report = validate_mapping_input(userdata, 'openep_userdata');
-    fprintf('%s import completed in %.1f seconds: %s\n', ...
-        egmType, elapsedSeconds, report.summary);
-    assert(report.numFail == 0, ...
-        'Imported %s userdata failed validation.', egmType);
-
-    results(i).egmType = egmType;
-    results(i).outputFile = savedFile;
-    results(i).elapsedSeconds = elapsedSeconds;
-    results(i).validationReport = report;
-end
+report = validate_mapping_input(openepCase, 'openep_case');
+fprintf('Study3 case import: %s\nSaved to: %s\n', report.summary, outputFile);
+assert(report.numFail == 0, 'Imported Study3 case failed validation.');
 end

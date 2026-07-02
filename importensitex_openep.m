@@ -26,6 +26,8 @@ function [userdata, matFileFullPath] = importensitex_openep(varargin)
 %       The full path to the location in which to save the output.
 %   'showprogress'      {true}|false
 %       Show progress windows while loading map and waveform CSV files.
+%   'saveoutput'        {true}|false
+%       Save or prompt to save userdata. Case-level importers set this false.
 
 %
 % IMPORTENSITEX_OPENEP is for parsing data from the EnsiteX mapping system.
@@ -146,6 +148,7 @@ egmtype = '';
 maptype = 'asegm';
 saveFileName = '';
 showProgress = true;
+saveOutput = true;
 
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
@@ -160,6 +163,8 @@ if nargin > nStandardArgs
                 saveFileName = varargin{i+1};
             case 'showprogress'
                 showProgress = varargin{i+1};
+            case 'saveoutput'
+                saveOutput = varargin{i+1};
             otherwise
                 error('IMPORTENSITEX_OPENEP: Unrecognized input.')
         end
@@ -1251,7 +1256,9 @@ userdata.electric.tags = cell(length(userdata.electric.names),1);
 
 %% Encourage user to save the data
 matFileFullPath = [];
-if ~isempty(saveFileName)
+if ~saveOutput
+    matFileFullPath = [];
+elseif ~isempty(saveFileName)
     save(saveFileName, 'userdata');
     matFileFullPath = saveFileName;
 else
