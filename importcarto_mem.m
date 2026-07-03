@@ -31,7 +31,7 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %   'savefilename'       {''}|string
 %       The full path to the location in which to save the output.
 %   'verbose'       {true}|false
-%       Not yet implemented
+%       Show progress dialogs and prompt to save the imported data.
 % Example of command line entry ...
 %       userdata = importcarto_mem(<path to XML file>, ...
 %                                        'maptoread', 1693,  ...
@@ -116,7 +116,7 @@ userdata = [];
 hWait = [];
 
 if nargin >= 1
-    userinput = varargin{1};
+    userinput = char(varargin{1});
 else
     dialog_title = 'Select the Carto Study xml in the unzipped folder (eg "Study 1 11_20_2012 21-02-32.xml"), or mat file.';
     filterSpec = {'*.zip;*.xml;*.mat', 'Appropriate files (*.zip;*.xml;*.mat)' ; '*.zip','Zip (*.zip)' ; '*.xml','XML (*.xml)' ; '*.mat','Matlab (*.mat)' ; '*.*','All files (*.*)'};
@@ -155,7 +155,7 @@ saveFileName_cli = '';
 verbose = true;
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
-        switch varargin{i}
+        switch lower(char(varargin{i}))
             case 'maptoread'
                 mapToRead_cli = varargin{i+1};
             case 'refchannel'
@@ -180,14 +180,16 @@ for i = 1:length(studyDirInfo)
     allfilenames{i} = studyDirInfo(i).name;
 end
 
-disp(['Accessing: ' userinput]);
+if verbose
+    disp(['Accessing: ' userinput]);
+end
 
-hWait = waitbar(0, 'Getting study information');
+hWait = openProgress(verbose, 'Getting study information');
 
 Pref.Str2Num = 'never';
 [tree, ~, ~] = xml_read(userinput, Pref);
 
-delete(hWait)
+closeProgress(hWait)
 hWait = [];
 
 study = tree.ATTRIBUTE.name; %#ok<NASGU>
@@ -222,6 +224,16 @@ else
         end
     elseif ischar(mapToRead_cli)
         selection = find(strstartcmpi(mapToRead_cli, names));
+        if isempty(selection)
+            error('IMPORTCARTO_MEM:MapNotFound', ...
+                'Unable to identify map: %s', mapToRead_cli);
+        elseif numel(selection) > 1
+            error('IMPORTCARTO_MEM:AmbiguousMap', ...
+                'Map name is ambiguous: %s', mapToRead_cli);
+        end
+    else
+        error('IMPORTCARTO_MEM:InvalidMapSelection', ...
+            'maptoread must be a map name or point count.');
     end
 end
 
@@ -265,9 +277,11 @@ for iMap = selection
                 [kRef,ok] = listdlg( 'ListString', names , 'SelectionMode','single' , 'PromptString','Which signal is Ref?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelRef_cli = names{kRef};
             else
-                kRef = find(strstartcmpi(channelRef_cli, names));
+                kRef = find(strcmpi(channelRef_cli, names));
                 if isempty(kRef) || numel(kRef)>1
-                    error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
+                    error('IMPORTCARTO_MEM:InvalidReferenceChannel', ...
+                        'Unable to uniquely identify the specified reference channel: %s', ...
+                        channelRef_cli);
                 end
             end
             kRefBu = kRef;
@@ -277,10 +291,13 @@ for iMap = selection
             else
                 kEcg = zeros(1,numel(channelECG_cli));
                 for i = 1:numel(channelECG_cli)
-                    kEcg(i) = find(strcmpi(channelECG_cli{i}, names));
-                    if isempty(kEcg(i))
-                        error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified ECG channel: ' channelECG_cli]);
+                    matches = find(strcmpi(channelECG_cli{i}, names));
+                    if numel(matches) ~= 1
+                        error('IMPORTCARTO_MEM:InvalidEcgChannel', ...
+                            'Unable to uniquely identify the specified ECG channel: %s', ...
+                            channelECG_cli{i});
                     end
+                    kEcg(i) = matches;
                 end
             end
             isFirstPointRead = true;
@@ -378,7 +395,8 @@ for iMap = selection
     end
 
     %%% Now get the point WOI, Reference time and Annotation time
-    hWait = waitbar(0, ['Getting annotation data for ' num2str(nPoints) ' points']);
+    hWait = openProgress(verbose, ...
+        ['Getting annotation data for ' num2str(nPoints) ' points']);
     pointExport_WOI = NaN(nPoints,2);
     pointExport_ReferenceAnnotation = NaN(nPoints,1);
     pointExport_MapAnnotation = NaN(nPoints,1);
@@ -393,7 +411,7 @@ for iMap = selection
 
     if nPoints>0
         for iPoint = 1:nPoints
-            waitbar(iPoint/nPoints, hWait);
+            updateProgress(hWait, iPoint/nPoints);
             filename_pointExport = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
             if ~isfile(fullfile(studyDir, filename_pointExport))
                 disp(['File not found: ' , filename_pointExport])
@@ -415,7 +433,7 @@ for iMap = selection
                 end
             end
         end
-        delete(hWait)
+        closeProgress(hWait)
         hWait = [];
 
         %%% Now get the details for the xml files of each point.
@@ -439,10 +457,11 @@ for iMap = selection
             nameEcgFull = namesFull(kEcg);
 
             %%% Now get the electrograms
-            hWait = waitbar(0, ['Getting electrical data for ' num2str(nPoints) ' points']);
+            hWait = openProgress(verbose, ...
+                ['Getting electrical data for ' num2str(nPoints) ' points']);
 
             for iPoint = 1:nPoints
-                waitbar(iPoint/nPoints , hWait )
+                updateProgress(hWait, iPoint/nPoints);
                 filename = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
                 filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_Point_Export']);
                 pointTree = xml_read(fullfile(studyDir, filename), Pref);
@@ -460,7 +479,9 @@ for iMap = selection
                         electrodeNames_uni{iPoint,2} = headerInfo.uniMapChannel2;
                     else
                         % we neeed to access mapping channels from the point XML file
-                        disp('getting mapping channels');
+                        if verbose
+                            disp('getting mapping channels');
+                        end
                         electrodeNames_bip{iPoint} = pointTree.ECG.ATTRIBUTE.BipolarMappingChannel;
                         electrodeNames_uni{iPoint,1} = pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel;
                         electrodeNames_uni{iPoint,2} = incrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
@@ -554,15 +575,17 @@ for iMap = selection
                         end
                     else
                         warning('IMPORTCARTO_MEM: No electrode found ... check "OnAnnotation" file ...')
-                        disp(filename)
-                        disp('')
+                        if verbose
+                            disp(filename)
+                            disp('')
+                        end
                     end
                 end
                 if isnan(kRef)
                     kRef = kRefBu;
                 end
             end
-            delete(hWait)
+            closeProgress(hWait)
             hWait = [];
         end
 
@@ -590,10 +613,11 @@ for iMap = selection
             t_lateralAngle = nan(nPoints,max(size(t_T)),2);
 
             %%% Now we get the forces
-            hWait = waitbar(0, ['Getting force data for ' num2str(nPoints) ' points']);
+            hWait = openProgress(verbose, ...
+                ['Getting force data for ' num2str(nPoints) ' points']);
             hasWarned = false;
             for iPoint = 1:nPoints
-                waitbar(iPoint/nPoints, hWait);
+                updateProgress(hWait, iPoint/nPoints);
                 filename_force = [filenameroot '_' map.pointNames{iPoint} '_ContactForce.txt'];
                 filename_force = mycheckfilename(filename_force, allfilenames, [map.pointNames{iPoint} '_ContactForce.txt']);
                 if ~isempty(filename_force)
@@ -634,13 +658,13 @@ for iMap = selection
                 end
 
             end
-            delete(hWait)
+            closeProgress(hWait)
             hWait = [];
         end
     else
         nameRef = [];
         nameEcg = [];
-        delete(hWait)
+        closeProgress(hWait)
         hWait = [];
     end
 
@@ -703,6 +727,7 @@ for iMap = selection
         userdata.electric.egmSurfX = [];
         userdata.electric.barDirection = [];
     end
+    userdata.surface.triRep = meshAsStruct(userdata.surface.triRep);
 
     % Now store the CF and RF data if the files existed
     if ~isempty(iContactForceInRfFiles)
@@ -748,7 +773,7 @@ for iMap = selection
     if ~isempty(saveFileName_cli)
         save(saveFileName_cli, 'userdata');
         matFileFullPath = saveFileName_cli;
-    else
+    elseif verbose
         defaultName = [map.studyName '_' map.name];
         defaultName(isspace(defaultName)) = '_';
         originalDir = cd();
@@ -760,6 +785,8 @@ for iMap = selection
             save([saveDir filename], 'userdata','-v7.3'); %needed as sometimes >2GB
             matFileFullPath = fullfile(saveDir, filename);
         end
+    else
+        matFileFullPath = [];
     end
 
 
@@ -776,6 +803,39 @@ end
 %     rethrow(err);
 % end
 
+end
+
+function hWait = openProgress(verbose, message)
+hWait = [];
+if verbose
+    hWait = waitbar(0, message);
+end
+end
+
+function updateProgress(hWait, fraction)
+if ~isempty(hWait) && isgraphics(hWait)
+    waitbar(fraction, hWait);
+end
+end
+
+function closeProgress(hWait)
+if ~isempty(hWait) && isgraphics(hWait)
+    delete(hWait);
+end
+end
+
+function mesh = meshAsStruct(mesh)
+if isempty(mesh) || isstruct(mesh)
+    return
+end
+
+if isa(mesh, 'triangulation')
+    mesh = struct('X', mesh.Points, ...
+        'Triangulation', mesh.ConnectivityList);
+else
+    mesh = struct('X', mesh.X, ...
+        'Triangulation', mesh.Triangulation);
+end
 end
 
 function fname = mycheckfilename(filename, allfilenames, searchstring)
@@ -812,5 +872,4 @@ else
     warning(['IMPORTCARTO3: the filename relating to ' char(39) searchstring char(39) ' is unexpected but a match was found - ' fname])
 end
 end
-
 
