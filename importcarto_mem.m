@@ -251,8 +251,11 @@ for iMap = selection
     isFirstPointRead = false;
     nPoints = str2double(cartoMap.CartoPoints.ATTRIBUTE.Count);
     if nPoints>0
-        filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export.txt'];
-        filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_ECG_Export']);
+        filename = [filenameroot '_P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_Point_Export.xml'];
+        filename = mycheckfilename(filename, allfilenames, ['P' num2str(cartoMap.CartoPoints.Point(1).ATTRIBUTE.Id) '_Point_Export']);
+        pointTree = xml_read(fullfile(studyDir, filename), Pref);
+        filename = pointTree.ECG.ATTRIBUTE.FileName;
+
         if ~isempty(filename)
             ecgFileHeader = read_ecgfile_v4(fullfile(studyDir, filename));
             names = ecgFileHeader.channelNames;
@@ -267,6 +270,7 @@ for iMap = selection
                     error(['IMPORTCARTO_MEM: Unable to uniquely identify the specified reference channel: ' channelRef_cli]);
                 end
             end
+            kRefBu = kRef;
             if isempty(channelECG_cli)
                 [kEcg,ok] = listdlg( 'ListString', names , 'SelectionMode','multiple' , 'PromptString','Which other signals should be downloaded with each point (typically one or more ECG signals)?' , 'ListSize',[300 300] ); if ~ok; return; end
                 channelECG_cli = names(kEcg);
@@ -439,21 +443,63 @@ for iMap = selection
 
             for iPoint = 1:nPoints
                 waitbar(iPoint/nPoints , hWait )
-                filename = [filenameroot '_' map.pointNames{iPoint} '_ECG_Export.txt'];
-                filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_ECG_Export']);
+                filename = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
+                filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_Point_Export']);
+                pointTree = xml_read(fullfile(studyDir, filename), Pref);
+                filename = pointTree.ECG.ATTRIBUTE.FileName;
 
                 if ~isempty(filename)
-                    [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename));
+                    [headerInfo, voltages] = read_ecgfile_v4(fullfile(studyDir, filename), ecgFileHeader.gain);
                     voltages = voltages * headerInfo.gain;
                     names = headerInfo.channelNames;
-                    electrodeNames_bip{iPoint} = headerInfo.bipMapChannel;
-                    electrodeNames_uni{iPoint,1} = headerInfo.uniMapChannel;
-                    electrodeNames_uni{iPoint,2} = headerInfo.uniMapChannel2;
+
+                    if isfield(headerInfo, 'bipMapChannel')
+                        % mapping channels are identified in the ECG file
+                        electrodeNames_bip{iPoint} = headerInfo.bipMapChannel;
+                        electrodeNames_uni{iPoint,1} = headerInfo.uniMapChannel;
+                        electrodeNames_uni{iPoint,2} = headerInfo.uniMapChannel2;
+                    else
+                        % we neeed to access mapping channels from the point XML file
+                        disp('getting mapping channels');
+                        electrodeNames_bip{iPoint} = pointTree.ECG.ATTRIBUTE.BipolarMappingChannel;
+                        electrodeNames_uni{iPoint,1} = pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel;
+                        electrodeNames_uni{iPoint,2} = incrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+
+                        % check that the second unipole name actually exists, otherwise decrement the unipole name
+                        if isempty(find(strcmpi(electrodeNames_uni{iPoint,2}, names)))
+                            electrodeNames_uni{iPoint,2} = decrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+                        end
+                        % check that the new second unipole name actually exists, otherwise throw an error (for now)
+                        if isempty(find(strcmpi(electrodeNames_uni{iPoint,2}, names)))
+                            error('OPENEP/IMPORTCARTO_MEM: Unable to identify second unipole channel')
+                        end
+
+                        % if possible check that the assumed second unipole exists in bipole name - this is only possible if two unipoles are identified in the bipole name
+                        if numel(regexp(electrodeNames_bip{iPoint}, '[0-9]+')) == 2
+
+                            % extract the number in the second unipole
+                            uni2Number = regexp(electrodeNames_uni{iPoint,2}, '[0-9]+', 'match');
+                            if numel(uni2Number) ~= 1
+                                error('OPENEP/IMPORTCARTO_MEM: There should only be one unipole number')
+                            end
+                            uni2Number = uni2Number{1};
+
+                            % check that the assumed second unipole number exists in bipole name electrodeNames_bip{iPoint}
+                            if isempty(regexp(electrodeNames_bip{iPoint}, uni2Number))
+                                warning('OPENEP/IMPORTCARTO_MEM: Second unipole channel incorrectly identified: alternatively decrementing unipole number')
+                                electrodeNames_uni{iPoint,2} = decrementUnipoleName(pointTree.ECG.ATTRIBUTE.UnipolarMappingChannel);
+                                % check that the new second unipole name actually exists, otherwise throw an error (for now)
+                                if isempty(find(strcmpi(electrodeNames_uni{iPoint,2}, names)))
+                                    error('OPENEP/IMPORTCARTO_MEM: Unable to identify second unipole channel')
+                                end
+                            end
+
+                        end
+
+                    end
                     
                     pointFileName = allPointExport.Point(iPoint).ATTRIBUTE.File_Name;
                     pointFileName = fullfile(homeDir, pointFileName);
-                    
-
                     
                     if any(kRef>numel(names)) || any(kEcg>numel(names)) || any(~strcmpi(names(kRef),nameRef)) || any(~strcmpi(names(kEcg),nameEcg))
                         beep()
@@ -461,6 +507,11 @@ for iMap = selection
                         kRef = find( strcmpi(nameRef, names) );
                         if isempty(kRef)
                             warning(['IMPORTCARTO_MEM: The requested reference channel, ' nameRef ' was not found in file: ' filename '. NaN values will be assigned as the reference for this point' ]);
+                            % % try switching the names CS to DECA
+                            % % TODO add in code here which translates CS
+                            % to DECA, as this is the only use case for
+                            % this we have come across yet
+                            
                             kRef = NaN;
                         end
                         for i = 1:numel(kEcg)
@@ -506,6 +557,9 @@ for iMap = selection
                         disp(filename)
                         disp('')
                     end
+                end
+                if isnan(kRef)
+                    kRef = kRefBu;
                 end
             end
             delete(hWait)
@@ -680,8 +734,11 @@ for iMap = selection
     for i = 1:numel(userdata.electric.electrodeNames_uni)
         userdata.electric.electrodeNames_uni{i} = [userdata.electric.electrodeNames_uni{i} , '('];
     end
-    userdata.electric.egmRefNames = nameRefFull;
-    userdata.electric.ecgNames = nameEcgFull;
+    
+    % Commented out, 25-6-25 - unsure why we are storing these. Format is
+    % e.g. V2(23) rather than V2. Can be added back in if needed.
+    % userdata.electric.egmRefNames = nameRefFull;
+    % userdata.electric.ecgNames = nameEcgFull;
     
     
 

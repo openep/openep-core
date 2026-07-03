@@ -38,10 +38,10 @@ elseif isa(tNew, 'triangulation')
     type = 'triangulation';
 elseif isa(tNew, 'struct')
     type = 'struct';
-    if ~isfield(userdata.surface.triRep, 'X')
+    if ~isfield(tNew, 'X')
         error('OPENEP/SETMESH: invalid input data. tNew must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
-    if ~isfield(userdata.surface.triRep, 'Triangulation')
+    if ~isfield(tNew, 'Triangulation')
         error('OPENEP/SETMESH: invalid intput data. tNew must be one of: TriRep, triangulation or struct with fields .X and .Triangulation');
     end
 end
