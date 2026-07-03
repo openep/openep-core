@@ -41,7 +41,7 @@ mkdir(destination);
 cleanupObj = onCleanup(@() removeFolder(destination));
 
 extractStart = tic;
-unzip(cartoPath, destination);
+extractZipArchive(cartoPath, destination);
 extractionSeconds = toc(extractStart);
 caseFolder = findExtractedCartoFolder(destination);
 if isempty(caseFolder)
@@ -58,6 +58,28 @@ info.requiredBytes = requiredBytes;
 info.availableBytesBeforeExtraction = availableBytes;
 info.extractionSeconds = extractionSeconds;
 info.message = sprintf('Extracted CARTO ZIP to %s.', destination);
+end
+
+function extractZipArchive(zipPath, destination)
+if isunix && isfile('/usr/bin/unzip')
+    command = java.util.ArrayList();
+    command.add('/usr/bin/unzip');
+    command.add('-q');
+    command.add(zipPath);
+    command.add('-d');
+    command.add(destination);
+    processBuilder = java.lang.ProcessBuilder(command);
+    processBuilder.redirectErrorStream(true);
+    process = processBuilder.start();
+    status = process.waitFor();
+    if status ~= 0
+        error('prepare_carto_case_for_test:ExtractionFailed', ...
+            'unzip failed with status %d while extracting %s.', ...
+            status, zipPath);
+    end
+else
+    unzip(zipPath, destination);
+end
 end
 
 function info = emptyInfo(sourcePath)
