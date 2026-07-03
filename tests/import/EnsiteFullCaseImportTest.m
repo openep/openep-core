@@ -47,7 +47,7 @@ classdef EnsiteFullCaseImportTest < matlab.unittest.TestCase
             expectedPoints = [4585, 3620, 7110];
             actualPoints = arrayfun(@(d) size(d.userdata.electric.egmX, 1), ...
                 openepCase.datasets);
-            testCase.verifyEqual(actualPoints, expectedPoints);
+            testCase.verifyEqual(actualPoints(:)', expectedPoints);
 
             verifyEgmLayout(testCase, openepCase.datasets(1), 2);
             verifyEgmLayout(testCase, openepCase.datasets(2), 1);
