@@ -179,6 +179,70 @@ end
 for i = 1:numel(datasets)
     datasetLabel = sprintf('%s [%s]', sourceLabel, datasets(i).id);
     checks = validateOpenepUserdata(datasets(i).userdata, checks, datasetLabel);
+    checks = validateRecordingModeEgmLayout(datasets(i).userdata, ...
+        datasets(i).recordingMode, checks, datasetLabel);
+end
+end
+
+function checks = validateRecordingModeEgmLayout(userdata, mode, checks, sourceLabel)
+if ~ismember(mode, {'bi', 'omni'})
+    return
+end
+
+nComponents = 2;
+if strcmp(mode, 'omni')
+    nComponents = 3;
+end
+
+if ~isstruct(userdata) || ~isfield(userdata, 'electric') || ...
+        ~isstruct(userdata.electric)
+    return
+end
+
+electric = userdata.electric;
+requiredFields = {'egmX', 'egm', 'egmUni', 'egmUniX', 'electrodeNames_uni'};
+missing = requiredFields(~isfield(electric, requiredFields));
+checkId = ['openep.case.', mode, '.egm_layout'];
+if ~isempty(missing)
+    checks = addCheck(checks, 'fail', 5, checkId, ...
+        ['Missing electric fields: ', strjoin(missing, ', ')], sourceLabel);
+    return
+end
+
+if ~isnumeric(electric.egm) || ~ismatrix(electric.egm)
+    checks = addCheck(checks, 'fail', 5, checkId, ...
+        'userdata.electric.egm must be a numeric numPoints-by-numSamples matrix.', ...
+        sourceLabel);
+    return
+end
+
+nPoints = size(electric.egmX, 1);
+nSamples = size(electric.egm, 2);
+if size(electric.egm, 1) ~= nPoints
+    checks = addCheck(checks, 'fail', 5, checkId, ...
+        sprintf(['userdata.electric.egm has %d row(s), but egmX has ', ...
+        '%d mapping point(s).'], size(electric.egm, 1), nPoints), sourceLabel);
+    return
+end
+
+expectedEgmUniSize = [nPoints, nSamples, nComponents];
+expectedCoordinateSize = [nPoints, 3, nComponents];
+expectedNameSize = [nPoints, nComponents];
+
+if ~isequal(size(electric.egmUni), expectedEgmUniSize) || ...
+        ~isequal(size(electric.egmUniX), expectedCoordinateSize) || ...
+        ~isequal(size(electric.electrodeNames_uni), expectedNameSize)
+    message = sprintf(['Expected egmUni %s, egmUniX %s and ', ...
+        'electrodeNames_uni %s; found %s, %s and %s.'], ...
+        mat2str(expectedEgmUniSize), mat2str(expectedCoordinateSize), ...
+        mat2str(expectedNameSize), mat2str(size(electric.egmUni)), ...
+        mat2str(size(electric.egmUniX)), ...
+        mat2str(size(electric.electrodeNames_uni)));
+    checks = addCheck(checks, 'fail', 5, checkId, message, sourceLabel);
+else
+    checks = addCheck(checks, 'pass', 5, checkId, ...
+        sprintf('%s EGM layout is numPoints-by-numSamples-by-%d.', ...
+        upper(mode), nComponents), sourceLabel);
 end
 end
 

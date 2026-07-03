@@ -75,8 +75,9 @@ function [userdata, matFileFullPath] = importensitex_openep(varargin)
 %       .egmX           - location of point
 %       .egmSurfX       - location of surface nearest point
 %       .barDirection   - normal to surface at egmSurfX
-%       .egm            - bipolar electrogram
-%       .egmUni         - matrix of unipolar electrograms
+%       .egm            - primary roving electrogram for the selected mode
+%       .egmUni         - numPoints-by-numSamples-by-numComponents unipolar
+%                         electrograms; omni order is corner, along, across
 %       .egmUniX        - location of unipolar points
 %       .egmRefNames    - names of egmRef
 %       .egmRef         - electrogram of reference
@@ -1121,6 +1122,7 @@ switch egmtype
     case 'omni'
         disp('IMPORTENSITEX_OPENEP: Parsing unipolar co-ordinates for omnipolar configuration ...');
 
+        % The third dimension is ordered corner, along, across.
         userdata.electric.egmUniX = zeros( ...
             size(userdata.electric.egmX, 1), 3, 3);
         for iPoint = 1:size(userdata.electric.electrodeNames_uni,1)
@@ -1165,6 +1167,7 @@ switch egmtype
         userdata.electric.egmUni = userdata.electric.egm;
         userdata.electric.egmUniX = userdata.electric.egmX;
 end
+local_validateEgmLayout(userdata, egmtype);
 
 % % Store any additional signals in the ecg array
 % disp('dealing with ECG electrograms')
@@ -1506,6 +1509,48 @@ end
         expected = strtrim(char(expected));
         tf = strcmpi(observed, expected) || ...
             endsWith(observed, [' ', expected], 'IgnoreCase', true);
+    end
+
+    function local_validateEgmLayout(userdataIn, recordingMode)
+        if ~ismember(recordingMode, {'bi', 'omni'})
+            return
+        end
+
+        nComponents = 2;
+        if strcmp(recordingMode, 'omni')
+            nComponents = 3;
+        end
+
+        electric = userdataIn.electric;
+        nPoints = size(electric.egmX, 1);
+        if size(electric.egm, 1) ~= nPoints
+            error(['IMPORTENSITEX_OPENEP: egm row count (%d) does not ', ...
+                'match mapping point count (%d).'], ...
+                size(electric.egm, 1), nPoints);
+        end
+
+        expectedEgmUniSize = [nPoints, ...
+            size(electric.egm, 2), nComponents];
+        if ~isequal(size(electric.egmUni), expectedEgmUniSize)
+            error(['IMPORTENSITEX_OPENEP: egmUni must have size ', ...
+                'numPoints-by-numSamples-by-%d for egmtype=%s; found %s.'], ...
+                nComponents, recordingMode, mat2str(size(electric.egmUni)));
+        end
+
+        expectedCoordinateSize = [nPoints, 3, nComponents];
+        if ~isequal(size(electric.egmUniX), expectedCoordinateSize)
+            error(['IMPORTENSITEX_OPENEP: egmUniX must have size ', ...
+                'numPoints-by-3-by-%d for egmtype=%s; found %s.'], ...
+                nComponents, recordingMode, mat2str(size(electric.egmUniX)));
+        end
+
+        expectedNameSize = [nPoints, nComponents];
+        if ~isequal(size(electric.electrodeNames_uni), expectedNameSize)
+            error(['IMPORTENSITEX_OPENEP: electrodeNames_uni must have size ', ...
+                'numPoints-by-%d for egmtype=%s; found %s.'], ...
+                nComponents, recordingMode, ...
+                mat2str(size(electric.electrodeNames_uni)));
+        end
     end
 
     function xmlFiles = local_findAllXmlFiles(parentDirectory)

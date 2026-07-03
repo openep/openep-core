@@ -48,8 +48,28 @@ classdef EnsiteFullCaseImportTest < matlab.unittest.TestCase
             actualPoints = arrayfun(@(d) size(d.userdata.electric.egmX, 1), ...
                 openepCase.datasets);
             testCase.verifyEqual(actualPoints, expectedPoints);
+
+            verifyEgmLayout(testCase, openepCase.datasets(1), 2);
+            verifyEgmLayout(testCase, openepCase.datasets(2), 1);
+            verifyEgmLayout(testCase, openepCase.datasets(3), 3);
         end
     end
+end
+
+function verifyEgmLayout(testCase, dataset, nComponents)
+electric = dataset.userdata.electric;
+nPoints = size(electric.egm, 1);
+nSamples = size(electric.egm, 2);
+
+if nComponents == 1
+    testCase.verifySize(electric.egmUni, [nPoints, nSamples]);
+    testCase.verifySize(electric.egmUniX, [nPoints, 3]);
+else
+    testCase.verifySize(electric.egmUni, ...
+        [nPoints, nSamples, nComponents]);
+    testCase.verifySize(electric.egmUniX, [nPoints, 3, nComponents]);
+end
+testCase.verifySize(electric.electrodeNames_uni, [nPoints, nComponents]);
 end
 
 function tf = runFullImporterTests()
