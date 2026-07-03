@@ -6,8 +6,7 @@ function [caseFolder, cleanupObj, info] = prepare_carto_case_for_test(cartoPath)
 
 cartoPath = char(cartoPath);
 cleanupObj = onCleanup(@() []);
-info = struct('sourcePath', cartoPath, 'wasArchive', false, ...
-    'extractionRoot', '', 'message', '');
+info = emptyInfo(cartoPath);
 
 if isfolder(cartoPath)
     caseFolder = cartoPath;
@@ -26,20 +25,24 @@ if ~strcmpi(ext, '.zip')
         'Expected a CARTO folder or ZIP file: %s', cartoPath);
 end
 
-archiveInfo = dir(cartoPath);
-requiredBytes = max(archiveInfo.bytes * 4, archiveInfo.bytes + 1e9);
-extractionBase = chooseExtractionBase(requiredBytes);
+archiveInfo = inspect_carto_zip(cartoPath);
+safetyBytes = max(0.15 * archiveInfo.uncompressedBytes, 2 * 1024^3);
+requiredBytes = archiveInfo.uncompressedBytes + safetyBytes;
+[extractionBase, availableBytes] = chooseExtractionBase(requiredBytes);
 if isempty(extractionBase)
     error('prepare_carto_case_for_test:InsufficientSpace', ...
-        ['Not enough temporary space to extract %s. ', ...
-        'Need roughly %.2f GB free.'], cartoPath, requiredBytes / 1e9);
+        ['Not enough temporary space to extract %s. Need %.2f GiB ', ...
+        '(%.2f GiB archive plus safety margin).'], cartoPath, ...
+        requiredBytes / 1024^3, archiveInfo.uncompressedBytes / 1024^3);
 end
 
 destination = tempname(extractionBase);
 mkdir(destination);
 cleanupObj = onCleanup(@() removeFolder(destination));
 
+extractStart = tic;
 unzip(cartoPath, destination);
+extractionSeconds = toc(extractStart);
 caseFolder = findExtractedCartoFolder(destination);
 if isempty(caseFolder)
     error('prepare_carto_case_for_test:NoCartoFolder', ...
@@ -48,10 +51,30 @@ end
 
 info.wasArchive = true;
 info.extractionRoot = destination;
+info.archiveCompressedBytes = archiveInfo.compressedBytes;
+info.archiveUncompressedBytes = archiveInfo.uncompressedBytes;
+info.archiveFileCount = archiveInfo.fileCount;
+info.requiredBytes = requiredBytes;
+info.availableBytesBeforeExtraction = availableBytes;
+info.extractionSeconds = extractionSeconds;
 info.message = sprintf('Extracted CARTO ZIP to %s.', destination);
 end
 
-function extractionBase = chooseExtractionBase(requiredBytes)
+function info = emptyInfo(sourcePath)
+info = struct( ...
+    'sourcePath', sourcePath, ...
+    'wasArchive', false, ...
+    'extractionRoot', '', ...
+    'archiveCompressedBytes', 0, ...
+    'archiveUncompressedBytes', 0, ...
+    'archiveFileCount', 0, ...
+    'requiredBytes', 0, ...
+    'availableBytesBeforeExtraction', 0, ...
+    'extractionSeconds', 0, ...
+    'message', '');
+end
+
+function [extractionBase, availableBytes] = chooseExtractionBase(requiredBytes)
 candidates = {};
 if isfolder('/dev/shm')
     candidates{end+1} = '/dev/shm';
@@ -59,12 +82,33 @@ end
 candidates{end+1} = tempdir;
 
 extractionBase = '';
+availableBytes = 0;
 for i = 1:numel(candidates)
     candidate = candidates{i};
-    if usableSpaceBytes(candidate) >= requiredBytes
+    candidateBytes = usableSpaceBytes(candidate);
+    hasMemory = true;
+    if strcmp(candidate, '/dev/shm')
+        memoryReserveBytes = 8 * 1024^3;
+        hasMemory = availableMemoryBytes() >= requiredBytes + memoryReserveBytes;
+    end
+    if candidateBytes >= requiredBytes && hasMemory
         extractionBase = candidate;
+        availableBytes = candidateBytes;
         return
     end
+end
+end
+
+function bytes = availableMemoryBytes()
+bytes = Inf;
+if ~isfile('/proc/meminfo')
+    return
+end
+
+text = fileread('/proc/meminfo');
+token = regexp(text, 'MemAvailable:\s+(\d+)\s+kB', 'tokens', 'once');
+if ~isempty(token)
+    bytes = str2double(token{1}) * 1024;
 end
 end
 

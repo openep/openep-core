@@ -30,8 +30,9 @@ end
 zipFiles = visibleFiles(dir(fullfile(cartoRoot, '**', '*.zip')));
 for i = 1:numel(zipFiles)
     zipPath = fullfile(zipFiles(i).folder, zipFiles(i).name);
+    archiveInfo = inspect_carto_zip(zipPath);
     cases(end+1) = makeCase('carto', zipPath, true, zipPath, zipFiles(i).bytes, ...
-        {}, {}, {}, 'CARTO ZIP export'); %#ok<AGROW>
+        {}, {}, {}, 'CARTO ZIP export', archiveInfo); %#ok<AGROW>
 end
 
 meshFiles = visibleFiles(dir(fullfile(cartoRoot, '**', '*.mesh')));
@@ -43,7 +44,7 @@ for i = 1:numel(folders)
     hasStudyXml = any(~contains(names, 'Point_Export') & ~contains(names, 'Points_Export'));
     if hasStudyXml
         cases(end+1) = makeCase('carto', folderPath, false, '', folderSizeBytes(folderPath), ...
-            inferCartoMapNames(folderPath), {}, {}, 'Extracted CARTO export'); %#ok<AGROW>
+            inferCartoMapNames(folderPath), {}, {}, 'Extracted CARTO export', struct()); %#ok<AGROW>
     end
 end
 end
@@ -61,7 +62,7 @@ for i = 1:numel(modelFiles)
     [candidateMaps, candidateMapFiles, egmTypes] = inferEnsiteMaps(exportFolder);
     cases(end+1) = makeCase('ensitex', exportFolder, false, '', ...
         folderSizeBytes(exportFolder), candidateMaps, candidateMapFiles, egmTypes, ...
-        'Extracted EnSiteX export'); %#ok<AGROW>
+        'Extracted EnSiteX export', struct()); %#ok<AGROW>
 end
 end
 
@@ -138,7 +139,7 @@ names = {files.name};
 files = files(~startsWith(names, '.') & ~startsWith(names, '._'));
 end
 
-function s = makeCase(caseType, path, isArchive, archivePath, sizeBytes, candidateMaps, candidateMapFiles, egmTypes, notes)
+function s = makeCase(caseType, path, isArchive, archivePath, sizeBytes, candidateMaps, candidateMapFiles, egmTypes, notes, archiveInfo)
 [~, name, ext] = fileparts(path);
 s = struct();
 s.caseType = caseType;
@@ -147,6 +148,15 @@ s.path = path;
 s.isArchive = isArchive;
 s.archivePath = archivePath;
 s.sizeBytes = sizeBytes;
+if isempty(fieldnames(archiveInfo))
+    s.archiveCompressedBytes = 0;
+    s.archiveUncompressedBytes = 0;
+    s.archiveFileCount = 0;
+else
+    s.archiveCompressedBytes = archiveInfo.compressedBytes;
+    s.archiveUncompressedBytes = archiveInfo.uncompressedBytes;
+    s.archiveFileCount = archiveInfo.fileCount;
+end
 s.candidateMaps = candidateMaps;
 s.candidateMapFiles = candidateMapFiles;
 s.egmTypes = egmTypes;
@@ -155,6 +165,7 @@ end
 
 function s = emptyManifest()
 s = struct('caseType', {}, 'name', {}, 'path', {}, 'isArchive', {}, ...
-    'archivePath', {}, 'sizeBytes', {}, 'candidateMaps', {}, ...
+    'archivePath', {}, 'sizeBytes', {}, 'archiveCompressedBytes', {}, ...
+    'archiveUncompressedBytes', {}, 'archiveFileCount', {}, 'candidateMaps', {}, ...
     'candidateMapFiles', {}, 'egmTypes', {}, 'notes', {});
 end

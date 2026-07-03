@@ -81,8 +81,14 @@ classdef MappingInputValidationTest < matlab.unittest.TestCase
             testCase.verifyTrue(isfolder(caseFolder));
             testCase.verifyTrue(info.wasArchive);
             testCase.verifyTrue(isfile(fullfile(caseFolder, 'map.mesh')));
+            testCase.verifyGreaterThan(info.archiveCompressedBytes, 0);
+            testCase.verifyGreaterThan(info.archiveUncompressedBytes, 0);
+            testCase.verifyEqual(info.archiveFileCount, 2);
+            testCase.verifyGreaterThan(info.requiredBytes, ...
+                info.archiveUncompressedBytes);
+            extractionRoot = info.extractionRoot;
             delete(cleanupObj);
-            testCase.verifyFalse(isfolder(info.extractionRoot));
+            testCase.verifyFalse(isfolder(extractionRoot));
         end
     end
 end
