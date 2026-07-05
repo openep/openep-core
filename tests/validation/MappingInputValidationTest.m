@@ -76,7 +76,7 @@ classdef MappingInputValidationTest < matlab.unittest.TestCase
             zipFile = fullfile(testCase.TempRoot, 'carto_case.zip');
             zip(zipFile, sourceFolder);
 
-            [caseFolder, cleanupObj, info] = prepare_carto_case_for_test(zipFile);
+            [caseFolder, cleanupObj, info] = prepare_carto_case(zipFile);
 
             testCase.verifyTrue(isfolder(caseFolder));
             testCase.verifyTrue(info.wasArchive);

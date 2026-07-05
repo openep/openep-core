@@ -28,19 +28,23 @@ classdef EnsiteFullCaseImportTest < matlab.unittest.TestCase
                 mapName = 'VoXel SR 1 ENDO';
             end
             outputFile = [tempname, '.mat'];
-            cleanupObj = onCleanup(@() deleteIfPresent(outputFile));
+            cleanupObj = onCleanup(@() deleteConversionFiles(outputFile));
 
-            [openepCase, savedFile] = importensitex_case( ...
-                caseRoot, ...
+            result = convert_mapping_case(caseRoot, outputFile, ...
+                'system', 'ensitex', ...
                 'maptoread', mapName, ...
                 'modes', {'bi', 'uni', 'omni'}, ...
-                'maptype', 'asegm', ...
-                'showprogress', false, ...
-                'savefilename', outputFile);
+                'validationlevel', 'standard');
 
-            testCase.verifyTrue(isfile(savedFile));
-            report = validate_mapping_input(openepCase, 'openep_case');
-            testCase.verifyEqual(report.numFail, 0, report.summary);
+            testCase.verifyTrue(result.success, result.error.message);
+            testCase.verifyTrue(result.outputPublished);
+            testCase.verifyTrue(isfile(outputFile));
+            testCase.verifyTrue(isfile(result.statusFile));
+            testCase.verifyTrue(isfile(result.logFile));
+            testCase.verifyEqual(result.outputValidation.numFail, 0, ...
+                result.outputValidation.summary);
+            loaded = load(outputFile, 'openepCase');
+            openepCase = loaded.openepCase;
             testCase.verifyEqual({openepCase.datasets.recordingMode}, ...
                 {'bi', 'uni', 'omni'});
 
@@ -52,6 +56,7 @@ classdef EnsiteFullCaseImportTest < matlab.unittest.TestCase
             verifyEgmLayout(testCase, openepCase.datasets(1), 2);
             verifyEgmLayout(testCase, openepCase.datasets(2), 1);
             verifyEgmLayout(testCase, openepCase.datasets(3), 3);
+            delete(cleanupObj);
         end
     end
 end
@@ -77,8 +82,16 @@ tf = any(strcmpi(getenv('RUN_FULL_IMPORTER_SMOKE_TESTS'), ...
     {'1', 'true', 'yes'}));
 end
 
-function deleteIfPresent(filePath)
-if isfile(filePath)
-    delete(filePath);
+function deleteConversionFiles(outputFile)
+[folder, name] = fileparts(outputFile);
+files = {
+    outputFile
+    fullfile(folder, [name, '.status.json'])
+    fullfile(folder, [name, '.log.txt'])
+    };
+for i = 1:numel(files)
+    if isfile(files{i})
+        delete(files{i});
+    end
 end
 end

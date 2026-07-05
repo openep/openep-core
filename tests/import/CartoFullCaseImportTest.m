@@ -29,37 +29,35 @@ classdef CartoFullCaseImportTest < matlab.unittest.TestCase
                 'OPENEP_FULL_CARTO_REFCHANNEL', 'CS1-CS2');
             ecgChannel = environmentDefault( ...
                 'OPENEP_FULL_CARTO_ECGCHANNEL', 'V1');
+            outputFile = [tempname, '.mat'];
+            cleanupObj = onCleanup(@() deleteConversionFiles(outputFile));
 
-            preparationStart = tic;
-            [caseFolder, extractionCleanup, extractionInfo] = ...
-                prepare_carto_case_for_test(casePath);
-            preparationSeconds = toc(preparationStart);
-            studyXml = findStudyXml(caseFolder);
-
-            importStart = tic;
-            userdata = importcarto_mem(studyXml, ...
+            result = convert_mapping_case(casePath, outputFile, ...
+                'system', 'carto', ...
                 'maptoread', mapName, ...
                 'refchannel', refChannel, ...
                 'ecgchannel', ecgChannel, ...
-                'verbose', false);
-            importSeconds = toc(importStart);
+                'validationlevel', 'standard');
 
-            validationStart = tic;
-            report = validate_mapping_input(userdata, 'openep_userdata');
-            validationSeconds = toc(validationStart);
-            printTimings(extractionInfo, preparationSeconds, ...
-                importSeconds, validationSeconds);
-
-            testCase.verifyEqual(report.numFail, 0, report.summary);
+            testCase.verifyTrue(result.success, result.error.message);
+            testCase.verifyTrue(result.outputPublished);
+            testCase.verifyTrue(isfile(outputFile));
+            testCase.verifyTrue(isfile(result.statusFile));
+            testCase.verifyTrue(isfile(result.logFile));
+            testCase.verifyEqual(result.outputValidation.numFail, 0, ...
+                result.outputValidation.summary);
+            loaded = load(outputFile, 'userdata');
+            userdata = loaded.userdata;
             testCase.verifyTrue(isstruct(userdata.surface.triRep));
             verifyMesh(testCase, userdata.surface.triRep);
             verifyElectricData(testCase, userdata.electric, mapName);
+            printTimings(result);
 
-            extractionRoot = extractionInfo.extractionRoot;
-            delete(extractionCleanup);
-            if extractionInfo.wasArchive
+            if isfield(result.archive, 'wasArchive') && result.archive.wasArchive
+                extractionRoot = result.archive.extractionRoot;
                 testCase.verifyFalse(isfolder(extractionRoot));
             end
+            delete(cleanupObj);
         end
     end
 end
@@ -74,22 +72,6 @@ value = getenv(name);
 if isempty(value)
     value = defaultValue;
 end
-end
-
-function studyXml = findStudyXml(caseFolder)
-xmlFiles = dir(fullfile(caseFolder, '*.xml'));
-names = {xmlFiles.name};
-isStudyFile = ~startsWith(names, '.') & ...
-    ~contains(names, 'Point_Export') & ...
-    ~contains(names, 'Points_Export');
-xmlFiles = xmlFiles(isStudyFile);
-
-if numel(xmlFiles) ~= 1
-    error('CartoFullCaseImportTest:StudyXmlSelection', ...
-        'Expected one CARTO study XML in %s, found %d.', ...
-        caseFolder, numel(xmlFiles));
-end
-studyXml = fullfile(xmlFiles(1).folder, xmlFiles(1).name);
 end
 
 function verifyMesh(testCase, mesh)
@@ -129,13 +111,31 @@ testCase.verifyEqual(size(electric.voltages.bipolar, 1), nPoints);
 testCase.verifyEqual(size(electric.voltages.unipolar, 1), nPoints);
 end
 
-function printTimings(info, preparationSeconds, importSeconds, validationSeconds)
-fprintf(['CARTO full-case timing: preparation %.1f s ', ...
-    '(extraction %.1f s), import %.1f s, validation %.1f s.\n'], ...
-    preparationSeconds, info.extractionSeconds, importSeconds, validationSeconds);
-if info.wasArchive
+function printTimings(result)
+timings = result.timings;
+fprintf(['CARTO full-case timing: preparation %.1f s, import %.1f s, ', ...
+    'validation %.1f s, save %.1f s, total %.1f s.\n'], ...
+    timings.preparationSeconds, timings.importSeconds, ...
+    timings.outputValidationSeconds, timings.saveSeconds, ...
+    timings.totalSeconds);
+if isfield(result.archive, 'wasArchive') && result.archive.wasArchive
     fprintf('CARTO archive: %d files, %.2f GiB uncompressed, root %s.\n', ...
-        info.archiveFileCount, info.archiveUncompressedBytes / 1024^3, ...
-        info.extractionRoot);
+        result.archive.archiveFileCount, ...
+        result.archive.archiveUncompressedBytes / 1024^3, ...
+        result.archive.extractionRoot);
+end
+end
+
+function deleteConversionFiles(outputFile)
+[folder, name] = fileparts(outputFile);
+files = {
+    outputFile
+    fullfile(folder, [name, '.status.json'])
+    fullfile(folder, [name, '.log.txt'])
+    };
+for i = 1:numel(files)
+    if isfile(files{i})
+        delete(files{i});
+    end
 end
 end
