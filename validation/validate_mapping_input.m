@@ -377,7 +377,8 @@ elseif ~isfolder(inputPath)
 end
 
 xmlFiles = visibleFiles(dir(fullfile(inputPath, '*.xml')));
-studyXml = xmlFiles(~contains({xmlFiles.name}, 'Point_Export'));
+studyXml = xmlFiles(~contains({xmlFiles.name}, 'Point_Export') & ...
+    ~contains({xmlFiles.name}, 'Points_Export'));
 if isempty(studyXml)
     checks = addCheck(checks, 'fail', 1, 'carto.study_xml.missing', ...
         'No CARTO study XML found at the export root.', inputPath);
