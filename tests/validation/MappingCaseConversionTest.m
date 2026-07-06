@@ -40,6 +40,7 @@ classdef MappingCaseConversionTest < matlab.unittest.TestCase
             testCase.verifyFalse(isfile(outputFile));
             testCase.verifyTrue(isfile(result.statusFile));
             testCase.verifyTrue(isfile(result.logFile));
+            testCase.verifyFalse(isfile(result.progressFile));
 
             savedStatus = jsondecode(fileread(result.statusFile));
             testCase.verifyFalse(savedStatus.success);
@@ -55,6 +56,7 @@ classdef MappingCaseConversionTest < matlab.unittest.TestCase
             outputFile = fullfile(testCase.TempRoot, 'thrown.mat');
             statusFile = fullfile(testCase.TempRoot, 'thrown.json');
             logFile = fullfile(testCase.TempRoot, 'thrown.log');
+            progressFile = fullfile(testCase.TempRoot, 'thrown.progress.json');
 
             call = @() convert_mapping_case( ...
                 fullfile(testCase.TempRoot, 'missing.zip'), outputFile, ...
@@ -64,11 +66,13 @@ classdef MappingCaseConversionTest < matlab.unittest.TestCase
                 'ecgchannel', 'V1', ...
                 'statusfilename', statusFile, ...
                 'logfilename', logFile, ...
+                'progressfilename', progressFile, ...
                 'throwonfailure', true);
 
             testCase.verifyError(call, 'prepare_carto_case:MissingPath');
             testCase.verifyTrue(isfile(statusFile));
             testCase.verifyTrue(isfile(logFile));
+            testCase.verifyFalse(isfile(progressFile));
             testCase.verifyFalse(isfile(outputFile));
         end
     end

@@ -75,6 +75,26 @@ case.status.json
 case.log.txt
 ```
 
+While conversion is running, it also maintains:
+
+```text
+case.progress.json
+```
+
+This file is atomically replaced as work advances. It contains the current
+stage, percentage, message, update timestamp and elapsed time. CARTO reports
+point, annotation, electrogram and force-data progress. EnSiteX reports
+discovery and completion of each requested recording mode. The progress file
+is removed only after the final status JSON has been written successfully. If
+MATLAB is terminated unexpectedly, a stale progress file remains as evidence
+of the interrupted job.
+
+Progress can be watched from a shell:
+
+```bash
+watch -n 2 cat /output/case.progress.json
+```
+
 The JSON document is the machine-readable result. Important fields are:
 
 | Field | Meaning |
@@ -83,6 +103,7 @@ The JSON document is the machine-readable result. Important fields are:
 | `status` | `success`, `warning`, or `failure` |
 | `outputFile` | Final MAT path |
 | `outputPublished` | Whether this conversion published a new MAT file |
+| `progressFile` | Path used for transient progress updates |
 | `inputValidation` | Input checks and summary |
 | `outputValidation` | OpenEP structure checks and summary |
 | `runtimeWarning` | Last MATLAB importer warning, when present |

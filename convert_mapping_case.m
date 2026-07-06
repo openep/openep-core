@@ -23,6 +23,7 @@ addParameter(p, 'validationlevel', 'standard', ...
     @(x) ischar(x) || isstring(x));
 addParameter(p, 'statusfilename', '', @(x) ischar(x) || isstring(x));
 addParameter(p, 'logfilename', '', @(x) ischar(x) || isstring(x));
+addParameter(p, 'progressfilename', '', @(x) ischar(x) || isstring(x));
 addParameter(p, 'throwonfailure', false, ...
     @(x) islogical(x) && isscalar(x));
 parse(p, inputPath, outputFile, varargin{:});
@@ -54,18 +55,27 @@ logFile = char(opts.logfilename);
 if isempty(logFile)
     logFile = fullfile(outputFolder, [outputName, '.log.txt']);
 end
+progressFile = char(opts.progressfilename);
+if isempty(progressFile)
+    progressFile = fullfile(outputFolder, [outputName, '.progress.json']);
+end
 ensureParentFolder(statusFile);
 ensureParentFolder(logFile);
+ensureParentFolder(progressFile);
 
-result = emptyResult(inputPath, outputFile, statusFile, logFile);
+result = emptyResult(inputPath, outputFile, statusFile, logFile, progressFile);
 totalStart = tic;
 consoleLog = '';
 failureException = [];
 cleanupObj = onCleanup(@() []);
+writeProgress(progressFile, inputPath, outputFile, '', totalStart, ...
+    'starting', 0, 'Starting conversion.');
 
 try
     sourceSystem = resolveSystem(inputPath, opts.system);
     result.sourceSystem = sourceSystem;
+    writeProgress(progressFile, inputPath, outputFile, sourceSystem, ...
+        totalStart, 'preparing_input', 5, 'Preparing input files.');
 
     preparationStart = tic;
     if strcmp(sourceSystem, 'carto')
@@ -77,6 +87,8 @@ try
     end
     result.timings.preparationSeconds = toc(preparationStart);
 
+    writeProgress(progressFile, inputPath, outputFile, sourceSystem, ...
+        totalStart, 'validating_input', 15, 'Validating input files.');
     validationStart = tic;
     result.inputValidation = validateInput( ...
         preparedInput, sourceSystem, opts);
@@ -87,9 +99,14 @@ try
     end
 
     lastwarn('');
+    progressCallback = @(stage, fraction, message) writeProgress( ...
+        progressFile, inputPath, outputFile, sourceSystem, totalStart, ...
+        ['importing_', char(stage)], 20 + 65 * fraction, char(message)); %#ok<NASGU>
+    writeProgress(progressFile, inputPath, outputFile, sourceSystem, ...
+        totalStart, 'importing', 20, 'Importing mapping data.');
     importStart = tic;
     [consoleLog, payload, importException] = evalc( ...
-        'invokeImporter(preparedInput, sourceSystem, opts)');
+        'invokeImporter(preparedInput, sourceSystem, opts, progressCallback)');
     result.timings.importSeconds = toc(importStart);
     [warningMessage, warningId] = lastwarn();
     result.runtimeWarning = struct( ...
@@ -98,6 +115,8 @@ try
         throw(importException);
     end
 
+    writeProgress(progressFile, inputPath, outputFile, sourceSystem, ...
+        totalStart, 'validating_output', 88, 'Validating OpenEP output.');
     validationStart = tic;
     result.outputValidation = validate_mapping_input( ...
         payload.value, payload.validationMode);
@@ -108,6 +127,8 @@ try
             result.outputValidation.summary);
     end
 
+    writeProgress(progressFile, inputPath, outputFile, sourceSystem, ...
+        totalStart, 'saving_output', 95, 'Publishing MAT output.');
     saveStart = tic;
     savePayloadAtomically(payload, outputFile);
     result.timings.saveSeconds = toc(saveStart);
@@ -125,6 +146,8 @@ catch ME
     result.success = false;
     result.status = 'failure';
     result.error = exceptionAsStruct(ME);
+    writeProgress(progressFile, inputPath, outputFile, result.sourceSystem, ...
+        totalStart, 'failed', 100, ME.message);
 end
 
 try
@@ -141,13 +164,15 @@ result.finishedAt = timestampNow();
 result.timings.totalSeconds = toc(totalStart);
 writeTextAtomically(logFile, formatLog(result, consoleLog));
 writeJsonAtomically(statusFile, result);
+deleteIfPresent(progressFile);
 
 if ~result.success && opts.throwonfailure
     throw(failureException);
 end
 end
 
-function result = emptyResult(inputPath, outputFile, statusFile, logFile)
+function result = emptyResult( ...
+        inputPath, outputFile, statusFile, logFile, progressFile)
 result = struct();
 result.schemaName = 'OpenEP mapping conversion result';
 result.schemaVersion = '1.0';
@@ -159,6 +184,7 @@ result.outputFile = outputFile;
 result.outputPublished = false;
 result.statusFile = statusFile;
 result.logFile = logFile;
+result.progressFile = progressFile;
 result.startedAt = timestampNow();
 result.finishedAt = '';
 result.archive = struct();
@@ -262,7 +288,7 @@ end
 end
 
 function [payload, caughtException] = invokeImporter( ...
-        preparedInput, sourceSystem, opts)
+        preparedInput, sourceSystem, opts, progressCallback)
 payload = struct('variableName', '', 'validationMode', '', 'value', struct());
 caughtException = [];
 try
@@ -271,6 +297,7 @@ try
             'maptoread', opts.maptoread, ...
             'refchannel', opts.refchannel, ...
             'ecgchannel', opts.ecgchannel, ...
+            'progresscallback', progressCallback, ...
             'verbose', false);
         payload.variableName = 'userdata';
         payload.validationMode = 'openep_userdata';
@@ -279,6 +306,7 @@ try
         openepCase = importensitex_case(preparedInput, ...
             'maptoread', opts.maptoread, ...
             'modes', opts.modes, ...
+            'progresscallback', progressCallback, ...
             'showprogress', false);
         payload.variableName = 'openepCase';
         payload.validationMode = 'openep_case';
@@ -356,6 +384,27 @@ end
 function writeJsonAtomically(filePath, value)
 text = jsonencode(value, 'PrettyPrint', true);
 writeTextAtomically(filePath, text);
+end
+
+function writeProgress(filePath, inputPath, outputFile, sourceSystem, ...
+        totalStart, stage, percent, message)
+progress = struct();
+progress.schemaName = 'OpenEP mapping conversion progress';
+progress.schemaVersion = '1.0';
+if strcmp(stage, 'failed')
+    progress.state = 'failed';
+else
+    progress.state = 'running';
+end
+progress.stage = char(stage);
+progress.percent = max(0, min(100, round(double(percent), 1)));
+progress.message = char(message);
+progress.sourceSystem = char(sourceSystem);
+progress.inputPath = inputPath;
+progress.outputFile = outputFile;
+progress.updatedAt = timestampNow();
+progress.elapsedSeconds = toc(totalStart);
+writeJsonAtomically(filePath, progress);
 end
 
 function writeTextAtomically(filePath, text)

@@ -32,6 +32,8 @@ function [userdata, matFileFullPath] = importcarto_mem(varargin)
 %       The full path to the location in which to save the output.
 %   'verbose'       {true}|false
 %       Show progress dialogs and prompt to save the imported data.
+%   'progresscallback' {[]}|function_handle
+%       Optional callback invoked as callback(stage, fraction, message).
 % Example of command line entry ...
 %       userdata = importcarto_mem(<path to XML file>, ...
 %                                        'maptoread', 1693,  ...
@@ -153,6 +155,7 @@ channelRef_cli = '';
 channelECG_cli = '';
 saveFileName_cli = '';
 verbose = true;
+progressCallback_cli = [];
 if nargin > nStandardArgs
     for i = nStandardArgs+1:2:nargin
         switch lower(char(varargin{i}))
@@ -167,6 +170,12 @@ if nargin > nStandardArgs
                 saveFileName_cli = varargin{i+1};
             case 'verbose'
                 verbose = varargin{i+1};
+            case 'progresscallback'
+                progressCallback_cli = varargin{i+1};
+                if ~isempty(progressCallback_cli) && ...
+                        ~isa(progressCallback_cli, 'function_handle')
+                    error('IMPORTCARTO_MEM: progresscallback must be a function handle.')
+                end
             otherwise
                 error('IMPORTCARTO_MEM: Unrecognized input.')
         end
@@ -236,6 +245,9 @@ else
             'maptoread must be a map name or point count.');
     end
 end
+
+reportProgress(progressCallback_cli, 'initializing', 0, ...
+    'Initializing CARTO import.');
 
 % Get the tags from the ID
 nTags = str2double(tree.Maps.TagsTable.ATTRIBUTE.Count);
@@ -344,6 +356,9 @@ for iMap = selection
 
     if nPoints>0
         for iPoint = 1:nPoints
+            reportLoopProgress(progressCallback_cli, 'point_metadata', ...
+                0, 0.05, iPoint, nPoints, ...
+                'Reading CARTO point metadata');
             map.xyz(iPoint,:) = str2num(cartoMap.CartoPoints.Point(iPoint).ATTRIBUTE.Position3D);
             %map.xyzSurf(iPoint,:) = cartoMap.CartoPoints.Point(iPoint).VirtualPoint.ATTRIBUTE.Position3D;   %not reliable
             %map.projDist(iPoint,:) = cartoMap.CartoPoints.Point(iPoint).VirtualPoint.ATTRIBUTE.ProjectionDistance;  %not reliable
@@ -411,6 +426,9 @@ for iMap = selection
 
     if nPoints>0
         for iPoint = 1:nPoints
+            reportLoopProgress(progressCallback_cli, 'annotations', ...
+                0.05, 0.20, iPoint, nPoints, ...
+                'Reading CARTO annotations');
             updateProgress(hWait, iPoint/nPoints);
             filename_pointExport = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
             if ~isfile(fullfile(studyDir, filename_pointExport))
@@ -461,6 +479,9 @@ for iMap = selection
                 ['Getting electrical data for ' num2str(nPoints) ' points']);
 
             for iPoint = 1:nPoints
+                reportLoopProgress(progressCallback_cli, 'electrograms', ...
+                    0.20, 0.90, iPoint, nPoints, ...
+                    'Reading CARTO electrograms');
                 updateProgress(hWait, iPoint/nPoints);
                 filename = [filenameroot '_' map.pointNames{iPoint} '_Point_Export.xml'];
                 filename = mycheckfilename(filename, allfilenames, [map.pointNames{iPoint} '_Point_Export']);
@@ -617,6 +638,9 @@ for iMap = selection
                 ['Getting force data for ' num2str(nPoints) ' points']);
             hasWarned = false;
             for iPoint = 1:nPoints
+                reportLoopProgress(progressCallback_cli, 'force', ...
+                    0.90, 0.98, iPoint, nPoints, ...
+                    'Reading CARTO contact-force data');
                 updateProgress(hWait, iPoint/nPoints);
                 filename_force = [filenameroot '_' map.pointNames{iPoint} '_ContactForce.txt'];
                 filename_force = mycheckfilename(filename_force, allfilenames, [map.pointNames{iPoint} '_ContactForce.txt']);
@@ -770,6 +794,8 @@ for iMap = selection
 
 
     % Encourage user to save the data
+    reportProgress(progressCallback_cli, 'complete', 1, ...
+        'Finished CARTO import.');
     if ~isempty(saveFileName_cli)
         save(saveFileName_cli, 'userdata');
         matFileFullPath = saveFileName_cli;
@@ -838,6 +864,27 @@ else
 end
 end
 
+function reportLoopProgress(callback, stage, startFraction, endFraction, ...
+        index, count, message)
+if isempty(callback) || count < 1
+    return
+end
+
+interval = max(1, ceil(count / 25));
+if index == 1 || index == count || mod(index, interval) == 0
+    fraction = startFraction + ...
+        (endFraction - startFraction) * index / count;
+    reportProgress(callback, stage, fraction, ...
+        sprintf('%s: %d of %d.', message, index, count));
+end
+end
+
+function reportProgress(callback, stage, fraction, message)
+if ~isempty(callback)
+    callback(stage, fraction, message);
+end
+end
+
 function fname = mycheckfilename(filename, allfilenames, searchstring)
 % Check that filename has an exact match in allfilenames. If not, then
 % search through filenames to see if there is a single string that contains
@@ -872,4 +919,3 @@ else
     warning(['IMPORTCARTO3: the filename relating to ' char(39) searchstring char(39) ' is unexpected but a match was found - ' fname])
 end
 end
-

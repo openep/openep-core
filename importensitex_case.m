@@ -6,6 +6,7 @@ function [openepCase, matFileFullPath] = importensitex_case(studyDir, varargin)
 %     'maptoread', mapName, ...
 %     'modes', {'bi', 'uni', 'omni'}, ...
 %     'savefilename', outputFile);
+% Optional progresscallback is invoked as callback(stage, fraction, message).
 
 p = inputParser;
 addRequired(p, 'studyDir', @(x) ischar(x) || isstring(x));
@@ -14,10 +15,14 @@ addParameter(p, 'modes', {}, @(x) ischar(x) || isstring(x) || iscellstr(x));
 addParameter(p, 'maptype', 'asegm', @(x) ischar(x) || isstring(x));
 addParameter(p, 'savefilename', '', @(x) ischar(x) || isstring(x));
 addParameter(p, 'showprogress', false, @(x) islogical(x) && isscalar(x));
+addParameter(p, 'progresscallback', [], ...
+    @(x) isempty(x) || isa(x, 'function_handle'));
 parse(p, studyDir, varargin{:});
 opts = p.Results;
 
 studyDir = char(studyDir);
+reportProgress(opts.progresscallback, 'discovering_exports', 0, ...
+    'Discovering EnSiteX exports.');
 manifest = inspectensitex_export(studyDir);
 assert(~isempty(manifest.exports), ...
     'IMPORTENSITEX_CASE: No EnSiteX exports found in %s.', studyDir);
@@ -25,12 +30,18 @@ assert(~isempty(manifest.exports), ...
 [mapName, mapExports] = selectMapExports(manifest.exports, opts.maptoread);
 requestedModes = normalizeRequestedModes(opts.modes, mapExports);
 datasets = repmat(emptyDataset(), numel(requestedModes), 1);
+reportProgress(opts.progresscallback, 'discovered_exports', 0.05, ...
+    sprintf('Found %d requested recording mode(s).', numel(requestedModes)));
 
 for iMode = 1:numel(requestedModes)
     mode = requestedModes{iMode};
     export = selectModeExport(mapExports, mode);
     fprintf('\nImporting EnSiteX map "%s", mode %s\n', ...
         normalizeMapName(mapName), mode);
+    reportProgress(opts.progresscallback, ['mode_', mode], ...
+        (iMode - 1) / numel(requestedModes), ...
+        sprintf('Importing EnSiteX mode %s (%d of %d).', ...
+        mode, iMode, numel(requestedModes)));
 
     [userdata, ~] = importensitex_openep( ...
         export.folder, ...
@@ -49,6 +60,10 @@ for iMode = 1:numel(requestedModes)
         'evidence', {export.evidence}, ...
         'warnings', {export.warnings});
     datasets(iMode).userdata = userdata;
+    reportProgress(opts.progresscallback, ['mode_', mode], ...
+        iMode / numel(requestedModes), ...
+        sprintf('Finished EnSiteX mode %s (%d of %d).', ...
+        mode, iMode, numel(requestedModes)));
 end
 
 openepCase = struct();
@@ -64,6 +79,12 @@ openepCase.datasets = datasets;
 matFileFullPath = char(opts.savefilename);
 if ~isempty(matFileFullPath)
     save(matFileFullPath, 'openepCase', '-v7.3');
+end
+
+function reportProgress(callback, stage, fraction, message)
+if ~isempty(callback)
+    callback(stage, fraction, message);
+end
 end
 end
 
