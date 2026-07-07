@@ -1,4 +1,4 @@
-# ARO/TRE Mapping Data Conversion
+# TRE Mapping Data Conversion
 
 ## Purpose
 
