@@ -17,6 +17,11 @@ The function:
 An unsuccessful conversion does not replace an existing MAT output with a
 partial file.
 
+For a TRE service, the recommended pattern is to run with the default
+`throwonfailure=false`, then read `case.status.json` to determine the final
+outcome. Use `throwonfailure=true` only when the surrounding batch system needs
+MATLAB to exit nonzero on conversion failure.
+
 ## CARTO
 
 CARTO input may be an extracted export folder, its study XML, or a ZIP archive.
@@ -65,7 +70,7 @@ source folder and detection evidence. Use:
 userdata = select_openep_dataset(openepCase, 'omni');
 ```
 
-## Status Contract
+## Output Contract
 
 By default, conversion produces three files:
 
@@ -74,6 +79,10 @@ case.mat
 case.status.json
 case.log.txt
 ```
+
+`case.mat` is written only after input validation, import and output validation
+have completed. If conversion fails, the previous MAT file at the same path is
+not overwritten by a partial result.
 
 While conversion is running, it also maintains:
 
@@ -95,15 +104,23 @@ Progress can be watched from a shell:
 watch -n 2 cat /output/case.progress.json
 ```
 
-The JSON document is the machine-readable result. Important fields are:
+The status JSON document is the machine-readable final result. Important fields
+are:
 
 | Field | Meaning |
 |---|---|
+| `schemaName` | Status document type |
+| `schemaVersion` | Status document schema version |
 | `success` | `true` only when import, output validation and MAT publication completed |
 | `status` | `success`, `warning`, or `failure` |
+| `sourceSystem` | Detected or requested source system: `carto` or `ensitex` |
+| `inputPath` | Source path used for conversion |
 | `outputFile` | Final MAT path |
 | `outputPublished` | Whether this conversion published a new MAT file |
+| `statusFile` | Path to this status JSON file |
+| `logFile` | Path to the text execution log |
 | `progressFile` | Path used for transient progress updates |
+| `startedAt`, `finishedAt` | UTC timestamps |
 | `inputValidation` | Input checks and summary |
 | `outputValidation` | OpenEP structure checks and summary |
 | `runtimeWarning` | Last MATLAB importer warning, when present |
@@ -119,8 +136,52 @@ The text log contains importer console output and warnings that are not part of
 the structured validator. Paths and importer messages may contain study
 identifiers, so status and log files must remain inside the TRE.
 
-Custom status and log locations can be supplied with `statusfilename` and
-`logfilename`.
+Custom status, progress and log locations can be supplied with
+`statusfilename`, `progressfilename` and `logfilename`.
+
+Example successful status fragment:
+
+```json
+{
+  "success": true,
+  "status": "success",
+  "sourceSystem": "carto",
+  "outputPublished": true,
+  "outputFile": "/output/case.mat",
+  "inputValidation": {
+    "summary": "PASS: 0 fail, 0 warning, 12 pass, 1 info"
+  },
+  "outputValidation": {
+    "summary": "PASS: 0 fail, 0 warning, 18 pass, 0 info"
+  }
+}
+```
+
+Example failure status fragment:
+
+```json
+{
+  "success": false,
+  "status": "failure",
+  "outputPublished": false,
+  "error": {
+    "identifier": "convert_mapping_case:InputValidationFailed",
+    "message": "Input validation failed: FAIL: 1 fail, 0 warning, 8 pass, 1 info"
+  }
+}
+```
+
+Example progress fragment while a job is running:
+
+```json
+{
+  "state": "running",
+  "stage": "importing_electrograms",
+  "percent": 46.2,
+  "message": "Reading CARTO electrograms: 203 of 711.",
+  "elapsedSeconds": 128.4
+}
+```
 
 ## Batch Failure Behaviour
 
@@ -143,12 +204,35 @@ The status and log files are written before the exception is rethrown.
 
 `validationlevel` accepts:
 
-- `quick`: required files and lightweight format checks;
-- `standard`: normal conversion checks and representative numeric validation;
-- `full`: all currently implemented import-relevant checks.
+- `quick`: required files, core headers and lightweight structure checks. This
+  mode avoids reading large waveform files in full where possible.
+- `standard`: `quick` checks plus representative numeric and consistency checks
+  for coordinates, LAT, voltage-like values and selected waveform files.
+- `full`: all currently implemented import-relevant checks. This mode can be
+  slower and is intended for local investigation or regression testing rather
+  than every routine conversion.
 
 Every converted OpenEP output receives structural and numeric validation
 regardless of the input validation level.
+
+Validation is format and importer validation. It checks that the exported files
+can be interpreted consistently and that the produced OpenEP structures are
+well formed. It is not a substitute for scientific or clinical review of the
+mapping data.
+
+## Known Limitations
+
+- EnSiteX ZIP archives are not extracted by this workflow. EnSiteX input should
+  be an extracted study folder.
+- CARTO ZIP archives can be large. Extraction requires enough temporary storage
+  for the uncompressed archive plus a safety margin.
+- Linux systems can use `/dev/shm` for fast CARTO extraction when enough memory
+  is available. Other platforms fall back to the system temporary directory.
+- Full-case tests are opt-in and require local test exports that are not stored
+  in the repository.
+- The text log captures MATLAB importer output verbatim, including MATLAB
+  warning backtraces. The JSON status file should be treated as the stable
+  machine-readable contract.
 
 ## Verification
 
