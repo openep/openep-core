@@ -5,6 +5,7 @@ function success = loadensitex_prechecks(fData, data_type)
 % Modifications -
 %   Phil Gemmell (2020): Refactored and updated
 %   Steven Williams (2022): converted for EnsiteX
+%   Steven Williams (2025): incremented version number
 
 success = false;
 
@@ -33,6 +34,13 @@ firstLine = fData(1:(indNewLine-1));
 ind = regexp(firstLine,...
               'Export\s*File\s*Version\s*:\s*10\.0R',...
               'once');
+
+if isempty(ind)
+    disp(['LOADENSITEX_PRECHECKS: First line is: ' firstLine]);
+    ind = regexp(firstLine,...
+              'Export\s*File\s*Version\s*:\s*11',...
+              'once');
+end
 
 if isempty(ind)
     warning('LoadPrecision:InvalidFile',...

@@ -36,15 +36,34 @@ function varargout = read_ecgfile_v4(varargin)
 headerInfo.nSamples = 2500;
 
 filename = varargin{1};
+
+% This section added to be able to remember if a manual gain has been set
+% before in this session
+manualgain = [];
+if nargin==2
+    manualgain = varargin{2};
+end
+
 fid = fopen(filename, 'r', 'ieee-le', 'UTF-8'); % MUCH faster than fid = fopen(filename, 'r')
 if fid == (-1)
     error(['READ_ECGFILE: Could not read the file: "' filename '"']);
 end
 try
     line1 = fgetl(fid);
+
+    % line 1
+    line1(isspace(line1)) = [];
+    if ~startsWith(line1,'ECG_Export_4.0','IgnoreCase',true) && ~startsWith(line1,'ECG_Export_4.1','IgnoreCase',true)
+        error('READ_ECGFILE: The version number in the txt file is unexpected.') %#ok<*WNTAG>
+    end
+
     line2 = fgetl(fid);
     line3 = fgetl(fid);
-    line4 = fgetl(fid);
+
+    % if line 
+    if startsWith(line1,'ECG_Export_4.0','IgnoreCase',true)
+        line4 = fgetl(fid);
+    end
     if nargout>=2
         vData = fread(fid,'*char')';
     end
@@ -54,37 +73,52 @@ catch err
     rethrow(err)
 end
     
-% Check lines have expected information and retrieve it
-% line 1
-line1(isspace(line1)) = []; 
-if ~startsWith(line1,'ECG_Export_4.0','IgnoreCase',true)
-    error('READ_ECGFILE: The version number in the txt file is unexpected.') %#ok<*WNTAG>
-end
+% Check lines have expected information and retrieve it (we have already
+% checked line 1)
+
 % line 2
 line2(isspace(line2)) = [];
 if startsWith(line2,'rawecgtomv(gain)=0.003000','IgnoreCase',true)
     headerInfo.gain = 0.003;
 else
-    error('READ_ECGFILE: Unexpected statement about gain.') %#ok<*WNTAG>
+    if isempty(manualgain)
+        warning('READ_ECGFILE: Unexpected statement about gain.')
+        if isempty(manualgain)
+            str = input('Do you want to manually set the gain (enter = no; value = yes). This gain will be used for all future points unless the agin is set in the ECG file. Enter a value here (e.g. 0.003): ');
+            if isempty(str)
+                error('READ_ECGFILE: Unexpected statement about gain.') %#ok<*WNTAG>
+            else
+            headerInfo.gain = str;
+            manualgain = headerInfo.gain;
+            end
+        end
+    else
+        headerInfo.gain = manualgain;
+    end
 end
 
-% line 3
-pattern = [ 'Unipolar Mapping Channel=(?<uni>\S*)\s*', ...
-            'Bipolar Mapping Channel=(?<bip>\S*)\s*', ...
-            'Reference Channel=(?<ref>\S*)\s*'];
-result = regexpi(line3,pattern,'names');
-headerInfo.uniMapChannel = result.uni;
-headerInfo.bipMapChannel = result.bip;
-headerInfo.refChannel = result.ref;
+% line 3 (optional)
+if startsWith(line1,'ECG_Export_4.0','IgnoreCase',true)
+    pattern = [ 'Unipolar Mapping Channel=(?<uni>\S*)\s*', ...
+        'Bipolar Mapping Channel=(?<bip>\S*)\s*', ...
+        'Reference Channel=(?<ref>\S*)\s*'];
+    result = regexpi(line3,pattern,'names');
+    if ~isempty(result)
+        headerInfo.uniMapChannel = result.uni;
+        headerInfo.bipMapChannel = result.bip;
+        headerInfo.refChannel = result.ref;
 
-%increment the unipole name by 1 to get the second unipole (this assumes
-%that the second unipole is always the 'first + 1'
-pattern = '(?<name>\S*\D)(?<number>\d*)';
-result = regexpi(headerInfo.uniMapChannel,pattern,'names');
-headerInfo.uniMapChannel2 = [result.name, num2str(str2double(result.number)+1)];
+        headerInfo.uniMapChannel2 = incrementUnipoleName(headerInfo.uniMapChannel);
 
-% line 4
-[headerInfo.channelNamesFull, nomatch] = regexpi(line4,'([\w-]*\(\d*\))','match','split');
+        % choose the correct next line
+        nextLine = line4;
+    end
+elseif startsWith(line1,'ECG_Export_4.1','IgnoreCase',true)
+    nextLine = line3;
+end
+
+% line 4 (or line 3)
+[headerInfo.channelNamesFull, nomatch] = regexpi(nextLine,'([\w-]*\(\d*\))','match','split');
 % check that nomatch strings are only white space characters
 test = regexp(nomatch,'\S*');
 for i = 1:numel(test)

@@ -1,4 +1,4 @@
-function [userdata, matFileFullPath] = import_ensitex(varargin)
+function [userdata, matFileFullPath] = import_ensite_x(varargin)
 % IMPORT_ENSITEX is used to import an EnsiteX case.
 %
 % Usage:
@@ -10,7 +10,7 @@ function [userdata, matFileFullPath] = import_ensitex(varargin)
 %   directory - an absolute folder path (if empty, user will be asked)
 %   userdata - an OpenEP data structure
 %
-% Author: Steven Williams (2022)
+% Author: Steven Williams (2024)
 % Modifications -
 %
 % Info on Code Testing:

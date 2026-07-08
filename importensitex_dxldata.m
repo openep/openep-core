@@ -1,4 +1,4 @@
-function data = importprecision_dxldata(varargin)
+function data = importensitex_dxldata(varargin)
 % IMPORTPRECISION_DXLDATA Loads all data from a given DxL case
 %{
 Imports all the ECG data from a Precision case folder, using the
@@ -130,10 +130,10 @@ p.addParameter('format',...
 p.parse(varargin{:})
 
 if p.Results.warning_files
-    warning('on', 'LoadPrecision:InvalidFile');
+    warning('on', 'LoadEnsiteX:InvalidFile');
     warning('on', 'importprecision_dxldata:InvalidFile');
 else
-    warning('off', 'LoadPrecision:InvalidFile');
+    warning('off', 'LoadEnsiteX:InvalidFile');
     warning('off', 'importprecision_dxldata:InvalidFile');
 end
 
@@ -202,30 +202,30 @@ else
 end
 
 % Disable warnings about invalid file - we will monitor
-oldWarningState = warning('query', 'loadprecision_dxldata:InvalidFile');
-warning('off', 'loadprecision_dxldata:InvalidFile');
+oldWarningState = warning('query', 'loadensitex_dxldata:InvalidFile');
+warning('off', 'loadensitex_dxldata:InvalidFile');
 cleanupWarning = onCleanup(@()warning(oldWarningState));
 
 for i_file = 1:length(fullFileList)
     % Extract sum total of data (while flagging for removal those entries
     % that don't provide any data)
     try
-        [info, pts, egm] = loadprecision_dxldata(fullFileList{i_file});
+        [info, pts, egm] = loadensitex_dxldata(fullFileList{i_file});
     catch
         fprintf(1,"Can't read %s\n", fullFileList{i_file})
         continue
     end
     if isempty(info)
         warning('importprecision_dxldata:InvalidFile', ...
-            ['loadprecision_dxldata: ', fileList{i_file}, ' was not loaded.'])
+            ['loadensitex_dxldata: ', fileList{i_file}, ' was not loaded.'])
         data_bool(i_file) = false;
         continue
     end
     
     % Reformat data to save only ECG output
-    info_fieldnames = {'study', 'sampleFreq', 'mapId', 'fileIndices', ...
+    info_fieldnames = {'study', 'sampleFreq', 'mapName', ...
         'startTime', 'endTime', 'startTimeAbs', 'endTimeAbs'};
-    info_fieldnames_new = {'study', 'sampleFreq', 'mapId', 'fileIndices', ...
+    info_fieldnames_new = {'study', 'sampleFreq', 'mapName', ...
         'expStartTime', 'expEndTime', 'expStartTimeAbs', 'expEndTimeAbs'};
     data(i_file).filename = fullFileList{i_file};
     for iFieldname = 1:length(info_fieldnames)
